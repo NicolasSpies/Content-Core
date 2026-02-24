@@ -1,0 +1,582 @@
+/**
+ * Content Core - Admin Styling
+ * Modern, clean, and client-friendly interface.
+ * Scoped to Content Core specific containers.
+ */
+
+:root {
+    --cc-primary: #2271b1;
+    --cc-primary-dark: #135e96;
+    --cc-bg-card: #ffffff;
+    --cc-bg-soft: #f6f7f7;
+    --cc-border: #dcdcde;
+    --cc-border-focus: #2271b1;
+    --cc-text: #1d2327;
+    --cc-text-muted: #646970;
+    --cc-radius: 8px;
+    --cc-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --cc-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* --- Global Scope: Content Core Admin Pages --- */
+.content-core-admin {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    color: var(--cc-text);
+    margin-right: 20px;
+}
+
+.content-core-admin .cc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--cc-border);
+}
+
+.content-core-admin .cc-header h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* --- Layout: Cards --- */
+.cc-card {
+    background: var(--cc-bg-card);
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--cc-shadow);
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.cc-card:hover {
+    box-shadow: var(--cc-shadow-hover);
+}
+
+.cc-card h2 {
+    margin-top: 0;
+    font-size: 18px;
+    font-weight: 600;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--cc-bg-soft);
+    margin-bottom: 20px;
+}
+
+/* --- Field Rendering: Post Edit & Options Pages --- */
+.cc-fields-container {
+    padding: 10px 0;
+}
+
+.cc-field-row {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 32px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--cc-bg-soft);
+}
+
+.cc-field-row:last-child {
+    border-bottom: none;
+}
+
+/* Override global field-row grid strictly for the Builder UI to enforce single-column accordion */
+#cc-fields-builder-app .cc-field-row {
+    display: block;
+    padding: 0;
+}
+
+.cc-field-label {
+    padding-top: 4px;
+}
+
+.cc-field-label label {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--cc-text);
+    margin-bottom: 4px;
+}
+
+.cc-required-mark {
+    color: #d63638;
+    margin-left: 2px;
+}
+
+.cc-field-input .description {
+    margin-top: 8px;
+    font-style: normal;
+    color: var(--cc-text-muted);
+    font-size: 13px;
+}
+
+/* Inputs refinement */
+.cc-field-input input[type="text"],
+.cc-field-input input[type="number"],
+.cc-field-input input[type="email"],
+.cc-field-input input[type="url"],
+.cc-field-input textarea,
+.cc-field-input select {
+    width: 100%;
+    max-width: 600px;
+    border-radius: 4px;
+    border: 1px solid var(--cc-border);
+    padding: 8px 12px;
+    box-shadow: none;
+}
+
+.cc-field-input input:focus,
+.cc-field-input textarea:focus {
+    border-color: var(--cc-border-focus);
+    box-shadow: 0 0 0 1px var(--cc-border-focus);
+}
+
+/* Utilities */
+.cc-input-full {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.cc-grid-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+/* --- UI Section Field --- */
+.cc-field-type-ui_section {
+    grid-template-columns: 1fr;
+    background: var(--cc-bg-soft);
+    padding: 20px 24px;
+    margin: 32px -12px;
+    border-radius: var(--cc-radius);
+    border: none;
+}
+
+.cc-ui-section-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+}
+
+.cc-ui-section-description {
+    color: var(--cc-text-muted);
+    margin: 0;
+    font-size: 14px;
+}
+
+/* --- Sections (Post Edit) --- */
+.cc-section {
+    margin: 24px 0 16px 0;
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius);
+    background: #fff;
+    overflow: hidden;
+    box-shadow: var(--cc-shadow);
+}
+
+.cc-section-header {
+    background: var(--cc-bg-soft);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: default;
+    user-select: none;
+    border-bottom: 1px solid transparent;
+}
+
+.cc-section.is-collapsible .cc-section-header {
+    cursor: pointer;
+}
+
+.cc-section.is-collapsible .cc-section-header:hover {
+    background: #f0f0f1;
+}
+
+.cc-section.is-open .cc-section-header {
+    border-bottom-color: var(--cc-border);
+}
+
+.cc-section-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.cc-section-description {
+    margin: 4px 0 0 0;
+    font-size: 13px;
+    color: var(--cc-text-muted);
+}
+
+.cc-section-toggle-icon {
+    font-size: 20px;
+    transition: transform 0.2s;
+    color: var(--cc-text-muted);
+}
+
+.cc-section.is-open .cc-section-toggle-icon {
+    transform: rotate(180deg);
+}
+
+.cc-section-content {
+    padding: 0 24px;
+    display: none;
+}
+
+.cc-section.is-open .cc-section-content {
+    display: block;
+}
+
+/* Styles */
+.cc-section-style-subtle {
+    border-color: transparent;
+    box-shadow: none;
+    background: transparent;
+    margin-top: 40px;
+}
+
+.cc-section-style-subtle .cc-section-header {
+    background: transparent;
+    padding-left: 0;
+    padding-right: 0;
+    border-bottom: 2px solid var(--cc-bg-soft);
+    margin-bottom: 8px;
+}
+
+.cc-section-style-strong {
+    border-left: 4px solid var(--cc-primary);
+}
+
+.cc-section .cc-field-row:last-child {
+    border-bottom: none;
+}
+
+/* --- Media Uploader --- */
+.cc-media-preview {
+    background: #f0f0f1;
+    border: 1px dashed var(--cc-border);
+    border-radius: var(--cc-radius);
+    min-height: 100px;
+    max-width: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.cc-media-preview img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.cc-media-filename {
+    padding: 10px;
+    font-size: 12px;
+    word-break: break-all;
+    text-align: center;
+}
+
+/* --- Repeater Modern Look --- */
+.cc-repeater-container {
+    background: var(--cc-bg-soft);
+    border-radius: var(--cc-radius);
+    padding: 16px;
+}
+
+.cc-repeater-row {
+    background: var(--cc-bg-card);
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.cc-repeater-row-header {
+    padding: 12px 16px;
+    background: #fff;
+    cursor: move;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid transparent;
+}
+
+.cc-repeater-row.is-open .cc-repeater-row-header {
+    border-bottom-color: var(--cc-bg-soft);
+}
+
+.cc-repeater-row-handle {
+    color: #ccc;
+    margin-right: 12px;
+}
+
+.cc-repeater-row-title {
+    font-weight: 600;
+    flex-grow: 1;
+}
+
+.cc-repeater-row-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.cc-repeater-row-content {
+    padding: 24px;
+    background: #fff;
+}
+
+.cc-repeater-row-actions button {
+    background: none;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    color: var(--cc-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.cc-repeater-row-actions button:hover {
+    color: var(--cc-primary);
+}
+
+.cc-repeater-row-actions .cc-repeater-row-remove:hover {
+    color: #d63638;
+}
+
+.cc-repeater-row-actions .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.cc-repeater-placeholder {
+    background: #f0f0f1;
+    border: 2px dashed var(--cc-border);
+    border-radius: var(--cc-radius);
+    height: 50px;
+    margin-bottom: 12px;
+}
+
+/* --- Gallery Styling --- */
+.cc-gallery-container {
+    background: var(--cc-bg-soft);
+    border-radius: var(--cc-radius);
+    padding: 16px;
+}
+
+.cc-gallery-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.cc-gallery-item {
+    position: relative;
+    aspect-ratio: 1;
+    background: #fff;
+    border: 1px solid var(--cc-border);
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: move;
+}
+
+.cc-gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cc-gallery-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(214, 54, 56, 0.9);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.cc-gallery-item:hover .cc-gallery-remove {
+    opacity: 1;
+}
+
+.cc-gallery-remove:hover {
+    background: #d63638;
+}
+
+.cc-repeater-row-content .cc-field-row {
+    grid-template-columns: 180px 1fr;
+    padding: 16px 0;
+    gap: 16px;
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 782px) {
+
+    .cc-field-row,
+    .cc-repeater-row-content .cc-field-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+}
+
+/* --- Builder Styling: Field Groups & Assignments --- */
+.cc-rule-group,
+.cc-field-definition {
+    background: #fff;
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius);
+    margin-bottom: 20px;
+    box-shadow: var(--cc-shadow);
+    overflow: hidden;
+}
+
+.cc-rule-group-header,
+.cc-field-definition-header {
+    background: var(--cc-bg-soft);
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--cc-border);
+    cursor: default;
+}
+
+.cc-field-definition-header {
+    cursor: pointer;
+}
+
+.cc-field-definition.cc-is-section {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, .05);
+    margin-top: 35px;
+    margin-bottom: 25px;
+    border: 1px solid #2271b1 !important;
+}
+
+.cc-field-definition.cc-is-section>.cc-field-definition-header {
+    background-color: #f0f6fc !important;
+    border-bottom: 1px solid #c3c4c7;
+}
+
+.inner-sortable-list {
+    min-height: 60px;
+    padding: 15px;
+    border: 2px dashed #c3c4c7;
+    background: #f6f7f7;
+    margin: 15px;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.inner-sortable-list .cc-field-row {
+    margin-bottom: 15px !important;
+}
+
+.inner-sortable-list.ui-sortable-hover {
+    background: #f0f6fc;
+    border-color: #2271b1;
+}
+
+.cc-field-definition-header strong {
+    font-size: 14px;
+    color: var(--cc-text);
+}
+
+.cc-rule-group-content,
+.cc-field-definition-content {
+    padding: 20px;
+}
+
+.cc-rule-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: #fdfdfd;
+    padding: 12px;
+    border: 1px solid var(--cc-border);
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.cc-rule-row select {
+    max-width: 200px;
+}
+
+.cc-field-definition .cc-field-definition-content {
+    display: none;
+}
+
+.cc-field-definition.is-open .cc-field-definition-content {
+    display: block;
+}
+
+/* Force Form Tables to stack vertically in Field Settings */
+.cc-field-settings .form-table,
+.cc-field-settings .form-table tbody,
+.cc-field-settings .form-table tr,
+.cc-field-settings .form-table th,
+.cc-field-settings .form-table td {
+    display: block;
+    width: 100%;
+}
+
+.cc-field-settings .form-table tr {
+    margin-bottom: 15px;
+}
+
+.cc-field-settings .form-table th {
+    padding: 0 0 8px 0;
+    font-weight: 600;
+}
+
+.cc-field-settings .form-table td {
+    padding: 0;
+}
+
+.cc-field-settings .form-table input.regular-text,
+.cc-field-settings .form-table textarea.large-text,
+.cc-field-settings .form-table select {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.cc-builder-actions {
+    margin-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cc-remove-btn-subtle {
+    background: none;
+    border: none;
+    color: var(--cc-text-muted);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px;
+    transition: color 0.2s;
+}
+
+.cc-remove-btn-subtle:hover {
+    color: #d63638;
+}

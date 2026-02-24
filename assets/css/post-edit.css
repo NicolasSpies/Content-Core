@@ -1,0 +1,89 @@
+/**
+ * Content Core - Post Edit Screens styling
+ * This file implements a native WordPress "form-table" layout for Content Core meta boxes.
+ */
+
+.content-core-form-table {
+    margin: 0;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.content-core-form-table th {
+    width: 200px;
+    padding: 20px 10px 20px 0;
+    vertical-align: top;
+    text-align: left;
+    font-weight: 600;
+}
+
+.content-core-form-table td {
+    padding: 15px 10px;
+    vertical-align: top;
+}
+
+.content-core-form-table .cc-input-full {
+    width: 100%;
+    max-width: 800px;
+}
+
+/* Red asterisk for required fields */
+.cc-required-mark {
+    color: #d63638;
+    margin-left: 2px;
+}
+
+/* Nested containers (Groups and Repeaters) */
+.nested-group-table,
+.nested-repeater-table {
+    background: #f9f9f9;
+    border-left: 3px solid #eee;
+    margin-top: 10px;
+    padding: 10px;
+}
+
+.nested-group-table th,
+.nested-repeater-table th {
+    width: 160px;
+    padding: 10px 10px 10px 15px;
+}
+
+.nested-group-table td,
+.nested-repeater-table td {
+    padding: 8px 10px;
+}
+
+/* Handle specific types for better layout */
+.content-core-field-type-boolean label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.content-core-field-type-textarea textarea {
+    min-height: 100px;
+}
+
+/* Spacing between different meta boxes if multiple present */
+.postbox .content-core-form-table {
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.postbox .content-core-form-table:last-child {
+    border-bottom: none;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 782px) {
+    .content-core-form-table th {
+        width: auto;
+        padding-bottom: 0;
+        display: block;
+    }
+
+    .content-core-form-table td {
+        padding-top: 5px;
+        display: block;
+    }
+}

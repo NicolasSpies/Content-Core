@@ -1,0 +1,230 @@
+/**
+ * Content Core - Client UI Cleanup
+ * Scoped styles for .cc-metabox containers on post edit screens.
+ */
+
+/* Root Container */
+.cc-metabox {
+    margin: 10px 0 20px 0;
+    border: 1px solid #ccd0d4;
+    background: #fff;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+}
+
+/* Header Bar */
+.cc-metabox-header {
+    background: #f6f7f7;
+    border-bottom: 1px solid #ccd0d4;
+    padding: 12px 16px;
+}
+
+.cc-metabox-title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 0;
+    color: #1d2327;
+}
+
+.cc-metabox-desc {
+    font-size: 12px;
+    color: #646970;
+    margin-top: 4px;
+}
+
+/* Body */
+.cc-metabox-body {
+    padding: 0 16px;
+}
+
+/* Field Rows - High specificity to override WP defaults */
+.cc-metabox .cc-metabox-body .cc-field-row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    column-gap: 20px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f0f0f1;
+    align-items: start;
+}
+
+.cc-metabox .cc-metabox-body .cc-field-row:last-child {
+    border-bottom: none;
+}
+
+/* Label Styling */
+.cc-metabox .cc-field-label {
+    font-weight: 600;
+    color: #1d2327;
+    padding-top: 4px;
+    line-height: 1.5;
+}
+
+.cc-metabox .cc-field-label label {
+    font-weight: 600;
+    cursor: default;
+}
+
+/* Control Container */
+.cc-metabox .cc-field-control {
+    min-width: 0;
+}
+
+/* Nested Fields Indentation */
+.cc-metabox .cc-repeater-row-content .cc-field-row,
+.cc-metabox .cc-group-container .cc-field-row {
+    padding-left: 15px;
+    border-left: 3px solid #f0f0f1;
+    margin-left: 5px;
+}
+
+.cc-metabox .cc-repeater-row-content .cc-field-row:hover,
+.cc-metabox .cc-group-container .cc-field-row:hover {
+    border-left-color: #2271b1;
+}
+
+/* Standard Inputs - Ensure full width within control */
+.cc-metabox .cc-field-control input[type="text"],
+.cc-metabox .cc-field-control input[type="number"],
+.cc-metabox .cc-field-control input[type="email"],
+.cc-metabox .cc-field-control input[type="url"],
+.cc-metabox .cc-field-control textarea,
+.cc-metabox .cc-field-control select {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+/* Boolean / Compact Fields */
+.cc-metabox .cc-field-row.cc-field-compact {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cc-metabox .cc-field-row.cc-field-compact .cc-field-label {
+    padding-top: 0;
+    order: 2;
+}
+
+.cc-metabox .cc-field-row.cc-field-compact .cc-field-control {
+    order: 1;
+}
+
+/* Media Fields Block */
+.cc-metabox .cc-field-media .cc-media-uploader,
+.cc-metabox .cc-field-media .cc-gallery-container {
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px dashed #ccd0d4;
+    border-radius: 4px;
+}
+
+.cc-metabox .cc-field-media .cc-media-preview img {
+    max-width: 100%;
+    max-height: 280px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    margin-bottom: 10px;
+    border-radius: 2px;
+}
+
+/* Gallery Grid Layout */
+.cc-metabox .cc-gallery-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.cc-metabox .cc-gallery-item {
+    position: relative;
+    aspect-ratio: 1/1;
+    background: #eee;
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid #ccd0d4;
+}
+
+.cc-metabox .cc-gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.cc-metabox .cc-gallery-remove {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 22px;
+    height: 22px;
+    line-height: 20px;
+    padding: 0;
+    background: rgba(220, 53, 69, 0.8);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    text-align: center;
+    display: none;
+    transition: background 0.2s;
+}
+
+.cc-metabox .cc-gallery-item:hover .cc-gallery-remove {
+    display: block;
+}
+
+.cc-metabox .cc-gallery-remove:hover {
+    background: rgba(220, 53, 69, 1);
+}
+
+/* Section Styling */
+.cc-section {
+    margin: 15px 0;
+    border: 1px solid #e2e4e7;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.cc-section-header {
+    background: #f8f9fa;
+    padding: 12px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: default;
+    border-bottom: 1px solid #e2e4e7;
+}
+
+.cc-section.is-collapsible .cc-section-header {
+    cursor: pointer;
+}
+
+.cc-section.is-collapsible .cc-section-header:hover {
+    background: #f0f0f1;
+}
+
+.cc-section-title {
+    margin: 0;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #50575e;
+}
+
+.cc-section-body {
+    padding: 0 15px;
+    background: #fff;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 782px) {
+    .cc-metabox .cc-metabox-body .cc-field-row {
+        grid-template-columns: 1fr;
+        row-gap: 8px;
+    }
+}
