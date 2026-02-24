@@ -8,6 +8,7 @@ class SettingsModule implements ModuleInterface
     const OPTION_KEY = 'content_core_admin_menu_settings';
     const ORDER_KEY = 'content_core_admin_menu_order';
     const MEDIA_KEY = 'cc_media_settings';
+    const REDIRECT_KEY = 'cc_redirect_settings';
 
     const DEFAULT_HIDDEN = [
         'edit-comments.php',
@@ -17,8 +18,32 @@ class SettingsModule implements ModuleInterface
         'options-general.php',
     ];
 
+    const ADMIN_SAFETY_SLUGS = [
+        'options-general.php',
+        'plugins.php',
+        'users.php',
+        'tools.php',
+        'content-core'
+    ];
+
+    const CORE_WP_SLUGS = [
+        'index.php',
+        'edit.php',
+        'upload.php',
+        'edit.php?post_type=page',
+        'edit-comments.php',
+        'themes.php',
+        'plugins.php',
+        'users.php',
+        'tools.php',
+        'options-general.php'
+    ];
+
     public function init(): void
     {
+        // Redirect logic runs on frontend init
+        add_action('init', [$this, 'handle_frontend_redirect']);
+
         if (!is_admin()) {
             return;
         }
@@ -50,23 +75,81 @@ class SettingsModule implements ModuleInterface
         );
     }
 
-    // ─── Visibility ────────────────────────────────────────────────
+    public function handle_frontend_redirect(): void
+    {
+        $settings = get_option(self::REDIRECT_KEY, []);
+        if (empty($settings['enabled'])) {
+            return;
+        }
+
+        // ── Exclusions ──
+        $excl = $settings['exclusions'] ?? [];
+        if (!empty($excl['admin']) && is_admin())
+            return;
+        if (!empty($excl['ajax']) && wp_doing_ajax())
+            return;
+        if (!empty($excl['cron']) && wp_doing_cron())
+            return;
+        if (!empty($excl['rest']) && defined('REST_REQUEST') && REST_REQUEST)
+            return;
+        if (!empty($excl['cli']) && defined('WP_CLI') && WP_CLI)
+            return;
+
+        // ── Path Matching ──
+        $from_path = $settings['from_path'] ?? '/';
+        $current_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+        if ($current_path !== $from_path) {
+            return;
+        }
+
+        $target = $settings['target'] ?? '/wp-admin';
+        $status = intval($settings['status_code'] ?? 302);
+
+        // Prevent redirect loop
+        if ($target === $from_path) {
+            return;
+        }
+
+        // ── Query String Pass Through ──
+        if (!empty($settings['pass_query']) && !empty($_SERVER['QUERY_STRING'])) {
+            $separator = (strpos($target, '?') !== false) ? '&' : '?';
+            $target .= $separator . $_SERVER['QUERY_STRING'];
+        }
+
+        wp_safe_redirect($target, $status);
+        exit;
+    }
+
+    private function is_cc_settings_screen(): bool
+    {
+        global $pagenow;
+        $page = $_GET['page'] ?? '';
+
+        // Safe Mode: Only active on the actual settings page to allow recovery
+        return $pagenow === 'admin.php' && $page === 'cc-settings';
+    }
 
     public function apply_menu_visibility(): void
     {
-        if (is_multisite() && is_super_admin()) {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        // Settings Page Safe Mode: Never hide menus while on the CC settings screen
+        if ($this->is_cc_settings_screen()) {
             return;
         }
 
         $settings = get_option(self::OPTION_KEY, []);
-        $is_admin = current_user_can('manage_options');
-        $hidden = $this->get_hidden_slugs($settings, $is_admin);
+        $hidden = $this->get_hidden_slugs($settings, true);
 
         foreach ($hidden as $slug) {
-            if ($slug === 'content-core')
+            // Admin Safety Override: Always retain these regardless of toggle.
+            if (in_array($slug, self::ADMIN_SAFETY_SLUGS, true)) {
                 continue;
-            if ($is_admin && in_array($slug, ['options-general.php', 'plugins.php'], true))
-                continue;
+            }
+
             remove_menu_page($slug);
         }
     }
@@ -74,11 +157,10 @@ class SettingsModule implements ModuleInterface
     private function get_hidden_slugs(array $settings, bool $is_admin): array
     {
         if (empty($settings)) {
-            return $is_admin ? [] : self::DEFAULT_HIDDEN;
+            return [];
         }
 
-        $role_key = $is_admin ? 'admin' : 'client';
-        $items = $settings[$role_key] ?? [];
+        $items = $settings['admin'] ?? [];
         $hidden = [];
 
         foreach ($items as $slug => $visible) {
@@ -182,6 +264,9 @@ class SettingsModule implements ModuleInterface
 
         // Reset
         if (isset($_POST['cc_reset_menu'])) {
+            if (!current_user_can('manage_options')) {
+                return;
+            }
             delete_option(self::OPTION_KEY);
             delete_option(self::ORDER_KEY);
             add_settings_error('cc_settings', 'reset', __('Menu visibility and ordering have been reset to defaults.', 'content-core'), 'updated');
@@ -197,7 +282,7 @@ class SettingsModule implements ModuleInterface
                 $visibility_payload['admin'] = array_map(function ($v) {
                     return (bool)$v;
                 }, $_POST['cc_menu_admin']);
-                
+
                 // Safety locks for Admin
                 $visibility_payload['admin']['options-general.php'] = true;
                 $visibility_payload['admin']['plugins.php'] = true;
@@ -208,7 +293,7 @@ class SettingsModule implements ModuleInterface
                 $visibility_payload['client'] = array_map(function ($v) {
                     return (bool)$v;
                 }, $_POST['cc_menu_client']);
-                
+
                 // Safety locks for Client
                 $visibility_payload['client']['content-core'] = true;
             }
@@ -218,6 +303,26 @@ class SettingsModule implements ModuleInterface
             }
         }
 
+        // ── Redirection ──
+        if (isset($_POST['cc_redirect'])) {
+            $redirect_post = (array)$_POST['cc_redirect'];
+            $redirect_payload = [
+                'enabled' => !empty($redirect_post['enabled']),
+                'from_path' => $this->sanitize_redirect_path($redirect_post['from_path'] ?? '/'),
+                'target' => $this->sanitize_redirect_path($redirect_post['target'] ?? '/wp-admin'),
+                'status_code' => in_array($redirect_post['status_code'] ?? '302', ['301', '302']) ? $redirect_post['status_code'] : '302',
+                'pass_query' => !empty($redirect_post['pass_query']),
+                'exclusions' => [
+                    'admin' => !empty($redirect_post['exclusions']['admin']),
+                    'ajax' => !empty($redirect_post['exclusions']['ajax']),
+                    'rest' => !empty($redirect_post['exclusions']['rest']),
+                    'cron' => !empty($redirect_post['exclusions']['cron']),
+                    'cli' => !empty($redirect_post['exclusions']['cli']),
+                ]
+            ];
+            update_option(self::REDIRECT_KEY, $redirect_payload);
+        }
+
         // ── Ordering ──
         // Only trigger update if order strings are provided and not empty
         $admin_order_raw = $_POST['cc_core_order_admin'] ?? '';
@@ -225,7 +330,7 @@ class SettingsModule implements ModuleInterface
 
         if (!empty($admin_order_raw) || !empty($client_order_raw)) {
             $order_payload = [];
-            
+
             if (!empty($admin_order_raw)) {
                 $admin_order = $this->parse_order_input($admin_order_raw);
                 if (!empty($admin_order)) {
@@ -327,7 +432,7 @@ class SettingsModule implements ModuleInterface
             $media_settings = [
                 'enabled' => !empty($_POST['cc_media']['enabled']),
                 'max_width_px' => intval($_POST['cc_media']['max_width_px'] ?: 2000),
-                'output_format' => 'webp', 
+                'output_format' => 'webp',
                 'quality' => intval($_POST['cc_media']['quality'] ?: 70),
                 'png_mode' => sanitize_text_field($_POST['cc_media']['png_mode'] ?: 'lossless'),
                 'delete_original' => !empty($_POST['cc_media']['delete_original']),
@@ -501,6 +606,9 @@ class SettingsModule implements ModuleInterface
         <a href="#multilingual" class="nav-tab" data-tab="multilingual">
             <?php _e('Multilingual', 'content-core'); ?>
         </a>
+        <a href="#redirect" class="nav-tab" data-tab="redirect">
+            <?php _e('Redirect', 'content-core'); ?>
+        </a>
     </h2>
 
     <form method="post">
@@ -552,6 +660,7 @@ class SettingsModule implements ModuleInterface
                     $c_checked = $client_vis[$slug] ?? true;
                 }
                 else {
+                    $a_locked = in_array($slug, self::ADMIN_SAFETY_SLUGS, true);
                     $c_checked = !in_array($slug, self::DEFAULT_HIDDEN, true);
                 }
 
@@ -1108,6 +1217,130 @@ class SettingsModule implements ModuleInterface
             </div>
         </div> <!-- End #cc-tab-multilingual -->
 
+        <div id="cc-tab-redirect" class="cc-tab-content">
+            <div class="cc-card">
+                <h2 style="margin-top: 0;">
+                    <?php _e('Root Redirection', 'content-core'); ?>
+                </h2>
+                <p style="color: #646970;">
+                    <?php _e('Configure where users are sent when visiting the site root (e.g. your CMS subdomain).', 'content-core'); ?>
+                </p>
+
+                <?php
+        $red_defaults = [
+            'enabled' => false,
+            'from_path' => '/',
+            'target' => '/wp-admin',
+            'status_code' => '302',
+            'pass_query' => false,
+            'exclusions' => [
+                'admin' => true,
+                'ajax' => true,
+                'rest' => true,
+                'cron' => true,
+                'cli' => true,
+            ]
+        ];
+        $red_settings = array_merge($red_defaults, get_option(self::REDIRECT_KEY, []));
+?>
+
+                <table class="form-table" style="margin-top: 20px;">
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Enable Root Redirect', 'content-core'); ?>
+                        </th>
+                        <td>
+                            <label class="cc-toggle">
+                                <input type="hidden" name="cc_redirect[enabled]" value="0">
+                                <input type="checkbox" name="cc_redirect[enabled]" value="1" <?php
+        checked($red_settings['enabled']); ?>>
+                                <span class="cc-toggle-slider"></span>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Redirect From', 'content-core'); ?>
+                        </th>
+                        <td>
+                            <input type="text" name="cc_redirect[from_path]"
+                                value="<?php echo esc_attr($red_settings['from_path']); ?>" class="regular-text">
+                            <p class="description">
+                                <?php _e('Exact path to redirect from. Default is "/".', 'content-core'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Redirect To', 'content-core'); ?>
+                        </th>
+                        <td>
+                            <input type="text" name="cc_redirect[target]"
+                                value="<?php echo esc_attr($red_settings['target']); ?>" class="regular-text">
+                            <p class="description">
+                                <?php _e('Relative path only (e.g. /wp-admin). Overrides any dropdown choices.', 'content-core'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Status Code', 'content-core'); ?>
+                        </th>
+                        <td>
+                            <select name="cc_redirect[status_code]" class="regular-text">
+                                <option value="301" <?php selected($red_settings['status_code'], '301'); ?>>301 Moved
+                                    Permanently</option>
+                                <option value="302" <?php selected($red_settings['status_code'], '302'); ?>>302 Found
+                                    (Temporary)</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Allow Query String Pass Through', 'content-core'); ?>
+                        </th>
+                        <td>
+                            <label class="cc-toggle">
+                                <input type="hidden" name="cc_redirect[pass_query]" value="0">
+                                <input type="checkbox" name="cc_redirect[pass_query]" value="1" <?php
+        checked($red_settings['pass_query']); ?>>
+                                <span class="cc-toggle-slider"></span>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Exclusions', 'content-core'); ?>
+                        </th>
+                        <td>
+                            <fieldset>
+                                <label><input type="checkbox" name="cc_redirect[exclusions][admin]" value="1" <?php
+        checked($red_settings['exclusions']['admin']); ?>>
+                                    <?php _e('Admin Area', 'content-core'); ?>
+                                </label><br>
+                                <label><input type="checkbox" name="cc_redirect[exclusions][ajax]" value="1" <?php
+        checked($red_settings['exclusions']['ajax']); ?>>
+                                    <?php _e('AJAX Requests', 'content-core'); ?>
+                                </label><br>
+                                <label><input type="checkbox" name="cc_redirect[exclusions][rest]" value="1" <?php
+        checked($red_settings['exclusions']['rest']); ?>>
+                                    <?php _e('REST API', 'content-core'); ?>
+                                </label><br>
+                                <label><input type="checkbox" name="cc_redirect[exclusions][cron]" value="1" <?php
+        checked($red_settings['exclusions']['cron']); ?>>
+                                    <?php _e('WP Cron', 'content-core'); ?>
+                                </label><br>
+                                <label><input type="checkbox" name="cc_redirect[exclusions][cli]" value="1" <?php
+        checked($red_settings['exclusions']['cli']); ?>>
+                                    <?php _e('WP CLI', 'content-core'); ?>
+                                </label>
+                            </fieldset>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div> <!-- End #cc-tab-redirect -->
+
         <div style="display: flex; gap: 12px; align-items: center; margin-top: 24px;">
             <?php submit_button(__('Save Settings', 'content-core'), 'primary', 'submit', false); ?>
             <button type="submit" name="cc_reset_menu" class="button button-secondary"
@@ -1404,40 +1637,43 @@ class SettingsModule implements ModuleInterface
         $('.cc-visibility-sortable tbody').sortable({
             handle: '.cc-drag-handle',
             items: 'tr[data-slug]',
-            placeholder: 'ui-sortable-placeholder',
-            axis: 'y',
-            opacity: 0.8,
-            cursor: 'grabbing',
-            update: function () {
+            placeholder: 'ui-sortable-placeholder', update: function (event, ui) {
                 serializeVisibilityOrder();
             }
         });
 
-        $('form').on('submit', function () {
-            serializeVisibilityOrder();
-        });
+        serializeVisibilityOrder();
     });
 </script>
 
 <?php
     }
 
-    private function render_order_list(array $core_items, array $saved_order, string $role): void
+    /**
+     * Helper to render the draggable order list items.
+     */
+    private function render_order_list(array $categories, array $saved_order, bool $is_admin): void
     {
-        // Re-order core items based on saved order
-        $ordered_slugs = $saved_order;
-        $all_slugs = array_keys($core_items);
-
-        // Items in saved order first
-        $final_order = [];
-        foreach ($ordered_slugs as $slug) {
-            if (isset($core_items[$slug])) {
-                $final_order[$slug] = $core_items[$slug];
+        $all_items = [];
+        foreach ($categories as $group_items) {
+            foreach ($group_items as $slug => $title) {
+                $all_items[$slug] = $title;
             }
         }
 
-        // Then remaining items
-        foreach ($core_items as $slug => $title) {
+        $role_key = $is_admin ? 'admin' : 'client';
+        $ordered_slugs = $saved_order[$role_key] ?? [];
+        $final_order = [];
+
+        // 1. Add items that have a saved position
+        foreach ($ordered_slugs as $slug) {
+            if (isset($all_items[$slug])) {
+                $final_order[$slug] = $all_items[$slug];
+            }
+        }
+
+        // 2. Add remaining items at the end
+        foreach ($all_items as $slug => $title) {
             if (!isset($final_order[$slug])) {
                 $final_order[$slug] = $title;
             }
@@ -1446,7 +1682,7 @@ class SettingsModule implements ModuleInterface
         foreach ($final_order as $slug => $title):
 ?>
 <li data-slug="<?php echo esc_attr($slug); ?>">
-    <span class="dashicons dashicons-menu"></span>
+    <span class="dashicons dashicons-menu cc-drag-handle"></span>
     <span class="cc-order-title">
         <?php echo esc_html($title); ?>
     </span>
@@ -1456,5 +1692,28 @@ class SettingsModule implements ModuleInterface
 </li>
 <?php
         endforeach;
+    }
+
+    /**
+     * Sanitize custom redirect path to be relative and start with a slash.
+     */
+    private function sanitize_redirect_path(string $path): string
+    {
+        $path = trim($path);
+        if (empty($path)) {
+            return '';
+        }
+
+        // Reject full URLs
+        if (preg_match('/^https?:\/\//i', $path) || strpos($path, '//') === 0) {
+            return '';
+        }
+
+        // Ensure starts with /
+        if ($path[0] !== '/') {
+            $path = '/' . $path;
+        }
+
+        return sanitize_text_field($path);
     }
 }

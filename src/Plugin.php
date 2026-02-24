@@ -91,7 +91,23 @@ class Plugin
                 }
             }
             catch (\Throwable $e) {
-                $this->missing_modules[] = $class_name . ' (Instantiation failed: ' . $e->getMessage() . ')';
+                // Log detailed error for server-side diagnostics
+                error_log(sprintf(
+                    'Content Core: Module %s failed to instantiate. Error: %s in %s on line %d',
+                    $class_name,
+                    $e->getMessage(),
+                    $e->getFile(),
+                    $e->getLine()
+                ));
+
+                // Capture actionable info for admin UI
+                $this->missing_modules[] = sprintf(
+                    '%s (Instantiation failed in %s:%d: %s)',
+                    $class_name,
+                    basename($e->getFile()),
+                    $e->getLine(),
+                    $e->getMessage()
+                );
             }
         }
     }
@@ -116,7 +132,21 @@ class Plugin
                     $this->active_modules[$module_id] = get_class($instance);
                 }
                 catch (\Throwable $e) {
-                    $this->missing_modules[] = get_class($instance) . ' (Init failed: ' . $e->getMessage() . ')';
+                    error_log(sprintf(
+                        'Content Core: Module %s failed during init(). Error: %s in %s on line %d',
+                        get_class($instance),
+                        $e->getMessage(),
+                        $e->getFile(),
+                        $e->getLine()
+                    ));
+
+                    $this->missing_modules[] = sprintf(
+                        '%s (Init failed in %s:%d: %s)',
+                        get_class($instance),
+                        basename($e->getFile()),
+                        $e->getLine(),
+                        $e->getMessage()
+                    );
                     unset($this->modules[$module_id]);
                 }
             }
