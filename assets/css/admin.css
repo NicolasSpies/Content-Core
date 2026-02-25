@@ -580,3 +580,132 @@
 .cc-remove-btn-subtle:hover {
     color: #d63638;
 }
+
+/* --- Translation Column & Toolbar UI Consistency --- */
+
+/* List Table Translation Column Improvements */
+.column-cc_translation {
+    white-space: nowrap;
+    width: 120px;
+}
+
+.column-cc_translation .cc-translation-column-wrap {
+    display: flex !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    align-items: center !important;
+}
+
+.column-cc_translation .cc-tr-flag {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-decoration: none !important;
+    transition: all 0.15s ease !important;
+    position: relative !important;
+    height: 22px !important;
+    min-width: 22px !important;
+    margin: 0 !important;
+    padding: 0 4px !important;
+    box-sizing: border-box !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 3px !important;
+}
+
+.column-cc_translation .cc-tr-flag img,
+.column-cc_translation .cc-tr-flag .cc-chip-emoji,
+.column-cc_translation .cc-tr-flag span[style*='font-size'] {
+    height: 14px !important;
+    width: auto !important;
+    margin: 0 !important;
+    display: block !important;
+    border-radius: 2px !important;
+}
+
+/* Current language - soft green background */
+.column-cc_translation .cc-tr-flag.is-current {
+    background: #e6f4ea !important;
+    border: 1px solid #8fd19e !important;
+}
+
+/* Existing translation - subtle hover */
+.column-cc_translation .cc-tr-flag.is-exists {
+    background: #f0f0f1 !important;
+}
+
+.column-cc_translation .cc-tr-flag.is-exists:hover {
+    background: #e6f4ea !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+
+/* Missing translation - ghosted/grayscale */
+.column-cc_translation .cc-tr-flag.is-missing {
+    opacity: 0.35 !important;
+    filter: grayscale(100%) !important;
+}
+
+.column-cc_translation .cc-tr-flag.is-missing:hover {
+    opacity: 0.6 !important;
+    filter: grayscale(50%) !important;
+}
+
+/* Admin Toolbar Language Switcher - Enhanced Visibility */
+#wpadminbar #wp-admin-bar-cc-multilingual-switcher > .ab-item {
+    background-color: #f59e0b !important;
+    color: #ffffff !important;
+    border-radius: 14px !important;
+    margin: 6px 8px 0 4px !important;
+    padding: 0 14px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+#wpadminbar #wp-admin-bar-cc-multilingual-switcher > .ab-item:before,
+#wpadminbar #wp-admin-bar-cc-multilingual-switcher > .ab-item .ab-icon {
+    display: none !important;
+}
+
+#wpadminbar #wp-admin-bar-cc-multilingual-switcher > .ab-item img,
+#wpadminbar #wp-admin-bar-cc-multilingual-switcher > .ab-item .cc-chip-emoji {
+    margin-right: 6px !important;
+    height: 14px !important;
+    width: auto !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+}
+
+/* Toolbar submenu improvements */
+#wpadminbar #wp-admin-bar-cc-multilingual-switcher .ab-sub-wrapper .ab-item {
+    padding: 8px 16px !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+}
+
+#wpadminbar #wp-admin-bar-cc-multilingual-switcher .ab-sub-wrapper .ab-item:hover {
+    background: #2271b1 !important;
+    color: #fff !important;
+}
+
+#wpadminbar #wp-admin-bar-cc-multilingual-switcher .ab-sub-wrapper .cc-lang-row {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+#wpadminbar #wp-admin-bar-cc-multilingual-switcher .ab-sub-wrapper .cc-lang-flag {
+    display: flex !important;
+    align-items: center !important;
+    width: 18px !important;
+    justify-content: center !important;
+}
+
+#wpadminbar #wp-admin-bar-cc-multilingual-switcher .ab-sub-wrapper .cc-lang-flag img,
+#wpadminbar #wp-admin-bar-cc-multilingual-switcher .ab-sub-wrapper .cc-lang-flag .cc-chip-emoji {
+    height: 12px !important;
+    width: auto !important;
+}

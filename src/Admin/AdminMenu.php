@@ -21,6 +21,9 @@ class AdminMenu
         add_action('admin_post_cc_clear_all_transients', [$this, 'handle_clear_all_transients']);
         add_action('admin_post_cc_clear_plugin_caches', [$this, 'handle_clear_plugin_caches']);
         add_action('admin_post_cc_flush_object_cache', [$this, 'handle_flush_object_cache']);
+
+        add_filter('admin_footer_text', '__return_empty_string');
+        add_filter('update_footer', '__return_empty_string', 11);
     }
 
     /**
@@ -146,6 +149,13 @@ class AdminMenu
             $suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
             return round(pow(1024, $base - floor($base)), 2) . ' ' . $suffixes[floor($base)];
         };
+
+        $last_expired = $cache_service->get_last_action_info('expired_transients');
+        $last_all = $cache_service->get_last_action_info('all_transients');
+        $last_cc = $cache_service->get_last_action_info('cc_caches');
+        $last_obj = $cache_service->get_last_action_info('object_cache');
+
+        $object_cache_active = $snapshot['object_cache']['enabled'];
         ?>
         <div class="wrap content-core-admin">
             <div class="cc-header">
@@ -154,10 +164,8 @@ class AdminMenu
 
 
             <?php 
-            // Display admin notices on Dashboard
             settings_errors('cc_dashboard'); 
 
-            // Handle custom cache action notices
             if (isset($_GET['cc_action'])) {
                 $bytes = isset($_GET['cc_bytes']) ? (int)$_GET['cc_bytes'] : 0;
                 $count = isset($_GET['cc_count']) ? (int)$_GET['cc_count'] : 0;
@@ -195,7 +203,7 @@ class AdminMenu
                     <h2><?php _e('Cache Management', 'content-core'); ?></h2>
                     <table class="cc-mini-table" style="width: 100%; margin-bottom: 15px;">
                         <tr>
-                            <td><?php _e('Expired Transients', 'content-core'); ?>:</td>
+                            <td><?php _e('Expired Transients (temporary cache entries)', 'content-core'); ?>:</td>
                             <td align="right"><strong><?php echo (int)$snapshot['expired']['count']; ?></strong> (<?php echo $format_bytes($snapshot['expired']['bytes']); ?>)</td>
                         </tr>
                         <tr>
@@ -212,41 +220,174 @@ class AdminMenu
                                 <?php if ($snapshot['object_cache']['enabled']) : ?>
                                     <span style="color: #008a20; font-weight: bold;"><?php _e('Active', 'content-core'); ?></span>
                                 <?php else : ?>
-                                    <span style="color: #646970;"><?php _e('Inactive', 'content-core'); ?></span>
+                                    <span style="color: #646970; font-weight: bold;"><?php _e('Inactive', 'content-core'); ?></span>
                                 <?php endif; ?>
                                 <span style="opacity: 0.6; font-size: 11px;">(<?php echo $snapshot['object_cache']['dropin'] ? 'Drop-in found' : 'No drop-in'; ?>)</span>
                             </td>
                         </tr>
                     </table>
 
-                    <div class="cc-action-buttons" style="display: flex; flex-direction: column; gap: 8px;">
-                        <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
-                            <input type="hidden" name="action" value="cc_clear_expired_transients">
-                            <?php wp_nonce_field('cc_cache_nonce'); ?>
-                            <button type="submit" class="button button-secondary" style="width: 100%;"><?php _e('Clear Expired Transients', 'content-core'); ?></button>
-                        </form>
+                    <style>
+                        .cc-cache-section { margin-bottom: 20px; }
+                        .cc-cache-section-header { 
+                            cursor: pointer; 
+                            padding: 10px 12px; 
+                            background: #f0f0f1; 
+                            border-radius: 4px; 
+                            margin-bottom: 10px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: space-between;
+                        }
+                        .cc-cache-section-header:hover { background: #e0e0e3; }
+                        .cc-cache-section-header .dashicons { transition: transform 0.2s; }
+                        .cc-cache-section.collapsed .cc-cache-section-header .dashicons { transform: rotate(-90deg); }
+                        .cc-cache-section.collapsed .cc-cache-section-content { display: none; }
+                        .cc-cache-danger-btn {
+                            width: 100%;
+                            border: 1px solid #d63638 !important;
+                            background: transparent !important;
+                            color: #d63638 !important;
+                            border-radius: 4px;
+                        }
+                        .cc-cache-danger-btn:hover {
+                            background: #d63638 !important;
+                            color: #fff !important;
+                        }
+                        .cc-cache-danger-btn:disabled {
+                            opacity: 0.5;
+                            cursor: not-allowed;
+                        }
+                        .cc-cache-safe-btn {
+                            width: 100%;
+                            border-radius: 4px;
+                        }
+                        .cc-cache-help-text {
+                            font-size: 11px;
+                            color: #646970;
+                            margin-top: 4px;
+                            display: block;
+                        }
+                        .cc-last-cleared {
+                            font-size: 11px;
+                            color: #646970;
+                            margin-top: 6px;
+                        }
+                    </style>
 
-                        <form action="<?php echo admin_url('admin-post.php'); ?>" method="post" onsubmit="return document.getElementById('cc_confirm_all').checked;">
-                            <input type="hidden" name="action" value="cc_clear_all_transients">
-                            <?php wp_nonce_field('cc_cache_nonce'); ?>
-                            <div style="margin-bottom: 4px;">
-                                <label style="font-size: 11px; display: block; color: #d63638;">
-                                    <input type="checkbox" id="cc_confirm_all"> <?php _e('I understand this removes ALL transients', 'content-core'); ?>
-                                </label>
-                            </div>
-                            <button type="submit" class="button button-link-delete" style="width: 100%; color: #d63638;"><?php _e('Clear ALL Transients', 'content-core'); ?></button>
-                        </form>
+                    <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        var toggleLinks = document.querySelectorAll('.cc-cache-toggle');
+                        toggleLinks.forEach(function(link) {
+                            link.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                var section = this.closest('.cc-cache-section');
+                                section.classList.toggle('collapsed');
+                            });
+                        });
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                            <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
+                        var confirmCheckbox = document.getElementById('cc_confirm_all_transients');
+                        var dangerousBtn = document.getElementById('cc_clear_all_btn');
+                        if (confirmCheckbox && dangerousBtn) {
+                            confirmCheckbox.addEventListener('change', function() {
+                                dangerousBtn.disabled = !this.checked;
+                            });
+                            dangerousBtn.disabled = true;
+                        }
+
+                        var dangerousForm = document.getElementById('cc_dangerous_form');
+                        if (dangerousForm) {
+                            dangerousForm.addEventListener('submit', function(e) {
+                                if (!confirm('<?php echo esc_js(__('This will delete ALL transients from the database. Continue?', 'content-core')); ?>')) {
+                                    e.preventDefault();
+                                    return false;
+                                }
+                            });
+                        }
+                    });
+                    </script>
+
+                    <!-- Safe Cache Actions -->
+                    <div class="cc-cache-section">
+                        <div class="cc-cache-section-header" style="background: #e6f4ea; cursor: default;">
+                            <strong><?php _e('Safe Cache Actions', 'content-core'); ?></strong>
+                        </div>
+                        <div class="cc-cache-section-content">
+                            <form action="<?php echo admin_url('admin-post.php'); ?>" method="post" style="margin-bottom: 12px;">
                                 <input type="hidden" name="action" value="cc_clear_plugin_caches">
                                 <?php wp_nonce_field('cc_cache_nonce'); ?>
-                                <button type="submit" class="button button-secondary" style="width: 100%;"><?php _e('Clear CC Caches', 'content-core'); ?></button>
+                                <button type="submit" class="button button-primary cc-cache-safe-btn"><?php _e('Clear CC Caches', 'content-core'); ?></button>
+                                <span class="cc-cache-help-text"><?php _e('Deletes only Content Core cache entries.', 'content-core'); ?></span>
+                                <?php if ($last_cc): ?>
+                                <div class="cc-last-cleared"><?php echo esc_html(sprintf(__('Last cleared: %s', 'content-core'), $last_cc['timestamp'])); ?></div>
+                                <?php endif; ?>
                             </form>
+
+                            <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
+                                <input type="hidden" name="action" value="cc_clear_expired_transients">
+                                <?php wp_nonce_field('cc_cache_nonce'); ?>
+                                <button type="submit" class="button button-secondary cc-cache-safe-btn" style="background: #fff;"><?php _e('Clear Expired Transients', 'content-core'); ?></button>
+                                <span class="cc-cache-help-text"><?php _e('Deletes only expired entries. Active ones remain untouched.', 'content-core'); ?></span>
+                                <?php if ($last_expired): ?>
+                                <div class="cc-last-cleared"><?php echo esc_html(sprintf(__('Last cleared: %s', 'content-core'), $last_expired['timestamp'])); ?></div>
+                                <?php endif; ?>
+                            </form>
+                        </div>
+                    </div>
+                        <div class="cc-cache-section-content">
+                            <form action="<?php echo admin_url('admin-post.php'); ?>" method="post" style="margin-bottom: 12px;">
+                                <input type="hidden" name="action" value="cc_clear_plugin_caches">
+                                <?php wp_nonce_field('cc_cache_nonce'); ?>
+                                <button type="submit" class="button button-primary cc-cache-safe-btn"><?php _e('Clear CC Caches', 'content-core'); ?></button>
+                                <span class="cc-cache-help-text"><?php _e('Deletes only Content Core cache entries.', 'content-core'); ?></span>
+                                <?php if ($last_cc): ?>
+                                <div class="cc-last-cleared"><?php echo esc_html(sprintf(__('Last cleared: %s', 'content-core'), $last_cc['timestamp'])); ?></div>
+                                <?php endif; ?>
+                            </form>
+
+                            <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
+                                <input type="hidden" name="action" value="cc_clear_expired_transients">
+                                <?php wp_nonce_field('cc_cache_nonce'); ?>
+                                <button type="submit" class="button button-secondary cc-cache-safe-btn" style="background: #fff;"><?php _e('Clear Expired Transients', 'content-core'); ?></button>
+                                <span class="cc-cache-help-text"><?php _e('Deletes only expired entries. Active ones remain untouched.', 'content-core'); ?></span>
+                                <?php if ($last_expired): ?>
+                                <div class="cc-last-cphp echo esc_htmlleared"><?(sprintf(__('Last cleared: %s', 'content-core'), $last_expired['timestamp'])); ?></div>
+                                <?php endif; ?>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Advanced / Dangerous Actions -->
+                    <div class="cc-cache-section collapsed">
+                        <div class="cc-cache-section-header" onclick="document.querySelectorAll('.cc-cache-section')[1].classList.toggle('collapsed');">
+                            <strong><?php _e('Advanced / Dangerous Actions', 'content-core'); ?></strong>
+                            <span class="dashicons dashicons-arrow-down"></span>
+                        </div>
+                        <div class="cc-cache-section-content">
+                            <form action="<?php echo admin_url('admin-post.php'); ?>" method="post" id="cc_dangerous_form" style="margin-bottom: 12px;">
+                                <input type="hidden" name="action" value="cc_clear_all_transients">
+                                <?php wp_nonce_field('cc_cache_nonce'); ?>
+                                <div style="margin-bottom: 8px;">
+                                    <label style="font-size: 12px; display: block; color: #d63638; cursor: pointer;">
+                                        <input type="checkbox" id="cc_confirm_all_transients"> 
+                                        <?php _e('I confirm this will delete ALL WordPress transients, including other plugins.', 'content-core'); ?>
+                                    </label>
+                                </div>
+                                <button type="submit" id="cc_clear_all_btn" class="button cc-cache-danger-btn" disabled><?php _e('Clear ALL Transients', 'content-core'); ?></button>
+                                <span class="cc-cache-help-text"><?php _e('Deletes all transient cache entries from WordPress.', 'content-core'); ?></span>
+                                <?php if ($last_all): ?>
+                                <div class="cc-last-cleared"><?php echo esc_html(sprintf(__('Last cleared: %s', 'content-core'), $last_all['timestamp'])); ?></div>
+                                <?php endif; ?>
+                            </form>
+
                             <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
                                 <input type="hidden" name="action" value="cc_flush_object_cache">
                                 <?php wp_nonce_field('cc_cache_nonce'); ?>
-                                <button type="submit" class="button button-secondary" style="width: 100%;"><?php _e('Flush Object Cache', 'content-core'); ?></button>
+                                <button type="submit" class="button cc-cache-danger-btn" <?php echo $object_cache_active ? '' : 'disabled'; ?>><?php _e('Flush Object Cache', 'content-core'); ?></button>
+                                <span class="cc-cache-help-text"><?php _e('Flushes external object cache if available.', 'content-core'); ?></span>
+                                <?php if ($last_obj): ?>
+                                <div class="cc-last-cleared"><?php echo esc_html(sprintf(__('Last cleared: %s', 'content-core'), $last_obj['timestamp'])); ?></div>
+                                <?php endif; ?>
                             </form>
                         </div>
                     </div>
@@ -503,6 +644,9 @@ class AdminMenu
         }
 
         check_admin_referer('cc_cache_nonce');
+
+        $cache_service = new CacheService();
+        $cache_service->update_last_action('object_cache', 0, 0);
 
         wp_cache_flush();
 
