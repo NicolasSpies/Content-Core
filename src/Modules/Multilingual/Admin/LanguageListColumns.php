@@ -26,9 +26,6 @@ class LanguageListColumns
         add_action("restrict_manage_posts", [$this, "add_filters"]);
 
         $post_types = get_post_types(["public" => true]);
-        foreach ($post_types as $post_type) {
-            add_filter("{$post_type}_row_actions", [$this, "add_row_actions"], 10, 2);
-        }
     }
 
     /**
@@ -54,35 +51,6 @@ class LanguageListColumns
         $this->batch_translations = $this->module->get_translation_manager()->get_batch_translations($post_ids);
 
         return $posts;
-    }
-
-    public function add_row_actions(array $actions, \WP_Post $post): array
-    {
-        if (!$this->module->is_active() || !post_type_supports($post->post_type, 'cc-multilingual')) {
-            return $actions;
-        }
-
-        $settings = $this->module->get_settings();
-        $current_lang = get_post_meta($post->ID, '_cc_language', true) ?: $settings['default_lang'];
-        $translations = $this->batch_translations[$post->ID] ?? [];
-
-        foreach ($settings['languages'] as $l) {
-            $code = $l['code'];
-            if ($code === $current_lang || isset($translations[$code])) {
-                continue;
-            }
-
-            $create_url = add_query_arg([
-                'action' => 'cc_create_translation',
-                'post' => $post->ID,
-                'lang' => $code,
-                'nonce' => wp_create_nonce('cc_create_translation_' . $post->ID)
-            ], admin_url('admin.php'));
-
-            $actions['translate_' . $code] = '<a href="' . $create_url . '">' . sprintf(__('Translate to %s', 'content-core'), strtoupper($code)) . '</a>';
-        }
-
-        return $actions;
     }
 
     public function add_filters(string $post_type): void
@@ -156,6 +124,10 @@ class LanguageListColumns
                 $query->set('orderby', 'date');
                 $query->set('order', 'DESC');
             }
+            return;
+        }
+
+        if (!post_type_supports($post_type, 'cc-multilingual')) {
             return;
         }
 

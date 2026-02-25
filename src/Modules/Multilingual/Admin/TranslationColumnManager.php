@@ -79,28 +79,24 @@ class TranslationColumnManager
             $translations = $group_id ? $manager->get_translations($group_id) : [];
         }
 
-        echo '<div style="display: flex; gap: 8px; align-items: center; overflow: visible;">';
+        echo '<div class="cc-translation-column-wrap">';
         foreach ($settings['languages'] as $l) {
             $code = $l['code'];
             $is_current = ($code === $current_lang);
+            $flag_html = self::$module->get_flag_html($code, $l['flag_id'] ?? 0);
+
+            // Remove the 4px margin if it's there from get_flag_html to control it via CSS
+            $flag_html = str_replace(['margin-right:4px;', 'margin-right: 4px;'], '', $flag_html);
 
             if ($is_current) {
-                echo '<span style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; text-decoration: none;" title="' . esc_attr__('Current Language', 'content-core') . '">';
-                echo '<span class="dashicons dashicons-yes" style="color: #00a32a; font-size: 18px;"></span>';
+                echo '<span class="cc-tr-flag is-current">';
+                echo $flag_html;
                 echo '</span>';
             }
             elseif (isset($translations[$code])) {
                 $t_id = $translations[$code];
-                $t_post = get_post($t_id);
-                $status = $t_post ? $t_post->post_status : 'unknown';
-
-                $dash_class = 'dashicons-edit';
-                $color = ($status === 'publish') ? '#2271b1' : '#646970';
-                $status_obj = get_post_status_object($status);
-                $status_label = $status_obj ? $status_obj->label : $status;
-
-                echo '<a href="' . get_edit_post_link($t_id) . '" style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; text-decoration: none; color: ' . $color . ';" title="' . esc_attr(strtoupper($code) . ': ' . $status_label) . '">';
-                echo '<span class="dashicons ' . $dash_class . '" style="font-size: 16px;"></span>';
+                echo '<a href="' . get_edit_post_link($t_id) . '" class="cc-tr-flag is-exists">';
+                echo $flag_html;
                 echo '</a>';
             }
             else {
@@ -111,8 +107,8 @@ class TranslationColumnManager
                     'nonce' => wp_create_nonce('cc_create_translation_' . $post_id)
                 ], admin_url('admin.php'));
 
-                echo '<a href="' . esc_url($create_url) . '" style="display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; text-decoration: none; color: #b5bcc2; transition: color 0.2s;" onmouseover="this.style.color=\'#2271b1\'" onmouseout="this.style.color=\'#b5bcc2\'" title="' . esc_attr(sprintf(__('Create %s translation', 'content-core'), strtoupper($code))) . '">';
-                echo '<span class="dashicons dashicons-plus-alt2" style="font-size: 16px;"></span>';
+                echo '<a href="' . esc_url($create_url) . '" class="cc-tr-flag is-missing">';
+                echo $flag_html;
                 echo '</a>';
             }
         }

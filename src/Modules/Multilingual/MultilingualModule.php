@@ -40,6 +40,8 @@ class MultilingualModule implements ModuleInterface
             // Toolbar styles
             add_action('admin_enqueue_scripts', [$this, 'enqueue_toolbar_styles']);
             add_action('wp_enqueue_scripts', [$this, 'enqueue_toolbar_styles']);
+
+            add_action('admin_init', [$this, 'handle_forms_backfill']);
         }
 
         $this->rest = new MultilingualRestHandler($this);
@@ -88,7 +90,7 @@ class MultilingualModule implements ModuleInterface
 
     public function handle_registered_post_type(string $post_type, \WP_Post_Type $args): void
     {
-        if ($args->public && $post_type !== 'attachment') {
+        if (($args->public || $post_type === 'cc_form') && $post_type !== 'attachment') {
             add_post_type_support($post_type, 'cc-multilingual');
 
             if (is_admin()) {
@@ -285,6 +287,90 @@ class MultilingualModule implements ModuleInterface
                     margin-top: 11px !important;
                 }
             }
+
+            /* Translation Column Flags Refined - Perfect Centering */
+            .column-cc_translation {
+                text-align: center !important;
+            }
+            .column-cc_translation .cc-translation-column-wrap {
+                display: flex !important;
+                justify-content: center !important;
+                gap: 8px !important;
+                align-items: center !important;
+                vertical-align: middle !important;
+                line-height: 1 !important;
+                width: 100% !important;
+            }
+            .column-cc_translation .cc-tr-flag,
+            .column-cc_translation .cc-tr-flag:link,
+            .column-cc_translation .cc-tr-flag:visited {
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                text-decoration: none !important;
+                transition: all 0.2s ease !important;
+                position: relative !important;
+                height: 24px !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
+                background: transparent !important;
+                border: 0 !important;
+                box-shadow: none !important;
+            }
+            .column-cc_translation .cc-tr-flag img,
+            .column-cc_translation .cc-tr-flag .cc-chip-emoji,
+            .column-cc_translation .cc-tr-flag span[style*='font-size: 16px'] {
+                height: 18px !important;
+                width: auto !important;
+                margin: 0 !important;
+                display: block !important;
+                border-radius: 2px !important;
+                background: transparent !important;
+                border: 0 !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+            }
+            /* Clickable items: hover effect and cursor */
+            .column-cc_translation a.cc-tr-flag {
+                cursor: pointer !important;
+            }
+            .column-cc_translation a.cc-tr-flag:hover {
+                transform: scale(1.15) !important;
+                z-index: 10 !important;
+                background: transparent !important;
+            }
+            /* Current state: WP-style soft pill badge */
+            .column-cc_translation .cc-tr-flag.is-current {
+                background: #e6f4ea !important;
+                border: 1px solid #8fd19e !important;
+                padding: 0 8px !important;
+                height: 22px !important;
+                border-radius: 999px !important;
+            }
+            .column-cc_translation .cc-tr-flag.is-current img,
+            .column-cc_translation .cc-tr-flag.is-current .cc-chip-emoji,
+            .column-cc_translation .cc-tr-flag.is-current span[style*='font-size: 16px'] {
+                height: 14px !important;
+                box-shadow: none !important;
+            }
+            /* Missing state: Greyscale/Ghost */
+            .column-cc_translation .cc-tr-flag.is-missing img,
+            .column-cc_translation .cc-tr-flag.is-missing .cc-chip-emoji,
+            .column-cc_translation .cc-tr-flag.is-missing span[style*='font-size: 16px'] {
+                filter: grayscale(100%) !important;
+                opacity: 0.25 !important;
+            }
+            .column-cc_translation .cc-tr-flag.is-missing:hover img,
+            .column-cc_translation .cc-tr-flag.is-missing:hover .cc-chip-emoji,
+            .column-cc_translation .cc-tr-flag.is-missing:hover span[style*='font-size: 16px'] {
+                opacity: 0.6 !important;
+                filter: grayscale(50%) !important;
+            }
+            /* Existing state: Subtle hover shadow */
+            .column-cc_translation .cc-tr-flag.is-exists:hover img {
+                box-shadow: 0 2px 4px rgba(0,0,0,0.15) !important;
+            }
         ";
 
         wp_add_inline_style('admin-bar', $css);
@@ -298,6 +384,17 @@ class MultilingualModule implements ModuleInterface
 
         $settings = $this->get_settings();
         $languages = $settings['languages'];
+        $default_lang = $settings['default_lang'] ?? 'de';
+
+        // Sort languages: Default first, then alphabetical by label
+        usort($languages, function ($a, $b) use ($default_lang) {
+            if ($a['code'] === $default_lang)
+                return -1;
+            if ($b['code'] === $default_lang)
+                return 1;
+            return strcmp($a['label'], $b['label']);
+        });
+
         $current_user_id = get_current_user_id();
         $admin_lang = get_user_meta($current_user_id, 'cc_admin_language', true) ?: 'all';
 
@@ -514,6 +611,55 @@ class MultilingualModule implements ModuleInterface
             delete_transient('cc_flush_multilingual_rewrites');
             flush_rewrite_rules();
         }
+    }
+
+    /**
+     * One-time backfill for cc_form posts to ensure they have multilingual meta.
+     */
+    public function handle_forms_backfill(): void
+    {
+        if (!is_admin() || !current_user_can('manage_options')) {
+            return;
+        }
+
+        if (get_option('cc_forms_migrated_v1')) {
+            return;
+        }
+
+        $settings = $this->get_settings();
+        $default_lang = $settings['default_lang'] ?? 'de';
+
+        $posts = get_posts([
+            'post_type' => 'cc_form',
+            'posts_per_page' => -1,
+            'post_status' => 'any',
+            'fields' => 'ids',
+            // Only find posts missing the meta
+            'meta_query' => [
+                'relation' => 'OR',
+                [
+                    'key' => '_cc_language',
+                    'compare' => 'NOT EXISTS'
+                ],
+                [
+                    'key' => '_cc_translation_group',
+                    'compare' => 'NOT EXISTS'
+                ]
+            ]
+        ]);
+
+        if (!empty($posts)) {
+            foreach ($posts as $post_id) {
+                if (!get_post_meta($post_id, '_cc_language', true)) {
+                    update_post_meta($post_id, '_cc_language', $default_lang);
+                }
+                if (!get_post_meta($post_id, '_cc_translation_group', true)) {
+                    update_post_meta($post_id, '_cc_translation_group', wp_generate_uuid4());
+                }
+            }
+        }
+
+        update_option('cc_forms_migrated_v1', time());
     }
 
     public static function get_language_catalog(): array
