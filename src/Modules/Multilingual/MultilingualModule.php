@@ -27,14 +27,19 @@ class MultilingualModule implements ModuleInterface
             $this->columns = new LanguageListColumns($this);
             $this->columns->init();
 
+            Admin\TranslationColumnManager::set_module($this);
+
             add_action('registered_post_type', [$this, 'handle_registered_post_type'], 10, 2);
             add_action('admin_bar_menu', [$this, 'add_admin_bar_switcher'], 100);
 
             // Handle admin language switching
             add_action('admin_action_cc_switch_admin_language', [$this, 'handle_switch_admin_language']);
 
-            // Handle translation creation
             add_action('admin_action_cc_create_translation', [$this, 'handle_create_translation']);
+
+            // Toolbar styles
+            add_action('admin_enqueue_scripts', [$this, 'enqueue_toolbar_styles']);
+            add_action('wp_enqueue_scripts', [$this, 'enqueue_toolbar_styles']);
         }
 
         $this->rest = new MultilingualRestHandler($this);
@@ -85,6 +90,10 @@ class MultilingualModule implements ModuleInterface
     {
         if ($args->public && $post_type !== 'attachment') {
             add_post_type_support($post_type, 'cc-multilingual');
+
+            if (is_admin()) {
+                Admin\TranslationColumnManager::register_for_post_type($post_type);
+            }
         }
     }
 
@@ -185,6 +194,102 @@ class MultilingualModule implements ModuleInterface
         return $this->translation_manager;
     }
 
+    public function get_columns_handler(): ?LanguageListColumns
+    {
+        return $this->columns;
+    }
+
+    /**
+     * Enqueue minimal styles for the admin toolbar switcher badge
+     */
+    public function enqueue_toolbar_styles(): void
+    {
+        if (!is_admin_bar_showing() || !$this->is_active()) {
+            return;
+        }
+
+        $css = "
+            /* Badge styling for top-level only */
+            #wpadminbar #wp-admin-bar-cc-multilingual-switcher > a.ab-item {
+                background-color: #f59e0b !important;
+                color: #ffffff !important;
+                border-radius: 12px !important;
+                margin-top: 4px !important;
+                height: 24px !important;
+                line-height: 24px !important;
+                padding: 0 12px !important;
+                display: flex !important;
+                align-items: center !important;
+                font-weight: 600 !important;
+                font-size: 11px !important;
+            }
+            #wpadminbar #wp-admin-bar-cc-multilingual-switcher > .ab-item:before,
+            #wpadminbar #wp-admin-bar-cc-multilingual-switcher > .ab-item .ab-icon {
+                display: none !important;
+            }
+            /* Flag styling in top-level badge */
+            #wpadminbar #wp-admin-bar-cc-multilingual-switcher > .ab-item img,
+            #wpadminbar #wp-admin-bar-cc-multilingual-switcher > .ab-item .cc-chip-emoji,
+            #wpadminbar #wp-admin-bar-cc-multilingual-switcher > .ab-item span[style*='font-size: 16px'] {
+                margin: 0 6px 0 0 !important;
+                display: flex !important;
+                align-items: center !important;
+                height: 100% !important;
+                width: auto !important;
+            }
+            /* Submenu resets */
+            #wpadminbar #wp-admin-bar-cc-multilingual-switcher .ab-sub-wrapper .ab-item {
+                background-color: transparent !important;
+                color: inherit !important;
+                display: block !important;
+                height: auto !important;
+                padding: 6px 15px !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+                font-weight: normal !important;
+                font-size: 13px !important;
+                line-height: 1.4 !important;
+            }
+            #wpadminbar #wp-admin-bar-cc-multilingual-switcher .ab-sub-wrapper .ab-item:hover {
+                color: #72aee6 !important;
+            }
+            #wpadminbar #wp-admin-bar-cc-multilingual-switcher .ab-sub-wrapper .ab-item .cc-lang-row {
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 10px !important;
+                width: 100% !important;
+            }
+            /* Flag styling in submenu */
+            #wpadminbar #wp-admin-bar-cc-multilingual-switcher .ab-sub-wrapper .ab-item .cc-lang-flag {
+                display: flex !important;
+                align-items: center !important;
+                width: 20px !important;
+                justify-content: center !important;
+            }
+            #wpadminbar #wp-admin-bar-cc-multilingual-switcher .ab-sub-wrapper .ab-item .cc-lang-flag img,
+            #wpadminbar #wp-admin-bar-cc-multilingual-switcher .ab-sub-wrapper .ab-item .cc-lang-flag .cc-chip-emoji,
+            #wpadminbar #wp-admin-bar-cc-multilingual-switcher .ab-sub-wrapper .ab-item .cc-lang-flag span[style*='font-size: 16px'] {
+                margin: 0 !important;
+                display: block !important;
+                height: 14px !important;
+                width: auto !important;
+                line-height: 1 !important;
+                vertical-align: top !important;
+            }
+            #wpadminbar #wp-admin-bar-cc-multilingual-switcher .ab-sub-wrapper .ab-item .cc-lang-label {
+                display: inline-block !important;
+                line-height: 1.4 !important;
+            }
+            @media screen and (max-width: 782px) {
+                #wpadminbar #wp-admin-bar-cc-multilingual-switcher > a.ab-item {
+                    margin-top: 11px !important;
+                }
+            }
+        ";
+
+        wp_add_inline_style('admin-bar', $css);
+    }
+
     public function add_admin_bar_switcher(\WP_Admin_Bar $wp_admin_bar): void
     {
         if (!$this->is_active() || !current_user_can('edit_posts')) {
@@ -196,34 +301,33 @@ class MultilingualModule implements ModuleInterface
         $current_user_id = get_current_user_id();
         $admin_lang = get_user_meta($current_user_id, 'cc_admin_language', true) ?: 'all';
 
-        $current_label = __('All', 'content-core');
+        $current_label = '';
         $current_flag = '';
-        if ($admin_lang !== 'all') {
-            foreach ($languages as $l) {
-                if ($l['code'] === $admin_lang) {
-                    $current_label = strtoupper($l['code']);
-                    $current_flag = $this->get_flag_html($l['code'], $l['flag_id'] ?? 0);
-                    break;
-                }
+
+        // Default language if 'all' or not set
+        $active_code = ($admin_lang === 'all') ? ($settings['default_lang'] ?? 'de') : $admin_lang;
+
+        foreach ($languages as $l) {
+            if ($l['code'] === $active_code) {
+                $current_label = $l['label'] . ' (' . strtoupper($l['code']) . ')';
+                $current_flag = $this->get_flag_html($l['code'], $l['flag_id'] ?? 0);
+                break;
             }
+        }
+
+        // Final fallback if something is weird
+        if (empty($current_label)) {
+            $current_label = strtoupper($active_code);
         }
 
         $wp_admin_bar->add_node([
             'id' => 'cc-multilingual-switcher',
-            'title' => '<span class="ab-icon dashicons-translation"></span> ' . $current_flag . ' ' . esc_html($current_label),
+            'title' => $current_flag . ' ' . esc_html($current_label),
             'href' => '#',
-            'meta' => ['title' => __('Switch Admin Language', 'content-core')]
-        ]);
-
-        $wp_admin_bar->add_node([
-            'id' => 'cc-ml-all',
-            'parent' => 'cc-multilingual-switcher',
-            'title' => __('Show All Languages', 'content-core'),
-            'href' => add_query_arg([
-                'action' => 'cc_switch_admin_language',
-                'lang' => 'all',
-                'nonce' => wp_create_nonce('cc_switch_admin_language')
-            ], admin_url('admin.php'))
+            'meta' => [
+                'title' => __('Switch Admin Language', 'content-core'),
+                'class' => 'cc-multilingual-badge'
+            ]
         ]);
 
         foreach ($languages as $lang) {
@@ -231,7 +335,7 @@ class MultilingualModule implements ModuleInterface
             $wp_admin_bar->add_node([
                 'id' => 'cc-ml-' . $lang['code'],
                 'parent' => 'cc-multilingual-switcher',
-                'title' => $flag . ' ' . esc_html($lang['label']) . ' (' . strtoupper(esc_html($lang['code'])) . ')',
+                'title' => '<span class="cc-lang-row"><span class="cc-lang-flag">' . $flag . '</span><span class="cc-lang-label">' . esc_html($lang['label']) . ' (' . strtoupper(esc_html($lang['code'])) . ')</span></span>',
                 'href' => add_query_arg([
                     'action' => 'cc_switch_admin_language',
                     'lang' => $lang['code'],
@@ -278,7 +382,7 @@ class MultilingualModule implements ModuleInterface
                         $wp_admin_bar->add_node([
                             'id' => 'cc-ml-ctx-' . $code,
                             'parent' => 'cc-multilingual-switcher',
-                            'title' => esc_html($title),
+                            'title' => '<span class="cc-lang-row"><span class="cc-lang-flag">' . $this->get_flag_html($code) . '</span><span class="cc-lang-label">' . esc_html($title) . '</span></span>',
                             'href' => $href
                         ]);
                     }

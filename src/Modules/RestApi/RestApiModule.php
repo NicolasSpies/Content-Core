@@ -45,6 +45,13 @@ class RestApiModule implements ModuleInterface
             ],
         ]);
 
+        // Global SEO endpoint
+        register_rest_route($namespace, '/seo', [
+            'methods' => \WP_REST_Server::READABLE,
+            'callback' => [$this, 'get_v1_seo'],
+            'permission_callback' => '__return_true', // Open to everyone
+        ]);
+
         // List endpoint
         register_rest_route($namespace, '/posts/(?P<type>[a-zA-Z0-9_-]+)', [
             'methods' => \WP_REST_Server::READABLE,
@@ -83,6 +90,27 @@ class RestApiModule implements ModuleInterface
                 'includeEmptyFields' => [
                     'default' => false,
                     'type' => 'boolean',
+                ],
+            ],
+        ]);
+
+        // Cookie banner endpoint
+        register_rest_route($namespace, '/cookies', [
+            'methods' => \WP_REST_Server::READABLE,
+            'callback' => [$this, 'get_v1_cookies'],
+            'permission_callback' => '__return_true', // Open to everyone
+        ]);
+
+        // Site options endpoint
+        register_rest_route($namespace, '/options/site', [
+            'methods' => \WP_REST_Server::READABLE,
+            'callback' => [$this, 'get_v1_site_options'],
+            'permission_callback' => '__return_true', // Open to everyone
+            'args' => [
+                'lang' => [
+                    'required' => false,
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_key',
                 ],
             ],
         ]);
@@ -180,6 +208,10 @@ class RestApiModule implements ModuleInterface
     {
         $slug = $request->get_param('slug');
 
+        if ($slug === 'site-options') {
+            return $this->get_v1_site_options($request);
+        }
+
         // Build context for options page
         $context = [
             'options_page' => $slug,
@@ -212,17 +244,127 @@ class RestApiModule implements ModuleInterface
     }
 
     /**
+     * Callback for v1 global SEO endpoint
+     */
+    public function get_v1_seo(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $seo_settings = get_option(\ContentCore\Modules\Settings\SettingsModule::SEO_KEY, []);
+
+        $title = $seo_settings['site_title'] ?? '';
+        $description = $seo_settings['default_description'] ?? '';
+        $image_id = $seo_settings['default_og_image_id'] ?? null;
+        $image_url = null;
+
+        if (!empty($image_id)) {
+            $url = wp_get_attachment_url(absint($image_id));
+            if ($url) {
+                $image_url = $url;
+            }
+        }
+
+        $data = [
+            'site_title' => $title,
+            'default_description' => $description,
+            'default_og_image_url' => $image_url,
+        ];
+
+        return new \WP_REST_Response($data, 200);
+    }
+
+    /**
+     * Public endpoint to retrieve cookie banner settings
+     */
+    public function get_v1_cookies(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $cookie_defaults = [
+            'enabled' => false,
+            'policyUrl' => '',
+            'bannerTitle' => __('Cookie Consent', 'content-core'),
+            'bannerText' => __('We use cookies to improve experience.', 'content-core'),
+            'labels' => [
+                'acceptAll' => __('Accept All', 'content-core'),
+                'rejectAll' => __('Reject All', 'content-core'),
+                'save' => __('Save Settings', 'content-core'),
+                'settings' => __('Preferences', 'content-core'),
+            ],
+            'categories' => [
+                'analytics' => false,
+                'marketing' => false,
+                'preferences' => false,
+            ],
+            'integrations' => [
+                'ga4MeasurementId' => '',
+                'gtmContainerId' => '',
+                'metaPixelId' => '',
+            ],
+            'behavior' => [
+                'regionMode' => 'eu_only',
+                'storage' => 'localStorage',
+                'ttlDays' => 365,
+            ]
+        ];
+
+        $saved_settings = get_option(\ContentCore\Modules\Settings\SettingsModule::COOKIE_KEY, []);
+        $data = array_replace_recursive($cookie_defaults, $saved_settings);
+
+        // Ensure types
+        $data['enabled'] = (bool)$data['enabled'];
+        $data['categories']['analytics'] = (bool)$data['categories']['analytics'];
+        $data['categories']['marketing'] = (bool)$data['categories']['marketing'];
+        $data['categories']['preferences'] = (bool)$data['categories']['preferences'];
+        $data['behavior']['ttlDays'] = (int)$data['behavior']['ttlDays'];
+
+        return new \WP_REST_Response($data, 200);
+    }
+
+    /**
      * Helper to prepare post data for v1 response
      */
     private function prepare_post_v1_data(\WP_Post $post, \WP_REST_Request $request): array
     {
+        $post_id = $post->ID;
+
+        // ── Fetch Global SEO Defaults ──
+        $site_seo = get_option(\ContentCore\Modules\Settings\SettingsModule::SEO_KEY, []);
+        $global_title = $site_seo['site_title'] ?? get_bloginfo('name');
+        $global_desc = $site_seo['default_description'] ?? '';
+        $global_img_id = $site_seo['default_og_image_id'] ?? null;
+
+        // ── Fetch Post-level Meta ──
+        $meta_title = get_post_meta($post_id, 'cc_seo_title', true);
+        $meta_desc = get_post_meta($post_id, 'cc_seo_description', true);
+        $meta_img_id = get_post_meta($post_id, 'cc_seo_og_image_id', true);
+        $noindex = get_post_meta($post_id, 'cc_seo_noindex', true);
+
+        // ── Compute Title ──
+        $seo_title = !empty($meta_title) ? $meta_title : $post->post_title . ' | ' . $global_title;
+
+        // ── Compute Description ──
+        $seo_desc = !empty($meta_desc) ? $meta_desc : $global_desc;
+
+        // ── Compute OG Image URL ──
+        $final_img_id = !empty($meta_img_id) ? $meta_img_id : $global_img_id;
+        $og_image_url = null;
+        if (!empty($final_img_id)) {
+            $og_image_url = wp_get_attachment_url(absint($final_img_id)) ?: null;
+        }
+
+        // ── Compute Robots ──
+        $robots = !empty($noindex) ? 'noindex,nofollow' : 'index,follow';
+
         return [
-            'id' => $post->ID,
+            'id' => $post_id,
             'title' => $post->post_title,
             'slug' => $post->post_name,
             'type' => $post->post_type,
             'date' => $post->post_date_gmt,
             'contentCoreVersion' => 'v1',
+            'seo' => [
+                'title' => $seo_title,
+                'description' => $seo_desc,
+                'og_image_url' => $og_image_url,
+                'robots' => $robots,
+            ],
             'customFields' => $this->get_custom_fields_value_internal($post, $request),
         ];
     }
@@ -248,6 +390,10 @@ class RestApiModule implements ModuleInterface
      */
     public function check_options_permission(\WP_REST_Request $request): bool
     {
+        $slug = $request->get_param('slug');
+        if ($slug === 'site-options') {
+            return true;
+        }
         return current_user_can('manage_options');
     }
 
@@ -470,5 +616,98 @@ class RestApiModule implements ModuleInterface
         // For standard WP REST fields, we simulate a default request
         $request = new \WP_REST_Request('GET', '/');
         return $this->format_value_for_v1($value, $schema, $request);
+    }
+
+    /**
+     * Retrieve site-wide business options with multilingual fallback support.
+     */
+    public function get_v1_site_options(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $plugin = \ContentCore\Plugin::get_instance();
+        $ml = $plugin->get_module('multilingual');
+        $site_mod = $plugin->get_module('site_options');
+
+        $requested_lang = $request->get_param('lang');
+        $default_lang = 'de';
+        $fallback_lang = '';
+        $headless_fallback_enabled = false;
+
+        if ($ml instanceof \ContentCore\Modules\Multilingual\MultilingualModule) {
+            $ml_settings = $ml->get_settings();
+            $default_lang = $ml_settings['default_lang'] ?? 'de';
+            $fallback_lang = $ml_settings['fallback_lang'] ?? '';
+            $headless_fallback_enabled = !empty($ml_settings['enable_headless_fallback']);
+        }
+
+        if (empty($requested_lang)) {
+            $requested_lang = $default_lang;
+        }
+
+        // 1. Initial attempt: Requested Language
+        $lang_to_check = $requested_lang;
+        $options = $site_mod ? $site_mod->get_options($lang_to_check) : [];
+        $resolved_lang = $lang_to_check;
+
+        // 2. Fallback attempt if enabled
+        if ($headless_fallback_enabled && empty($options)) {
+            // Try Fallback Language
+            if (!empty($fallback_lang) && $fallback_lang !== $requested_lang) {
+                $lang_to_check = $fallback_lang;
+                $options = $site_mod ? $site_mod->get_options($lang_to_check) : [];
+                if (!empty($options)) {
+                    $resolved_lang = $lang_to_check;
+                }
+            }
+
+            // Try Default Language if still empty
+            if (empty($options) && $default_lang !== $requested_lang && $default_lang !== $fallback_lang) {
+                $lang_to_check = $default_lang;
+                $options = $site_mod ? $site_mod->get_options($lang_to_check) : [];
+                if (!empty($options)) {
+                    $resolved_lang = $lang_to_check;
+                }
+            }
+        }
+
+        $schema = $site_mod ? $site_mod->get_localized_schema($resolved_lang) : [];
+        $is_fallback = $resolved_lang !== $requested_lang;
+
+        // Filter options and format schema based on client_visible
+        $filtered_options = [];
+        $filtered_schema = [];
+
+        foreach ($schema as $section_id => $section) {
+            $visible_fields = [];
+            foreach ($section['fields'] as $field_id => $field) {
+                if (!isset($field['client_visible']) || $field['client_visible']) {
+                    $visible_fields[$field_id] = $field;
+
+                    // Add value to filtered_options
+                    $val = $options[$field_id] ?? null;
+
+                    // Logic to resolve logo ID to URL / Media object
+                    if ($field['type'] === 'image' && !empty($val)) {
+                        $media = $this->format_media_v1($val, $request);
+                        $filtered_options[$field_id] = $media;
+                    }
+                    else {
+                        $filtered_options[$field_id] = $val;
+                    }
+                }
+            }
+            if (!empty($visible_fields)) {
+                $section['fields'] = $visible_fields;
+                $filtered_schema[$section_id] = $section;
+            }
+        }
+
+        return new \WP_REST_Response([
+            'language' => $resolved_lang, // Backward compatibility
+            'requestedLanguage' => $requested_lang,
+            'resolvedLanguage' => $resolved_lang,
+            'isFallback' => $is_fallback,
+            'schema' => (object)$filtered_schema,
+            'data' => (object)$filtered_options,
+        ], 200);
     }
 }

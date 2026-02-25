@@ -199,7 +199,6 @@ class GitHubUpdater
     private function log_error(string $message): void
     {
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('Content Core GitHub Updater: ' . $message);
         }
     }
 }

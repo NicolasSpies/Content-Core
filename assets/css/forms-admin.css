@@ -1,0 +1,74 @@
+/* Forms Admin Premium Styling */
+
+#cc-form-field-builder {
+    margin-top: 10px;
+}
+
+.cc-field-item.card {
+    transition: all 0.2s ease;
+    background: #fff;
+}
+
+.cc-field-item.card:hover {
+    border-color: #2271b1 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+.cc-field-header {
+    background: #fbfbfc;
+    margin: -15px -15px 15px -15px;
+    padding: 12px 15px;
+    border-radius: 4px 4px 0 0;
+}
+
+.cc-field-type-badge {
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.cc-field-input-group label {
+    font-size: 12px;
+    color: #50575e;
+}
+
+.cc-field-input-group input:focus {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+}
+
+.cc-options-editor {
+    border-left: 3px solid #ccd0d4 !important;
+}
+
+.cc-option-row input {
+    font-size: 13px;
+}
+
+.cc-field-actions button {
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.cc-field-actions button:disabled {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.cc-field-actions .dashicons {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.cc-field-actions .cc-remove-field:hover {
+    text-decoration: underline;
+}
+
+/* Toolbar Styling */
+.cc-form-builder-toolbar {
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.cc-form-builder-toolbar select {
+    min-width: 150px;
+}

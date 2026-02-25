@@ -82,6 +82,10 @@ class Plugin
             'settings' => \ContentCore\Modules\Settings\SettingsModule::class ,
             'multilingual' => \ContentCore\Modules\Multilingual\MultilingualModule::class ,
             'media' => \ContentCore\Modules\Media\MediaModule::class ,
+            'seo' => \ContentCore\Modules\Seo\SeoModule::class ,
+            'language_mapping' => \ContentCore\Modules\LanguageMapping\LanguageMappingModule::class ,
+            'forms' => \ContentCore\Modules\Forms\FormsModule::class ,
+            'site_options' => \ContentCore\Modules\SiteOptions\SiteOptionsModule::class ,
         ];
 
         foreach ($module_classes as $id => $class_name) {
@@ -91,14 +95,7 @@ class Plugin
                 }
             }
             catch (\Throwable $e) {
-                // Log detailed error for server-side diagnostics
-                error_log(sprintf(
-                    'Content Core: Module %s failed to instantiate. Error: %s in %s on line %d',
-                    $class_name,
-                    $e->getMessage(),
-                    $e->getFile(),
-                    $e->getLine()
-                ));
+                // Error logged by caller if necessary
 
                 // Capture actionable info for admin UI
                 $this->missing_modules[] = sprintf(
@@ -110,6 +107,14 @@ class Plugin
                 );
             }
         }
+    }
+
+    /**
+     * Get a registered module instance
+     */
+    public function get_module(string $module_id): ?ModuleInterface
+    {
+        return $this->modules[$module_id] ?? null;
     }
 
     /**
@@ -132,13 +137,7 @@ class Plugin
                     $this->active_modules[$module_id] = get_class($instance);
                 }
                 catch (\Throwable $e) {
-                    error_log(sprintf(
-                        'Content Core: Module %s failed during init(). Error: %s in %s on line %d',
-                        get_class($instance),
-                        $e->getMessage(),
-                        $e->getFile(),
-                        $e->getLine()
-                    ));
+                    // Error logged by caller if necessary
 
                     $this->missing_modules[] = sprintf(
                         '%s (Init failed in %s:%d: %s)',

@@ -9,6 +9,8 @@ class SettingsModule implements ModuleInterface
     const ORDER_KEY = 'content_core_admin_menu_order';
     const MEDIA_KEY = 'cc_media_settings';
     const REDIRECT_KEY = 'cc_redirect_settings';
+    const SEO_KEY = 'cc_site_seo';
+    const COOKIE_KEY = 'cc_cookie_settings';
 
     const DEFAULT_HIDDEN = [
         'edit-comments.php',
@@ -21,8 +23,6 @@ class SettingsModule implements ModuleInterface
     const ADMIN_SAFETY_SLUGS = [
         'options-general.php',
         'plugins.php',
-        'users.php',
-        'tools.php',
         'content-core'
     ];
 
@@ -49,9 +49,11 @@ class SettingsModule implements ModuleInterface
         }
 
         add_action('admin_menu', [$this, 'register_settings_page']);
-        add_action('admin_menu', [$this, 'apply_menu_visibility'], 998);
+        add_action('admin_menu', [$this, 'apply_menu_visibility'], 9999);
+        add_action('admin_head', [$this, 'apply_menu_visibility']);
         add_action('admin_menu', [$this, 'apply_menu_order'], 999);
         add_action('admin_init', [$this, 'handle_save']);
+        add_action('admin_notices', [$this, 'render_admin_notices']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_settings_assets']);
     }
 
@@ -65,6 +67,17 @@ class SettingsModule implements ModuleInterface
 
     public function register_settings_page(): void
     {
+        // 1. Site Settings (Multilingual, SEO)
+        add_submenu_page(
+            'content-core',
+            __('Site Settings', 'content-core'),
+            __('Site Settings', 'content-core'),
+            'manage_options',
+            'cc-site-settings',
+        [$this, 'render_settings_page']
+        );
+
+        // 2. Settings (Menu, Media, Redirect)
         add_submenu_page(
             'content-core',
             __('Settings', 'content-core'),
@@ -126,8 +139,8 @@ class SettingsModule implements ModuleInterface
         global $pagenow;
         $page = $_GET['page'] ?? '';
 
-        // Safe Mode: Only active on the actual settings page to allow recovery
-        return $pagenow === 'admin.php' && $page === 'cc-settings';
+        // Safe Mode: Only active on the actual settings pages to allow recovery
+        return $pagenow === 'admin.php' && ($page === 'cc-settings' || $page === 'cc-site-settings');
     }
 
     public function apply_menu_visibility(): void
@@ -136,10 +149,6 @@ class SettingsModule implements ModuleInterface
             return;
         }
 
-        // Settings Page Safe Mode: Never hide menus while on the CC settings screen
-        if ($this->is_cc_settings_screen()) {
-            return;
-        }
 
         $settings = get_option(self::OPTION_KEY, []);
         $hidden = $this->get_hidden_slugs($settings, true);
@@ -232,24 +241,6 @@ class SettingsModule implements ModuleInterface
 
     // ─── Save Handler ──────────────────────────────────────────────
 
-    /**
-     * Helper to merge new values into an existing option array.
-     * Starts from the existing stored option and only overwrites sub-keys 
-     * that are present in the current payload.
-     */
-    private function update_merged_option(string $option_key, array $new_values): void
-    {
-        $existing = get_option($option_key, []);
-        if (!is_array($existing)) {
-            $existing = [];
-        }
-
-        // We only want to merge keys that are actually provided in this payload.
-        // array_replace_recursive is good, but we must ensure we don't pass empty arrays for missing POST sections.
-        $merged = array_replace_recursive($existing, $new_values);
-        update_option($option_key, $merged);
-    }
-
     public function handle_save(): void
     {
         if (!isset($_POST['cc_menu_settings_nonce'])) {
@@ -262,185 +253,259 @@ class SettingsModule implements ModuleInterface
             return;
         }
 
-        // Reset
-        if (isset($_POST['cc_reset_menu'])) {
-            if (!current_user_can('manage_options')) {
-                return;
-            }
-            delete_option(self::OPTION_KEY);
-            delete_option(self::ORDER_KEY);
-            add_settings_error('cc_settings', 'reset', __('Menu visibility and ordering have been reset to defaults.', 'content-core'), 'updated');
-            return;
-        }
+        $settings_group = $_POST['settings_group'] ?? 'general';
+        $redirect_to = $_POST['_wp_http_referer'] ?? admin_url('admin.php?page=' . ($_GET['page'] ?? 'cc-settings'));
 
-        // ── Visibility ──
-        // Only trigger update if at least one visibility section is present in POST
-        if (isset($_POST['cc_menu_admin']) || isset($_POST['cc_menu_client'])) {
-            $visibility_payload = [];
-
-            if (isset($_POST['cc_menu_admin']) && is_array($_POST['cc_menu_admin'])) {
-                $visibility_payload['admin'] = array_map(function ($v) {
-                    return (bool)$v;
-                }, $_POST['cc_menu_admin']);
-
-                // Safety locks for Admin
-                $visibility_payload['admin']['options-general.php'] = true;
-                $visibility_payload['admin']['plugins.php'] = true;
-                $visibility_payload['admin']['content-core'] = true;
+        try {
+            // ── Reset ──
+            if (isset($_POST['cc_reset_menu']) && $settings_group === 'general') {
+                delete_option(self::OPTION_KEY);
+                delete_option(self::ORDER_KEY);
+                set_transient('cc_settings_success', __('Menu visibility and ordering have been reset to defaults.', 'content-core'), 30);
+                wp_safe_redirect($redirect_to);
+                exit;
             }
 
-            if (isset($_POST['cc_menu_client']) && is_array($_POST['cc_menu_client'])) {
-                $visibility_payload['client'] = array_map(function ($v) {
-                    return (bool)$v;
-                }, $_POST['cc_menu_client']);
+            if ($settings_group === 'general') {
+                // ── Visibility ──
+                if (isset($_POST['cc_menu_admin']) || isset($_POST['cc_menu_client'])) {
+                    $visibility_payload = [];
+                    if (isset($_POST['cc_menu_admin']) && is_array($_POST['cc_menu_admin'])) {
+                        $visibility_payload['admin'] = array_map(function ($v) {
+                            return (bool)$v;
+                        }, $_POST['cc_menu_admin']);
+                        $visibility_payload['admin']['options-general.php'] = true;
+                        $visibility_payload['admin']['plugins.php'] = true;
+                        $visibility_payload['admin']['content-core'] = true;
+                    }
+                    if (isset($_POST['cc_menu_client']) && is_array($_POST['cc_menu_client'])) {
+                        $visibility_payload['client'] = array_map(function ($v) {
+                            return (bool)$v;
+                        }, $_POST['cc_menu_client']);
+                        $visibility_payload['client']['content-core'] = true;
+                    }
+                    if (!empty($visibility_payload)) {
+                        $this->update_merged_option(self::OPTION_KEY, $visibility_payload);
+                    }
+                }
 
-                // Safety locks for Client
-                $visibility_payload['client']['content-core'] = true;
-            }
+                // ── Ordering ──
+                $admin_order_raw = $_POST['cc_core_order_admin'] ?? '';
+                $client_order_raw = $_POST['cc_core_order_client'] ?? '';
+                if (!empty($admin_order_raw) || !empty($client_order_raw)) {
+                    $order_payload = [];
+                    if (!empty($admin_order_raw)) {
+                        $admin_order = $this->parse_order_input($admin_order_raw);
+                        if (!empty($admin_order))
+                            $order_payload['admin'] = $admin_order;
+                    }
+                    if (!empty($client_order_raw)) {
+                        $client_order = $this->parse_order_input($client_order_raw);
+                        if (!empty($client_order))
+                            $order_payload['client'] = $client_order;
+                    }
+                    if (!empty($order_payload)) {
+                        $this->update_merged_option(self::ORDER_KEY, $order_payload);
+                    }
+                }
 
-            if (!empty($visibility_payload)) {
-                $this->update_merged_option(self::OPTION_KEY, $visibility_payload);
-            }
-        }
+                // ── Media Settings ──
+                $media_raw = $_POST['cc_media'] ?? null;
+                if ($media_raw !== null) {
+                    if (!is_array($media_raw)) {
+                        $media_raw = [];
+                    }
+                    $media_settings = [
+                        'enabled' => !empty($media_raw['enabled']),
+                        'max_width_px' => intval(($media_raw['max_width_px'] ?? 2000) ?: 2000),
+                        'output_format' => 'webp',
+                        'quality' => intval(($media_raw['quality'] ?? 70) ?: 70),
+                        'png_mode' => sanitize_text_field($media_raw['png_mode'] ?? 'lossless'),
+                        'delete_original' => !empty($media_raw['delete_original']),
+                    ];
+                    $this->update_merged_option(self::MEDIA_KEY, $media_settings);
+                }
 
-        // ── Redirection ──
-        if (isset($_POST['cc_redirect'])) {
-            $redirect_post = (array)$_POST['cc_redirect'];
-            $redirect_payload = [
-                'enabled' => !empty($redirect_post['enabled']),
-                'from_path' => $this->sanitize_redirect_path($redirect_post['from_path'] ?? '/'),
-                'target' => $this->sanitize_redirect_path($redirect_post['target'] ?? '/wp-admin'),
-                'status_code' => in_array($redirect_post['status_code'] ?? '302', ['301', '302']) ? $redirect_post['status_code'] : '302',
-                'pass_query' => !empty($redirect_post['pass_query']),
-                'exclusions' => [
-                    'admin' => !empty($redirect_post['exclusions']['admin']),
-                    'ajax' => !empty($redirect_post['exclusions']['ajax']),
-                    'rest' => !empty($redirect_post['exclusions']['rest']),
-                    'cron' => !empty($redirect_post['exclusions']['cron']),
-                    'cli' => !empty($redirect_post['exclusions']['cli']),
-                ]
-            ];
-            update_option(self::REDIRECT_KEY, $redirect_payload);
-        }
-
-        // ── Ordering ──
-        // Only trigger update if order strings are provided and not empty
-        $admin_order_raw = $_POST['cc_core_order_admin'] ?? '';
-        $client_order_raw = $_POST['cc_core_order_client'] ?? '';
-
-        if (!empty($admin_order_raw) || !empty($client_order_raw)) {
-            $order_payload = [];
-
-            if (!empty($admin_order_raw)) {
-                $admin_order = $this->parse_order_input($admin_order_raw);
-                if (!empty($admin_order)) {
-                    $order_payload['admin'] = $admin_order;
+                // ── Redirection ──
+                $redirect_raw = $_POST['cc_redirect'] ?? null;
+                if ($redirect_raw !== null) {
+                    if (!is_array($redirect_raw)) {
+                        $redirect_raw = [];
+                    }
+                    $redirect_payload = [
+                        'enabled' => !empty($redirect_raw['enabled']),
+                        'from_path' => $this->sanitize_redirect_path($redirect_raw['from_path'] ?? '/'),
+                        'target' => $this->sanitize_redirect_path($redirect_raw['target'] ?? '/wp-admin'),
+                        'status_code' => in_array($redirect_raw['status_code'] ?? '302', ['301', '302']) ? $redirect_raw['status_code'] : '302',
+                        'pass_query' => !empty($redirect_raw['pass_query']),
+                        'exclusions' => [
+                            'admin' => !empty($redirect_raw['exclusions']['admin'] ?? false),
+                            'ajax' => !empty($redirect_raw['exclusions']['ajax'] ?? false),
+                            'rest' => !empty($redirect_raw['exclusions']['rest'] ?? false),
+                            'cron' => !empty($redirect_raw['exclusions']['cron'] ?? false),
+                            'cli' => !empty($redirect_raw['exclusions']['cli'] ?? false),
+                        ]
+                    ];
+                    $this->update_merged_option(self::REDIRECT_KEY, $redirect_payload);
                 }
             }
 
-            if (!empty($client_order_raw)) {
-                $client_order = $this->parse_order_input($client_order_raw);
-                if (!empty($client_order)) {
-                    $order_payload['client'] = $client_order;
+            if ($settings_group === 'site_settings' || $settings_group === 'site') {
+                // ── SEO ──
+                if (isset($_POST['cc_seo'])) {
+                    $seo_post = (array)$_POST['cc_seo'];
+                    $seo_payload = [
+                        'site_title' => sanitize_text_field($seo_post['site_title'] ?? ''),
+                        'default_description' => sanitize_textarea_field($seo_post['default_description'] ?? ''),
+                        'default_og_image_id' => !empty($seo_post['default_og_image_id']) ? intval($seo_post['default_og_image_id']) : null,
+                    ];
+                    $this->update_merged_option(self::SEO_KEY, $seo_payload);
+                }
+
+                // ── Multilingual Settings ──
+                $ml_raw = $_POST['cc_languages'] ?? null;
+                if ($ml_raw !== null) {
+                    if (!is_array($ml_raw)) {
+                        $ml_raw = [];
+                    }
+                    $raw_langs = $ml_raw['languages'] ?? [];
+                    $structured_langs = [];
+                    $seen_codes = [];
+
+                    if (is_array($raw_langs)) {
+                        foreach ($raw_langs as $lang) {
+                            if (empty($lang['code']))
+                                continue;
+                            $code = strtolower(sanitize_text_field($lang['code']));
+                            if (in_array($code, $seen_codes))
+                                continue;
+                            $structured_langs[] = [
+                                'code' => $code,
+                                'label' => sanitize_text_field(($lang['label'] ?? '') ?: strtoupper($code)),
+                                'flag_id' => intval($lang['flag_id'] ?? 0),
+                            ];
+                            $seen_codes[] = $code;
+                        }
+                    }
+
+                    $active_codes = array_column($structured_langs, 'code');
+                    $submitted_default = sanitize_text_field($ml_raw['default_lang'] ?? 'de');
+                    $submitted_fallback = sanitize_text_field($ml_raw['fallback_lang'] ?? 'de');
+
+                    $current_settings = get_option('cc_languages_settings', []);
+                    $old_default = $current_settings['default_lang'] ?? 'de';
+
+                    if (empty($active_codes)) {
+                        throw new \Exception(__('You must have at least one active language.', 'content-core'));
+                    }
+                    elseif (!in_array($old_default, $active_codes, true)) {
+                        throw new \Exception(sprintf(__('The default language (%s) cannot be deleted. Please change the default language first.', 'content-core'), strtoupper($old_default)));
+                    }
+                    else {
+                        if (!in_array($submitted_default, $active_codes, true)) {
+                            $submitted_default = $active_codes[0];
+                        }
+
+                        if (!empty($ml_raw['fallback_enabled']) && !in_array($submitted_fallback, $active_codes, true)) {
+                            $submitted_fallback = $submitted_default;
+                        }
+
+                        $ml_settings = [
+                            'enabled' => !empty($ml_raw['enabled']),
+                            'default_lang' => $submitted_default,
+                            'active_langs' => $active_codes,
+                            'languages' => $structured_langs,
+                            'fallback_enabled' => !empty($ml_raw['fallback_enabled']),
+                            'fallback_lang' => $submitted_fallback,
+                            'permalink_enabled' => !empty($ml_raw['permalink_enabled']),
+                            'permalink_bases' => $ml_raw['permalink_bases'] ?? [],
+                            'enable_rest_seo' => !empty($ml_raw['enable_rest_seo']),
+                            'enable_headless_fallback' => !empty($ml_raw['enable_headless_fallback']),
+                            'enable_localized_taxonomies' => !empty($ml_raw['enable_localized_taxonomies']),
+                            'enable_sitemap_endpoint' => !empty($ml_raw['enable_sitemap_endpoint']),
+                            'taxonomy_bases' => $ml_raw['taxonomy_bases'] ?? [],
+                        ];
+                        $this->update_merged_option('cc_languages_settings', $ml_settings);
+
+                        if ($ml_settings['permalink_enabled']) {
+                            set_transient('cc_flush_rewrites', 1, 3600);
+                        }
+                        else {
+                            flush_rewrite_rules();
+                        }
+                    }
+                }
+                // ── Cookie Banner ──
+                $cookie_raw = $_POST['cc_cookie_settings'] ?? null;
+
+                if ($cookie_raw !== null) {
+                    if (!is_array($cookie_raw)) {
+                        $cookie_raw = [];
+                    }
+
+                    $cookie_raw = wp_unslash($cookie_raw);
+
+                    $cookie_settings = [
+                        'enabled' => !empty($cookie_raw['enabled']),
+                        'bannerTitle' => sanitize_text_field($cookie_raw['bannerTitle'] ?? ''),
+                        'bannerText' => sanitize_textarea_field($cookie_raw['bannerText'] ?? ''),
+                        'policyUrl' => esc_url_raw($cookie_raw['policyUrl'] ?? ''),
+                        'labels' => [
+                            'acceptAll' => sanitize_text_field($cookie_raw['labels']['acceptAll'] ?? __('Accept All', 'content-core')),
+                            'rejectAll' => sanitize_text_field($cookie_raw['labels']['rejectAll'] ?? __('Reject All', 'content-core')),
+                            'save' => sanitize_text_field($cookie_raw['labels']['save'] ?? __('Save Settings', 'content-core')),
+                            'settings' => sanitize_text_field($cookie_raw['labels']['settings'] ?? __('Preferences', 'content-core')),
+                        ],
+                        'categories' => [
+                            'analytics' => !empty($cookie_raw['categories']['analytics']),
+                            'marketing' => !empty($cookie_raw['categories']['marketing']),
+                            'preferences' => !empty($cookie_raw['categories']['preferences']),
+                        ],
+                        'integrations' => [
+                            'ga4MeasurementId' => sanitize_text_field($cookie_raw['integrations']['ga4MeasurementId'] ?? ''),
+                            'gtmContainerId' => sanitize_text_field($cookie_raw['integrations']['gtmContainerId'] ?? ''),
+                            'metaPixelId' => sanitize_text_field($cookie_raw['integrations']['metaPixelId'] ?? ''),
+                        ],
+                        'behavior' => [
+                            'regionMode' => in_array(($cookie_raw['regionMode'] ?? 'eu_only'), ['eu_only', 'global'], true) ? $cookie_raw['regionMode'] : 'eu_only',
+                            'storage' => in_array(($cookie_raw['storage'] ?? 'localStorage'), ['localStorage', 'cookie'], true) ? $cookie_raw['storage'] : 'localStorage',
+                            'ttlDays' => max(1, min(3650, absint($cookie_raw['ttlDays'] ?? 365))),
+                        ]
+                    ];
+
+                    $this->update_merged_option(self::COOKIE_KEY, $cookie_settings);
+                }
+
+                // ── Site Options Schema ──
+                if (isset($_POST['cc_site_options_schema']) || isset($_POST['cc_reset_site_options_schema'])) {
+                    $plugin = \ContentCore\Plugin::get_instance();
+                    $site_mod = $plugin->get_module('site_options');
+
+                    if ($site_mod instanceof \ContentCore\Modules\SiteOptions\SiteOptionsModule) {
+                        if (isset($_POST['cc_reset_site_options_schema'])) {
+                            $site_mod->reset_schema();
+                            set_transient('cc_settings_success', __('Site Options schema has been reset to defaults.', 'content-core'), 30);
+                        }
+                        else {
+                            $schema_raw = $_POST['cc_site_options_schema'];
+                            // Simple structure validation and sanitization could be deeper, but we expect array here
+                            if (is_array($schema_raw)) {
+                                $site_mod->update_schema($schema_raw);
+                                set_transient('cc_settings_success', __('Site Options schema saved successfully.', 'content-core'), 30);
+                            }
+                        }
+                    }
                 }
             }
 
-            if (!empty($order_payload)) {
-                $this->update_merged_option(self::ORDER_KEY, $order_payload);
-            }
+            set_transient('cc_settings_success', __('Settings saved successfully.', 'content-core'), 30);
+        }
+        catch (\Throwable $e) {
+            set_transient('cc_settings_error', __('Failed to save settings: ', 'content-core') . $e->getMessage(), 30);
         }
 
-        // ── Multilingual Settings ──
-        if (isset($_POST['cc_languages'])) {
-            $raw_langs = $_POST['cc_languages']['languages'] ?? [];
-            $structured_langs = [];
-            $seen_codes = [];
-
-            foreach ($raw_langs as $lang) {
-                if (empty($lang['code']))
-                    continue;
-
-                $code = strtolower(sanitize_text_field($lang['code']));
-                if (in_array($code, $seen_codes))
-                    continue;
-
-                $structured_langs[] = [
-                    'code' => $code,
-                    'label' => sanitize_text_field($lang['label'] ?: strtoupper($code)),
-                    'flag_id' => intval($lang['flag_id'] ?? 0),
-                ];
-                $seen_codes[] = $code;
-            }
-
-            $active_codes = array_column($structured_langs, 'code');
-            $submitted_default = sanitize_text_field($_POST['cc_languages']['default_lang'] ?? 'de');
-            $submitted_fallback = sanitize_text_field($_POST['cc_languages']['fallback_lang'] ?? 'de');
-
-            // ── Validation: Block deleting default language or all languages ──
-            $current_settings = get_option('cc_languages_settings', []);
-            $old_default = $current_settings['default_lang'] ?? 'de';
-
-            if (empty($active_codes)) {
-                add_settings_error('cc_settings', 'ml_empty_error', __('You must have at least one active language.', 'content-core'), 'error');
-                return; // Abort save for ML
-            }
-
-            // If the user tries to remove the default language, block it unless they changed the default first
-            if (!in_array($old_default, $active_codes, true)) {
-                add_settings_error('cc_settings', 'ml_default_delete_error', sprintf(__('The default language (%s) cannot be deleted. Please change the default language first.', 'content-core'), strtoupper($old_default)), 'error');
-                return;
-            }
-
-            // If the user changed the default language choice to something that IS in active_codes, use that.
-            if (!in_array($submitted_default, $active_codes, true)) {
-                $submitted_default = $active_codes[0];
-            }
-
-            if (!empty($_POST['cc_languages']['fallback_enabled']) && !in_array($submitted_fallback, $active_codes, true)) {
-                $submitted_fallback = $submitted_default;
-                add_settings_error('cc_settings', 'ml_fallback_warning', __('Fallback language was removed. It has been reset to the Default Language.', 'content-core'), 'warning');
-            }
-
-            $ml_settings = [
-                'enabled' => !empty($_POST['cc_languages']['enabled']),
-                'default_lang' => $submitted_default,
-                'active_langs' => $active_codes,
-                'languages' => $structured_langs,
-                'fallback_enabled' => !empty($_POST['cc_languages']['fallback_enabled']),
-                'fallback_lang' => $submitted_fallback,
-                'permalink_enabled' => !empty($_POST['cc_languages']['permalink_enabled']),
-                'permalink_bases' => $_POST['cc_languages']['permalink_bases'] ?? [],
-                'enable_rest_seo' => !empty($_POST['cc_languages']['enable_rest_seo']),
-                'enable_headless_fallback' => !empty($_POST['cc_languages']['enable_headless_fallback']),
-                'enable_localized_taxonomies' => !empty($_POST['cc_languages']['enable_localized_taxonomies']),
-                'enable_sitemap_endpoint' => !empty($_POST['cc_languages']['enable_sitemap_endpoint']),
-                'taxonomy_bases' => $_POST['cc_languages']['taxonomy_bases'] ?? [],
-            ];
-            $this->update_merged_option('cc_languages_settings', $ml_settings);
-
-            // Flush rewrite rules if permalinks were toggled or bases changed
-            if ($ml_settings['permalink_enabled']) {
-                set_transient('cc_flush_rewrites', 1, 3600);
-            }
-            else {
-                flush_rewrite_rules();
-            }
-        }
-
-        // ── Media Settings ──
-        if (isset($_POST['cc_media'])) {
-            $media_settings = [
-                'enabled' => !empty($_POST['cc_media']['enabled']),
-                'max_width_px' => intval($_POST['cc_media']['max_width_px'] ?: 2000),
-                'output_format' => 'webp',
-                'quality' => intval($_POST['cc_media']['quality'] ?: 70),
-                'png_mode' => sanitize_text_field($_POST['cc_media']['png_mode'] ?: 'lossless'),
-                'delete_original' => !empty($_POST['cc_media']['delete_original']),
-            ];
-            $this->update_merged_option(self::MEDIA_KEY, $media_settings);
-        }
-
-        add_settings_error('cc_settings', 'saved', __('Settings saved.', 'content-core'), 'updated');
+        wp_safe_redirect($redirect_to);
+        exit;
     }
 
     private function parse_order_input(string $raw): array
@@ -555,6 +620,9 @@ class SettingsModule implements ModuleInterface
 
     public function render_settings_page(): void
     {
+        $page_slug = $_GET['page'] ?? '';
+        $is_site_settings = ($page_slug === 'cc-site-settings');
+
         $vis_settings = get_option(self::OPTION_KEY, []);
         $order_settings = get_option(self::ORDER_KEY, []);
         $all_items = $this->get_all_menu_items();
@@ -587,32 +655,50 @@ class SettingsModule implements ModuleInterface
 <div class="wrap content-core-admin">
     <div class="cc-header">
         <h1>
-            <?php _e('Content Core Settings', 'content-core'); ?>
+            <?php echo $is_site_settings ? __('Site Settings', 'content-core') : __('Settings', 'content-core'); ?>
         </h1>
         <p style="color: #646970; margin-top: 4px;">
-            <?php _e('Control admin sidebar visibility and ordering per role.', 'content-core'); ?>
+            <?php echo $is_site_settings
+            ? __('Manage high-level project configurations like languages and SEO.', 'content-core')
+            : __('Configure sidebar visibility, media optimization, and redirects.', 'content-core'); ?>
         </p>
     </div>
 
     <?php settings_errors('cc_settings'); ?>
 
     <h2 class="nav-tab-wrapper cc-settings-tabs" style="margin-bottom: 20px; display: none;">
+        <?php if ($is_site_settings): ?>
+        <a href="#multilingual" class="nav-tab nav-tab-active" data-tab="multilingual">
+            <?php _e('Multilingual', 'content-core'); ?>
+        </a>
+        <a href="#seo" class="nav-tab" data-tab="seo">
+            <?php _e('SEO', 'content-core'); ?>
+        </a>
+        <a href="#cookie" class="nav-tab" data-tab="cookie">
+            <?php _e('Cookie Banner', 'content-core'); ?>
+        </a>
+        <a href="#site-options" class="nav-tab" data-tab="site-options">
+            <?php _e('Site Options', 'content-core'); ?>
+        </a>
+        <?php
+        else: ?>
         <a href="#menu" class="nav-tab nav-tab-active" data-tab="menu">
             <?php _e('Menu', 'content-core'); ?>
         </a>
         <a href="#media" class="nav-tab" data-tab="media">
             <?php _e('Media', 'content-core'); ?>
         </a>
-        <a href="#multilingual" class="nav-tab" data-tab="multilingual">
-            <?php _e('Multilingual', 'content-core'); ?>
-        </a>
         <a href="#redirect" class="nav-tab" data-tab="redirect">
             <?php _e('Redirect', 'content-core'); ?>
         </a>
+        <?php
+        endif; ?>
     </h2>
 
     <form method="post">
         <?php wp_nonce_field('cc_save_menu_settings', 'cc_menu_settings_nonce'); ?>
+        <input type="hidden" name="settings_group"
+            value="<?php echo $is_site_settings ? 'site_settings' : 'general'; ?>">
 
         <div id="cc-tab-menu" class="cc-tab-content active">
 
@@ -1341,6 +1427,251 @@ class SettingsModule implements ModuleInterface
             </div>
         </div> <!-- End #cc-tab-redirect -->
 
+        <div id="cc-tab-seo" class="cc-tab-content">
+            <div class="cc-card">
+                <h2 style="margin-top: 0;">
+                    <?php _e('SEO Settings', 'content-core'); ?>
+                </h2>
+                <p style="color: #646970;">
+                    <?php _e('Configure global SEO defaults for your site.', 'content-core'); ?>
+                </p>
+
+                <?php
+        $seo_defaults = [
+            'site_title' => '',
+            'default_description' => '',
+            'default_og_image_id' => null,
+        ];
+        $seo_settings = array_merge($seo_defaults, get_option(self::SEO_KEY, []));
+?>
+
+                <table class="form-table" style="margin-top: 20px;">
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Site Title', 'content-core'); ?>
+                        </th>
+                        <td>
+                            <input type="text" name="cc_seo[site_title]"
+                                value="<?php echo esc_attr($seo_settings['site_title']); ?>" class="regular-text">
+                            <p class="description">
+                                <?php _e('The default title for your site.', 'content-core'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Default Meta Description', 'content-core'); ?>
+                        </th>
+                        <td>
+                            <textarea name="cc_seo[default_description]" rows="4"
+                                class="large-text"><?php echo esc_textarea($seo_settings['default_description']); ?></textarea>
+                            <p class="description">
+                                <?php _e('The default meta description if a specific page does not have one.', 'content-core'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Default OG Image', 'content-core'); ?>
+                        </th>
+                        <td>
+                            <input type="hidden" name="cc_seo[default_og_image_id]" id="cc-seo-image-id"
+                                value="<?php echo esc_attr($seo_settings['default_og_image_id']); ?>">
+
+                            <div id="cc-seo-image-preview"
+                                style="margin-bottom: 10px; <?php echo empty($seo_settings['default_og_image_id']) ? 'display: none;' : ''; ?>">
+                                <?php
+        if (!empty($seo_settings['default_og_image_id'])) {
+            echo wp_get_attachment_image($seo_settings['default_og_image_id'], 'thumbnail', false, ['style' => 'max-width: 150px; height: auto; border: 1px solid #ddd; padding: 3px; border-radius: 4px;']);
+        }
+?>
+                            </div>
+
+                            <button type="button" class="button" id="cc-seo-image-button">
+                                <?php _e('Select Image', 'content-core'); ?>
+                            </button>
+                            <button type="button" class="button button-link-delete" id="cc-seo-image-remove"
+                                style="<?php echo empty($seo_settings['default_og_image_id']) ? 'display: none;' : ''; ?>">
+                                <?php _e('Remove Image', 'content-core'); ?>
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div> <!-- End #cc-tab-seo -->
+        <div id="cc-tab-cookie" class="cc-tab-content">
+            <?php
+        $cookie_defaults = [
+            'enabled' => false,
+            'policyUrl' => '',
+            'bannerTitle' => __('Cookie Consent', 'content-core'),
+            'bannerText' => __('We use cookies to improve experience.', 'content-core'),
+            'labels' => [
+                'acceptAll' => __('Accept All', 'content-core'),
+                'rejectAll' => __('Reject All', 'content-core'),
+                'save' => __('Save Settings', 'content-core'),
+                'settings' => __('Preferences', 'content-core'),
+            ],
+            'categories' => [
+                'analytics' => false,
+                'marketing' => false,
+                'preferences' => false,
+            ],
+            'integrations' => [
+                'ga4MeasurementId' => '',
+                'gtmContainerId' => '',
+                'metaPixelId' => '',
+            ],
+            'behavior' => [
+                'regionMode' => 'eu_only',
+                'storage' => 'localStorage',
+                'ttlDays' => 365,
+            ]
+        ];
+        $cookie_settings = array_replace_recursive($cookie_defaults, get_option(self::COOKIE_KEY, []));
+?>
+        </div> <!-- End #cc-tab-cookies -->
+
+        <div id="cc-tab-site-options" class="cc-tab-content">
+            <?php
+        $plugin = \ContentCore\Plugin::get_instance();
+        $site_mod = $plugin->get_module('site_options');
+        $schema = $site_mod->get_schema();
+        $ml = $plugin->get_module('multilingual');
+        $languages = ($ml instanceof \ContentCore\Modules\Multilingual\MultilingualModule) ? $ml->get_settings()['languages'] : [];
+?>
+            <div class="cc-card">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="margin-top: 0;">
+                            <?php _e('Site Options Schema', 'content-core'); ?>
+                        </h2>
+                        <p style="color: #646970;">
+                            <?php _e('Define groups and fields for global business information. These fields will appear on the Site Options page.', 'content-core'); ?>
+                        </p>
+                    </div>
+                    <button type="submit" name="cc_reset_site_options_schema" class="button button-secondary"
+                        onclick="return confirm('<?php echo esc_attr__('Reset Site Options schema to defaults? Your values will be preserved.', 'content-core'); ?>');">
+                        <?php _e('Reset to Default Template', 'content-core'); ?>
+                    </button>
+                </div>
+
+                <div id="cc-schema-editor" style="margin-top: 24px;">
+                    <?php foreach ($schema as $section_id => $section): ?>
+                    <div class="cc-schema-section cc-card"
+                        style="background: #f8f9fa; margin-bottom: 20px; border: 1px solid #dcdcde;"
+                        data-id="<?php echo esc_attr($section_id); ?>">
+                        <div
+                            style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #dcdcde; padding-bottom: 15px;">
+                            <span class="dashicons dashicons-menu" style="color: #a0a5aa; cursor: grab;"></span>
+                            <div style="flex-grow: 1;">
+                                <input type="text"
+                                    name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][title]"
+                                    value="<?php echo esc_attr($section['title']); ?>" class="large-text"
+                                    style="font-weight: 600;"
+                                    placeholder="<?php _e('Section Title', 'content-core'); ?>">
+                            </div>
+                            <button type="button" class="button button-link-delete cc-remove-section"><span
+                                    class="dashicons dashicons-no-alt"></span></button>
+                        </div>
+
+                        <div class="cc-schema-fields" style="margin-left: 30px;">
+                            <?php foreach ($section['fields'] as $field_id => $field): ?>
+                            <div class="cc-schema-field"
+                                style="background: #fff; border: 1px solid #dcdcde; padding: 15px; border-radius: 4px; margin-bottom: 10px;"
+                                data-id="<?php echo esc_attr($field_id); ?>">
+                                <div style="display: flex; gap: 15px; align-items: start;">
+                                    <span class="dashicons dashicons-menu"
+                                        style="color: #a0a5aa; cursor: grab; margin-top: 8px;"></span>
+                                    <div style="flex-grow: 1;">
+                                        <div
+                                            style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                            <div>
+                                                <label style="display: block; font-size: 11px; margin-bottom: 3px;">
+                                                    <?php _e('Stable Key', 'content-core'); ?>
+                                                </label>
+                                                <input type="text" value="<?php echo esc_attr($field_id); ?>"
+                                                    class="regular-text" style="width: 100%; font-family: monospace;"
+                                                    readonly disabled>
+                                            </div>
+                                            <div>
+                                                <label style="display: block; font-size: 11px; margin-bottom: 3px;">
+                                                    <?php _e('Type', 'content-core'); ?>
+                                                </label>
+                                                <select
+                                                    name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][type]"
+                                                    style="width: 100%;">
+                                                    <option value="text" <?php selected($field['type'], 'text'); ?>
+                                                        >Text
+                                                    </option>
+                                                    <option value="email" <?php selected($field['type'], 'email'); ?>
+                                                        >Email
+                                                    </option>
+                                                    <option value="url" <?php selected($field['type'], 'url'); ?>>URL
+                                                    </option>
+                                                    <option value="textarea" <?php selected($field['type'], 'textarea'
+                ); ?>
+                                                        >Textarea</option>
+                                                    <option value="image" <?php selected($field['type'], 'image'); ?>
+                                                        >Image/Logo</option>
+                                                </select>
+                                            </div>
+                                            <div
+                                                style="display: flex; gap: 15px; align-items: center; padding-top: 20px;">
+                                                <label><input type="checkbox"
+                                                        name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][client_visible]"
+                                                        value="1" <?php checked(!empty($field['client_visible'])); ?>>
+                                                    <?php _e('Visible', 'content-core'); ?>
+                                                </label>
+                                                <label><input type="checkbox"
+                                                        name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][client_editable]"
+                                                        value="1" <?php checked(!empty($field['client_editable'])); ?>>
+                                                    <?php _e('Editable', 'content-core'); ?>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div
+                                            style="display: grid; grid-template-columns: repeat(<?php echo count($languages) ?: 1; ?>, 1fr); gap: 10px;">
+                                            <?php foreach ($languages as $lang):
+                    $label_val = is_array($field['label']) ? ($field['label'][$lang['code']] ?? '') : ($lang['code'] === 'de' ? $field['label'] : '');
+?>
+                                            <div>
+                                                <label style="display: block; font-size: 11px; margin-bottom: 3px;">
+                                                    <?php echo esc_html($lang['label']); ?>
+                                                    <?php _e('Label', 'content-core'); ?>
+                                                </label>
+                                                <input type="text"
+                                                    name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][label][<?php echo esc_attr($lang['code']); ?>]"
+                                                    value="<?php echo esc_attr($label_val); ?>" style="width: 100%;">
+                                            </div>
+                                            <?php
+                endforeach; ?>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="button button-link-delete cc-remove-field"
+                                        style="margin-top: 5px;"><span
+                                            class="dashicons dashicons-no-alt"></span></button>
+                                </div>
+                            </div>
+                            <?php
+            endforeach; ?>
+                            <button type="button" class="button button-secondary cc-add-field"
+                                data-section="<?php echo esc_attr($section_id); ?>">
+                                <?php _e('+ Add Field', 'content-core'); ?>
+                            </button>
+                        </div>
+                    </div>
+                    <?php
+        endforeach; ?>
+                    <button type="button" class="button button-secondary cc-add-section">
+                        <?php _e('+ Add Group', 'content-core'); ?>
+                    </button>
+                </div>
+            </div>
+        </div> <!-- End #cc-tab-site-options -->
+
         <div style="display: flex; gap: 12px; align-items: center; margin-top: 24px;">
             <?php submit_button(__('Save Settings', 'content-core'), 'primary', 'submit', false); ?>
             <button type="submit" name="cc_reset_menu" class="button button-secondary"
@@ -1600,14 +1931,25 @@ class SettingsModule implements ModuleInterface
             $tabs.show();
             $('body').addClass('js');
 
-            var activeTab = localStorage.getItem('cc_active_settings_tab') || 'menu';
+            var pageSlug = new URLSearchParams(window.location.search).get('page');
+            var storageKey = 'cc_active_tab_' + pageSlug;
+
+            // Default tabs for each page
+            var defaultTab = (pageSlug === 'cc-site-settings') ? 'multilingual' : 'menu';
+            var activeTab = localStorage.getItem(storageKey) || defaultTab;
+
+            // Sanity check to ensure the tab exists on the current page
+            if ($tabs.find('[data-tab="' + activeTab + '"]').length === 0) {
+                activeTab = defaultTab;
+            }
+
             switchTab(activeTab);
 
             $tabs.on('click', 'a', function (e) {
                 e.preventDefault();
                 var tab = $(this).data('tab');
                 switchTab(tab);
-                localStorage.setItem('cc_active_settings_tab', tab);
+                localStorage.setItem(storageKey, tab);
             });
 
             function switchTab(tabId) {
@@ -1622,6 +1964,36 @@ class SettingsModule implements ModuleInterface
                 }
             }
         }
+
+        // ── SEO Media Uploader ──
+        var seoMediaFrame;
+        $('#cc-seo-image-button').on('click', function (e) {
+            e.preventDefault();
+            if (seoMediaFrame) {
+                seoMediaFrame.open();
+                return;
+            }
+            seoMediaFrame = wp.media({
+                title: '<?php echo esc_js(__('Select Default OG Image', 'content - core')); ?>',
+                button: { text: '<?php echo esc_js(__('Use this image', 'content - core')); ?>' },
+                multiple: false
+            });
+            seoMediaFrame.on('select', function () {
+                var attachment = seoMediaFrame.state().get('selection').first().toJSON();
+                $('#cc-seo-image-id').val(attachment.id);
+                var imgUrl = attachment.sizes && attachment.sizes.thumbnail ? attachment.sizes.thumbnail.url : attachment.url;
+                $('#cc-seo-image-preview').html('<img src="' + imgUrl + '" style="max-width: 150px; height: auto; border: 1px solid #ddd; padding: 3px; border-radius: 4px;" />').show();
+                $('#cc-seo-image-remove').show();
+            });
+            seoMediaFrame.open();
+        });
+
+        $('#cc-seo-image-remove').on('click', function (e) {
+            e.preventDefault();
+            $('#cc-seo-image-id').val('');
+            $('#cc-seo-image-preview').hide().html('');
+            $(this).hide();
+        });
 
         // ── Ordering Logic ──
         function serializeVisibilityOrder() {
@@ -1643,6 +2015,114 @@ class SettingsModule implements ModuleInterface
         });
 
         serializeVisibilityOrder();
+
+        // ── Site Options Schema Editor ──
+        var $schemaEditor = $('#cc-schema-editor');
+
+        function generateId() {
+            return 'cc_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        $schemaEditor.on('click', '.cc-add-section', function () {
+            var sectionId = generateId();
+            var titleLabel = '<?php _e('Section Title', 'content - core'); ?>';
+            var removeLabel = '<?php _e('Remove Group', 'content - core'); ?>';
+            var addFieldLabel = '<?php _e(' + Add Field', 'content - core'); ?>';
+
+            var html = '<div class="cc-schema-section cc-card" style="background: #f8f9fa; margin-bottom: 20px; border: 1px solid #dcdcde;" data-id="' + sectionId + '">' +
+                '<div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #dcdcde; padding-bottom: 15px;">' +
+                '<span class="dashicons dashicons-menu" style="color: #a0a5aa; cursor: grab;"></span>' +
+                '<div style="flex-grow: 1;">' +
+                '<input type="text" name="cc_site_options_schema[' + sectionId + '][title]" value="" class="large-text" style="font-weight: 600;" placeholder="' + titleLabel + '">' +
+                '</div>' +
+                '<button type="button" class="button button-link-delete cc-remove-section"><span class="dashicons dashicons-no-alt"></span></button>' +
+                '</div>' +
+                '<div class="cc-schema-fields" style="margin-left: 30px;">' +
+                '<button type="button" class="button button-secondary cc-add-field" data-section="' + sectionId + '">' + addFieldLabel + '</button>' +
+                '</div>' +
+                '</div>';
+
+            $(this).before(html);
+        });
+
+        $schemaEditor.on('click', '.cc-remove-section', function () {
+            if (confirm('<?php echo esc_js(__('Remove this entire section and all its fields ? ', 'content - core')); ?>')) {
+                $(this).closest('.cc-schema-section').remove();
+            }
+        });
+
+        $schemaEditor.on('click', '.cc-add-field', function () {
+            var sectionId = $(this).data('section');
+            var fieldId = generateId();
+            var languages = <?php echo json_encode($languages); ?>;
+            var addBtn = $(this);
+
+            var html = '<div class="cc-schema-field" style="background: #fff; border: 1px solid #dcdcde; padding: 15px; border-radius: 4px; margin-bottom: 10px;" data-id="' + fieldId + '">' +
+                '<div style="display: flex; gap: 15px; align-items: start;">' +
+                '<span class="dashicons dashicons-menu" style="color: #a0a5aa; cursor: grab; margin-top: 8px;"></span>' +
+                '<div style="flex-grow: 1;">' +
+                '<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">' +
+                '<div>' +
+                '<label style="display: block; font-size: 11px; margin-bottom: 3px;"><?php _e('Stable Key', 'content - core'); ?></label>' +
+                    '<input type="text" name="cc_site_options_schema[' + sectionId + '][fields][' + fieldId + '][key_placeholder]" value="' + fieldId + '" class="regular-text" style="width: 100%; font-family: monospace;" readonly disabled>' +
+                    '<input type="hidden" name="dummy" value="just so we have the key implied by the name structure">' +
+                    '</div>' +
+                    '<div>' +
+                    '<label style="display: block; font-size: 11px; margin-bottom: 3px;"><?php _e('Type', 'content - core'); ?></label>' +
+                        '<select name="cc_site_options_schema[' + sectionId + '][fields][' + fieldId + '][type]" style="width: 100%;">' +
+                        '<option value="text">Text</option>' +
+                        '<option value="email">Email</option>' +
+                        '<option value="url">URL</option>' +
+                        '<option value="textarea">Textarea</option>' +
+                        '<option value="image">Image/Logo</option>' +
+                        '</select>' +
+                        '</div>' +
+                        '<div style="display: flex; gap: 15px; align-items: center; padding-top: 20px;">' +
+                        '<label><input type="checkbox" name="cc_site_options_schema[' + sectionId + '][fields][' + fieldId + '][client_visible]" value="1" checked> <?php _e('Visible', 'content - core'); ?></label>' +
+                            '<label><input type="checkbox" name="cc_site_options_schema[' + sectionId + '][fields][' + fieldId + '][client_editable]" value="1" checked> <?php _e('Editable', 'content - core'); ?></label>' +
+                                '</div>' +
+                                '</div>' +
+                                '<div style="display: grid; grid-template-columns: repeat(' + (languages.length || 1) + ', 1fr); gap: 10px;">';
+
+            languages.forEach(function (lang) {
+                html += '<div>' +
+                    '<label style="display: block; font-size: 11px; margin-bottom: 3px;">' + lang.label + ' <?php _e('Label', 'content - core'); ?></label>' +
+                        '<input type="text" name="cc_site_options_schema[' + sectionId + '][fields][' + fieldId + '][label][' + lang.code + ']" value="" style="width: 100%;">' +
+                        '</div>';
+            });
+
+            html += '</div></div>' +
+                '<button type="button" class="button button-link-delete cc-remove-field" style="margin-top: 5px;"><span class="dashicons dashicons-no-alt"></span></button>' +
+                '</div></div>';
+
+            addBtn.before(html);
+        });
+
+        $schemaEditor.on('click', '.cc-remove-field', function () {
+            if (confirm('<?php echo esc_js(__('Remove this field ? ', 'content - core')); ?>')) {
+                $(this).closest('.cc-schema-field').remove();
+            }
+        });
+
+        // ── Schema Reordering ──
+        $schemaEditor.sortable({
+            items: '.cc-schema-section',
+            handle: '.dashicons-menu',
+            placeholder: 'ui-sortable-placeholder',
+            axis: 'y'
+        });
+
+        $schemaEditor.on('mouseenter', '.cc-schema-fields', function () {
+            if (!$(this).data('sortable-init')) {
+                $(this).sortable({
+                    items: '.cc-schema-field',
+                    handle: '.dashicons-menu',
+                    placeholder: 'ui-sortable-placeholder',
+                    axis: 'y'
+                });
+                $(this).data('sortable-init', true);
+            }
+        });
     });
 </script>
 
@@ -1692,6 +2172,41 @@ class SettingsModule implements ModuleInterface
 </li>
 <?php
         endforeach;
+    }
+
+    /**
+     * Safely merge and update a project option.
+     */
+    private function update_merged_option(string $key, array $new_data): void
+    {
+        $existing = get_option($key, []);
+        if (!is_array($existing)) {
+            $existing = [];
+        }
+        $merged = array_replace_recursive($existing, $new_data);
+        update_option($key, $merged, false);
+    }
+
+    /**
+     * Render success/error notices after redirection.
+     */
+    public function render_admin_notices(): void
+    {
+        if (!$this->is_cc_settings_screen()) {
+            return;
+        }
+
+        $error = get_transient('cc_settings_error');
+        if ($error) {
+            delete_transient('cc_settings_error');
+            echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($error) . '</p></div>';
+        }
+
+        $success = get_transient('cc_settings_success');
+        if ($success) {
+            delete_transient('cc_settings_success');
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($success) . '</p></div>';
+        }
     }
 
     /**

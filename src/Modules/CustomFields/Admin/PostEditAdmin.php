@@ -528,7 +528,6 @@ class PostEditAdmin
             return;
         if (!isset($_POST['cc_meta']) || !is_array($_POST['cc_meta'])) {
             if (defined('WP_DEBUG') && WP_DEBUG) {
-                error_log(sprintf('Content Core Save: No cc_meta found in request for Post %d', $post_id));
             }
             return;
         }
@@ -544,7 +543,6 @@ class PostEditAdmin
         }
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log(sprintf('Content Core Save: Processing %d fields for Post %d', count($_POST['cc_meta']), $post_id));
         }
 
         foreach ($_POST['cc_meta'] as $name => $value) {
@@ -650,7 +648,6 @@ class PostEditAdmin
         }
 
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('Content Core: Enqueueing assets for Post Edit screen');
         }
 
         // We enqueue unconditionally on post screens because selectors are scoped to .cc-metabox

@@ -39,6 +39,12 @@ spl_autoload_register(function ($class) {
 // Initialize the Plugin
 function content_core_init()
 {
+	// Step A: Enable safe logging
+	if (defined('WP_DEBUG') && WP_DEBUG) {
+		ini_set('display_errors', '0');
+		ini_set('log_errors', '1');
+	}
+
 	$plugin = \ContentCore\Plugin::get_instance();
 	$plugin->init();
 

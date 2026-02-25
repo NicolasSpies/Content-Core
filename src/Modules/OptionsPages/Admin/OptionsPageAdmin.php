@@ -12,7 +12,7 @@ class OptionsPageAdmin
      */
     public function register(): void
     {
-        add_action('admin_menu', [$this, 'register_admin_menus'], 60);
+        // add_action('admin_menu', [$this, 'register_admin_menus'], 60);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_scripts']);
     }
 

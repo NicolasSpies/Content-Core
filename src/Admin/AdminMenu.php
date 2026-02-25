@@ -16,6 +16,11 @@ class AdminMenu
     {
         add_action('admin_menu', [$this, 'register_menu']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
+        add_action('admin_post_cc_flush_rewrite_rules', [$this, 'handle_flush_rewrite_rules']);
+        add_action('admin_post_cc_clear_expired_transients', [$this, 'handle_clear_expired_transients']);
+        add_action('admin_post_cc_clear_all_transients', [$this, 'handle_clear_all_transients']);
+        add_action('admin_post_cc_clear_plugin_caches', [$this, 'handle_clear_plugin_caches']);
+        add_action('admin_post_cc_flush_object_cache', [$this, 'handle_flush_object_cache']);
     }
 
     /**
@@ -81,15 +86,28 @@ class AdminMenu
                 'edit.php?post_type=cc_taxonomy_def'
             );
         }
-
-        // Submenu: Options Pages
-        if ($plugin->is_module_active('options_pages')) {
+ 
+        // Submenu: Language Mapping (Management UI)
+        if ($plugin->is_module_active('language_mapping')) {
             add_submenu_page(
                 'content-core',
-                __('Options Pages', 'content-core'),
-                __('Options Pages', 'content-core'),
+                __('Language Mapping', 'content-core'),
+                __('Language Mapping', 'content-core'),
                 'manage_options',
-                'edit.php?post_type=cc_options_page'
+                'content-core-language-mapping',
+                function() {
+                    $plugin = \ContentCore\Plugin::get_instance();
+                    $module = $plugin->get_module('language_mapping');
+                    if ($module instanceof \ContentCore\Modules\LanguageMapping\LanguageMappingModule) {
+                        $admin = new \ContentCore\Modules\LanguageMapping\Admin\LanguageMappingAdmin($module);
+                        $admin->render_page();
+                    } else {
+                        error_log('Language Mapping module not found or invalid: ' . gettype($module));
+                        if (is_admin()) {
+                            echo '<div class="wrap"><h1>Language Mapping</h1><p>Module integration error. Please check logs.</p></div>';
+                        }
+                    }
+                }
             );
         }
 
@@ -105,15 +123,6 @@ class AdminMenu
             );
         }
 
-        // Submenu: Tools
-        add_submenu_page(
-            'content-core',
-            __('Tools', 'content-core'),
-            __('Tools', 'content-core'),
-            'manage_options',
-            'cc-tools',
-            [$this, 'render_tools_page']
-        );
 
         // Rename the first submenu item (which defaults to the same name as the top-level)
         global $submenu;
@@ -128,123 +137,134 @@ class AdminMenu
     public function render_main_dashboard(): void
     {
         $plugin = \ContentCore\Plugin::get_instance();
+        $cache_service = new CacheService();
+        $snapshot = $cache_service->get_snapshot();
+
+        $format_bytes = function($bytes) {
+            if ($bytes <= 0) return '0 B';
+            $base = log($bytes, 1024);
+            $suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            return round(pow(1024, $base - floor($base)), 2) . ' ' . $suffixes[floor($base)];
+        };
         ?>
         <div class="wrap content-core-admin">
             <div class="cc-header">
                 <h1><?php _e('Content Core Dashboard', 'content-core'); ?></h1>
             </div>
 
-            <div class="cc-card">
-                <h2><?php _e('Welcome to Content Core', 'content-core'); ?></h2>
-                <p><?php _e('Content Core is your modular headless CMS framework for WordPress. Use the menu on the left to manage your field groups, post types, and taxonomies.', 'content-core'); ?></p>
-            </div>
+
+            <?php 
+            // Display admin notices on Dashboard
+            settings_errors('cc_dashboard'); 
+
+            // Handle custom cache action notices
+            if (isset($_GET['cc_action'])) {
+                $bytes = isset($_GET['cc_bytes']) ? (int)$_GET['cc_bytes'] : 0;
+                $count = isset($_GET['cc_count']) ? (int)$_GET['cc_count'] : 0;
+                $msg = '';
+                
+                switch ($_GET['cc_action']) {
+                    case 'expired_cleared':
+                        $msg = sprintf(__('Cleared %d expired transients (%s).', 'content-core'), $count, $format_bytes($bytes));
+                        break;
+                    case 'all_cleared':
+                        $msg = sprintf(__('Cleared ALL transients: %d items removed (%s).', 'content-core'), $count, $format_bytes($bytes));
+                        break;
+                    case 'cc_cleared':
+                        $msg = sprintf(__('Cleared Content Core caches: %d items removed (%s).', 'content-core'), $count, $format_bytes($bytes));
+                        break;
+                    case 'obj_flushed':
+                        $msg = __('Object cache flushed successfully.', 'content-core');
+                        break;
+                }
+
+                if ($msg) {
+                    echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($msg) . '</p></div>';
+                }
+            }
+            ?>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                 <div class="cc-card">
-                    <h2><?php _e('Quick Links', 'content-core'); ?></h2>
-                    <ul style="margin:0; padding-left: 20px;">
-                        <?php if ($plugin->is_module_active('custom_fields')) : ?>
-                            <li style="margin-bottom: 8px;"><a href="<?php echo admin_url('post-new.php?post_type=cc_field_group'); ?>"><?php _e('Create a Field Group', 'content-core'); ?></a></li>
-                        <?php endif; ?>
-                        
-                        <?php if ($plugin->is_module_active('content_types')) : ?>
-                            <li style="margin-bottom: 8px;"><a href="<?php echo admin_url('post-new.php?post_type=cc_post_type_def'); ?>"><?php _e('Define a New Post Type', 'content-core'); ?></a></li>
-                        <?php endif; ?>
-                    </ul>
+                    <h2><?php _e('Headless API', 'content-core'); ?></h2>
+                    <p><?php _e('Your API is active at:', 'content-core'); ?></p>
+                    <input type="text" class="regular-text" style="width: 100%; font-family: monospace; background: var(--cc-bg-soft); border: 1px solid var(--cc-border); padding: 8px;" value="<?php echo esc_url(rest_url('content-core/v1')); ?>" readonly>
                 </div>
-                <?php if ($plugin->is_module_active('rest_api')) : ?>
-                    <div class="cc-card">
-                        <h2><?php _e('Headless API', 'content-core'); ?></h2>
-                        <p><?php _e('Your API is active at:', 'content-core'); ?></p>
-                        <code style="background: var(--cc-bg-soft); padding: 8px 12px; border-radius: 4px; display: block; border: 1px solid var(--cc-border);">
-                            <?php echo esc_url(get_rest_url(null, 'content-core/v1')); ?>
-                        </code>
+
+                <div class="cc-card">
+                    <h2><?php _e('Cache Management', 'content-core'); ?></h2>
+                    <table class="cc-mini-table" style="width: 100%; margin-bottom: 15px;">
+                        <tr>
+                            <td><?php _e('Expired Transients', 'content-core'); ?>:</td>
+                            <td align="right"><strong><?php echo (int)$snapshot['expired']['count']; ?></strong> (<?php echo $format_bytes($snapshot['expired']['bytes']); ?>)</td>
+                        </tr>
+                        <tr>
+                            <td><?php _e('Total Transients', 'content-core'); ?>:</td>
+                            <td align="right"><strong><?php echo (int)$snapshot['transients']['count']; ?></strong> (<?php echo $format_bytes($snapshot['transients']['bytes']); ?>)</td>
+                        </tr>
+                        <tr>
+                            <td><?php _e('Content Core Caches', 'content-core'); ?>:</td>
+                            <td align="right"><strong><?php echo (int)$snapshot['cc_cache']['count']; ?></strong> (<?php echo $format_bytes($snapshot['cc_cache']['bytes']); ?>)</td>
+                        </tr>
+                        <tr>
+                            <td><?php _e('Object Cache', 'content-core'); ?>:</td>
+                            <td align="right">
+                                <?php if ($snapshot['object_cache']['enabled']) : ?>
+                                    <span style="color: #008a20; font-weight: bold;"><?php _e('Active', 'content-core'); ?></span>
+                                <?php else : ?>
+                                    <span style="color: #646970;"><?php _e('Inactive', 'content-core'); ?></span>
+                                <?php endif; ?>
+                                <span style="opacity: 0.6; font-size: 11px;">(<?php echo $snapshot['object_cache']['dropin'] ? 'Drop-in found' : 'No drop-in'; ?>)</span>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="cc-action-buttons" style="display: flex; flex-direction: column; gap: 8px;">
+                        <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
+                            <input type="hidden" name="action" value="cc_clear_expired_transients">
+                            <?php wp_nonce_field('cc_cache_nonce'); ?>
+                            <button type="submit" class="button button-secondary" style="width: 100%;"><?php _e('Clear Expired Transients', 'content-core'); ?></button>
+                        </form>
+
+                        <form action="<?php echo admin_url('admin-post.php'); ?>" method="post" onsubmit="return document.getElementById('cc_confirm_all').checked;">
+                            <input type="hidden" name="action" value="cc_clear_all_transients">
+                            <?php wp_nonce_field('cc_cache_nonce'); ?>
+                            <div style="margin-bottom: 4px;">
+                                <label style="font-size: 11px; display: block; color: #d63638;">
+                                    <input type="checkbox" id="cc_confirm_all"> <?php _e('I understand this removes ALL transients', 'content-core'); ?>
+                                </label>
+                            </div>
+                            <button type="submit" class="button button-link-delete" style="width: 100%; color: #d63638;"><?php _e('Clear ALL Transients', 'content-core'); ?></button>
+                        </form>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
+                                <input type="hidden" name="action" value="cc_clear_plugin_caches">
+                                <?php wp_nonce_field('cc_cache_nonce'); ?>
+                                <button type="submit" class="button button-secondary" style="width: 100%;"><?php _e('Clear CC Caches', 'content-core'); ?></button>
+                            </form>
+                            <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
+                                <input type="hidden" name="action" value="cc_flush_object_cache">
+                                <?php wp_nonce_field('cc_cache_nonce'); ?>
+                                <button type="submit" class="button button-secondary" style="width: 100%;"><?php _e('Flush Object Cache', 'content-core'); ?></button>
+                            </form>
+                        </div>
                     </div>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php
-    }
-
-    /**
-     * Render the REST API Info page
-     */
-    public function render_api_page(): void
-    {
-        ?>
-        <div class="wrap content-core-admin">
-            <div class="cc-header">
-                <h1><?php _e('REST API Reference', 'content-core'); ?></h1>
+                </div>
             </div>
 
-            <div class="cc-card">
-                <h2><?php _e('Introduction', 'content-core'); ?></h2>
-                <p><?php _e('Content Core provides dedicated, high-performance REST API endpoints for your headless application. All responses return clean, production-ready JSON.', 'content-core'); ?></p>
-            </div>
-
-            <div class="cc-card">
-                <h2><?php _e('Endpoints', 'content-core'); ?></h2>
-                <table class="wp-list-table widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th style="width: 300px;"><?php _e('Endpoint', 'content-core'); ?></th>
-                            <th><?php _e('Description', 'content-core'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><code>/content-core/v1/post/{type}/{id}</code></td>
-                            <td><?php _e('Get a single post by ID and type, including all custom fields.', 'content-core'); ?></td>
-                        </tr>
-                        <tr>
-                            <td><code>/content-core/v1/posts/{type}</code></td>
-                            <td><?php _e('Query multiple posts of a specific type. Supports pagination.', 'content-core'); ?></td>
-                        </tr>
-                        <tr>
-                            <td><code>/content-core/v1/options/{slug}</code></td>
-                            <td><?php _e('Get all custom fields for a specific options page.', 'content-core'); ?></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            
-            <div class="cc-card">
-                <h2><?php _e('Global Custom Fields Object', 'content-core'); ?></h2>
-                <p><?php _e('Content Core also attaches a "customFields" object to standard WordPress REST API post responses for easy integration.', 'content-core'); ?></p>
-            </div>
-        </div>
-        <?php
-    }
-
-    /**
-     * Render the Tools page
-     */
-    public function render_tools_page(): void
-    {
-        $plugin = \ContentCore\Plugin::get_instance();
-        if (isset($_POST['cc_flush_rules']) && check_admin_referer('cc_flush_rules_nonce')) {
-            flush_rewrite_rules();
-            add_settings_error('cc_tools', 'flushed', __('Rewrite rules flushed successfully.', 'content-core'), 'updated');
-        }
-
-        ?>
-        <div class="wrap content-core-admin">
-            <div class="cc-header">
-                <h1><?php _e('Content Core Tools', 'content-core'); ?></h1>
-            </div>
-            
-            <?php settings_errors('cc_tools'); ?>
-
-            <div class="cc-card">
+            <!-- Moved from Tools -->
+            <div class="cc-card" style="margin-top: 24px;">
                 <h2><?php _e('System Maintenance', 'content-core'); ?></h2>
-                <form method="post">
+                <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
+                    <input type="hidden" name="action" value="cc_flush_rewrite_rules">
                     <?php wp_nonce_field('cc_flush_rules_nonce'); ?>
                     <p><?php _e('Flush your rewrite rules if you experience 404 errors after adding new Post Types or Taxonomies.', 'content-core'); ?></p>
-                    <input type="submit" name="cc_flush_rules" class="button button-primary" value="<?php _e('Flush Rewrite Rules', 'content-core'); ?>">
+                    <input type="submit" class="button button-primary" value="<?php _e('Flush Rewrite Rules', 'content-core'); ?>">
                 </form>
             </div>
 
-            <div class="cc-card">
+            <div class="cc-card" style="margin-top: 24px;">
                 <h2><?php _e('Admin UI Health', 'content-core'); ?></h2>
                 <p><?php _e('Diagnostic information for Content Core admin interfaces. Use this to verify that layouts are loading correctly.', 'content-core'); ?></p>
                 
@@ -277,7 +297,7 @@ class AdminMenu
 
                 <h3><?php _e('Asset Enqueue Status', 'content-core'); ?></h3>
                 <p style="font-size: 12px; color: #646970; margin-bottom: 10px;">
-                    <em><?php _e('Note: Post-edit specific assets (cc-post-edit, cc-metabox-ui) are intentionally not enqueued on this Tools page. They should show as "Registered" here if the files exist.', 'content-core'); ?></em>
+                    <em><?php _e('Note: Post-edit specific assets (cc-post-edit, cc-metabox-ui) are intentionally not enqueued on the Dashboard. They should show as "Registered" here if the files exist.', 'content-core'); ?></em>
                 </p>
                 <table class="wp-list-table widefat fixed striped" style="margin-top: 10px;">
                     <thead>
@@ -349,23 +369,164 @@ class AdminMenu
                     </tbody>
                 </table>
             </div>
+        </div>
 
-            <script>
-                jQuery(document).ready(function($) {
-                    var $status = $('#cc-js-status-val');
-                    if (window.ContentCoreHealth && window.ContentCoreHealth.fieldGroupAdminLoaded) {
-                        $status.html('<span style="color: #008a20;">' + <?php echo wp_json_encode(__('Healthy (Builder JS Localized)', 'content-core')); ?> + '</span>');
+        <script>
+            jQuery(document).ready(function($) {
+                var $status = $('#cc-js-status-val');
+                if (window.ContentCoreHealth && window.ContentCoreHealth.fieldGroupAdminLoaded) {
+                    $status.html('<span style="color: #008a20;">' + <?php echo wp_json_encode(__('Healthy (Builder JS Localized)', 'content-core')); ?> + '</span>');
+                } else {
+                    // Check if admin.js is working by setting a generic flag
+                    if (typeof jQuery !== 'undefined') {
+                        $status.html('<span style="color: #008a20;">' + <?php echo wp_json_encode(__('Healthy (jQuery Active)', 'content-core')); ?> + '</span>');
                     } else {
-                        // Check if admin.js is working by setting a generic flag
-                        if (typeof jQuery !== 'undefined') {
-                            $status.html('<span style="color: #008a20;">' + <?php echo wp_json_encode(__('Healthy (jQuery Active)', 'content-core')); ?> + '</span>');
-                        } else {
-                            $status.html('<span style="color: #d63638;">' + <?php echo wp_json_encode(__('Error: JS Runtime Failure', 'content-core')); ?> + '</span>');
-                        }
+                        $status.html('<span style="color: #d63638;">' + <?php echo wp_json_encode(__('Error: JS Runtime Failure', 'content-core')); ?> + '</span>');
                     }
-                });
-            </script>
+                }
+            });
+        </script>
+        <?php
+    }
+
+    /**
+     * Render the REST API Info page
+     */
+    public function render_api_page(): void
+    {
+        ?>
+        <div class="wrap content-core-admin">
+            <div class="cc-header">
+                <h1><?php _e('REST API Reference', 'content-core'); ?></h1>
+            </div>
+
+            <div class="cc-card">
+                <h2><?php _e('Introduction', 'content-core'); ?></h2>
+                <p><?php _e('Content Core provides dedicated, high-performance REST API endpoints for your headless application. All responses return clean, production-ready JSON.', 'content-core'); ?></p>
+            </div>
+
+            <div class="cc-card">
+                <h2><?php _e('Endpoints', 'content-core'); ?></h2>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 300px;"><?php _e('Endpoint', 'content-core'); ?></th>
+                            <th><?php _e('Description', 'content-core'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>/content-core/v1/post/{type}/{id}</code></td>
+                            <td><?php _e('Get a single post by ID and type, including all custom fields.', 'content-core'); ?></td>
+                        </tr>
+                        <tr>
+                            <td><code>/content-core/v1/posts/{type}</code></td>
+                            <td><?php _e('Query multiple posts of a specific type. Supports pagination.', 'content-core'); ?></td>
+                        </tr>
+                        <tr>
+                            <td><code>/content-core/v1/options/{slug}</code></td>
+                            <td><?php _e('Get all custom fields for a specific options page.', 'content-core'); ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="cc-card">
+                <h2><?php _e('Global Custom Fields Object', 'content-core'); ?></h2>
+                <p><?php _e('Content Core also attaches a "customFields" object to standard WordPress REST API post responses for easy integration.', 'content-core'); ?></p>
+            </div>
         </div>
         <?php
+    }
+
+    /**
+     * Handle clear expired transients via admin_post
+     */
+    public function handle_clear_expired_transients(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
+        }
+
+        check_admin_referer('cc_cache_nonce');
+
+        $service = new CacheService();
+        $res = $service->clear_expired_transients();
+
+        wp_safe_redirect(admin_url('admin.php?page=content-core&cc_action=expired_cleared&cc_count=' . $res['count'] . '&cc_bytes=' . $res['bytes']));
+        exit;
+    }
+
+    /**
+     * Handle clear ALL transients via admin_post
+     */
+    public function handle_clear_all_transients(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
+        }
+
+        check_admin_referer('cc_cache_nonce');
+
+        $service = new CacheService();
+        $res = $service->clear_all_transients();
+
+        wp_safe_redirect(admin_url('admin.php?page=content-core&cc_action=all_cleared&cc_count=' . $res['count'] . '&cc_bytes=' . $res['bytes']));
+        exit;
+    }
+
+    /**
+     * Handle clear plugin caches via admin_post
+     */
+    public function handle_clear_plugin_caches(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
+        }
+
+        check_admin_referer('cc_cache_nonce');
+
+        $service = new CacheService();
+        $res = $service->clear_content_core_caches();
+
+        wp_safe_redirect(admin_url('admin.php?page=content-core&cc_action=cc_cleared&cc_count=' . $res['count'] . '&cc_bytes=' . $res['bytes']));
+        exit;
+    }
+
+    /**
+     * Handle flush object cache via admin_post
+     */
+    public function handle_flush_object_cache(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
+        }
+
+        check_admin_referer('cc_cache_nonce');
+
+        wp_cache_flush();
+
+        wp_safe_redirect(admin_url('admin.php?page=content-core&cc_action=obj_flushed'));
+        exit;
+    }
+
+    /**
+     * Handle rewrite rules flushing via admin_post
+     */
+    public function handle_flush_rewrite_rules(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
+        }
+
+        check_admin_referer('cc_flush_rules_nonce');
+
+        flush_rewrite_rules();
+
+        add_settings_error('cc_dashboard', 'flushed', __('Rewrite rules flushed successfully.', 'content-core'), 'updated');
+        set_transient('settings_errors', get_settings_errors(), 30);
+
+        wp_safe_redirect(admin_url('admin.php?page=content-core&settings-updated=true'));
+        exit;
     }
 }
