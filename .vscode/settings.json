@@ -1,0 +1,16 @@
+{
+    "http.proxySupport": "off",
+    "http.systemCertificates": false,
+    "http.proxyStrictSSL": false,
+    "workbench.colorTheme": "Tokyo Night",
+    "php.suggest.basic": false,
+    "php.validate.enable": false,
+    "emmet.excludeLanguages": [
+        "markdown",
+        "php"
+    ],
+    "php.executables": {
+        "local-8.2": "/Users/nicolasspies/Library/Application Support/Local/lightning-services/php-8.2.30+1/bin/darwin-arm64/bin/php"
+    },
+    "php.version": "local-8.2"
+}

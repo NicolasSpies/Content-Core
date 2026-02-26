@@ -15,6 +15,12 @@ class Plugin
     private static $instance = null;
 
     /**
+     * REST API Configuration
+     */
+    public const REST_NAMESPACE = 'content-core';
+    public const REST_VERSION = 'v1';
+
+    /**
      * Registered modules
      *
      * @var array
@@ -22,6 +28,13 @@ class Plugin
     private array $modules = [];
     private array $active_modules = [];
     private array $missing_modules = [];
+
+    /**
+     * Flag to prevent multiple initializations
+     *
+     * @var bool
+     */
+    private bool $initialized = false;
 
     /**
      * Main Instance
@@ -41,7 +54,7 @@ class Plugin
      */
     private function __construct()
     {
-    // Private to enforce singleton
+        // Private to enforce singleton
     }
 
     /**
@@ -49,6 +62,12 @@ class Plugin
      */
     public function init(): void
     {
+        if ($this->initialized) {
+            return;
+        }
+
+        $this->initialized = true;
+
         $this->register_modules();
         $this->init_modules();
 
@@ -75,26 +94,25 @@ class Plugin
 
         // Define module classes to dynamically load safely
         $module_classes = [
-            'custom_fields' => CustomFieldsModule::class ,
-            'rest_api' => \ContentCore\Modules\RestApi\RestApiModule::class ,
-            'options_pages' => \ContentCore\Modules\OptionsPages\OptionsPagesModule::class ,
-            'content_types' => \ContentCore\Modules\ContentTypes\ContentTypesModule::class ,
-            'settings' => \ContentCore\Modules\Settings\SettingsModule::class ,
-            'multilingual' => \ContentCore\Modules\Multilingual\MultilingualModule::class ,
-            'media' => \ContentCore\Modules\Media\MediaModule::class ,
-            'seo' => \ContentCore\Modules\Seo\SeoModule::class ,
-            'language_mapping' => \ContentCore\Modules\LanguageMapping\LanguageMappingModule::class ,
-            'forms' => \ContentCore\Modules\Forms\FormsModule::class ,
-            'site_options' => \ContentCore\Modules\SiteOptions\SiteOptionsModule::class ,
+            'custom_fields' => CustomFieldsModule::class,
+            'rest_api' => \ContentCore\Modules\RestApi\RestApiModule::class,
+            'options_pages' => \ContentCore\Modules\OptionsPages\OptionsPagesModule::class,
+            'content_types' => \ContentCore\Modules\ContentTypes\ContentTypesModule::class,
+            'settings' => \ContentCore\Modules\Settings\SettingsModule::class,
+            'multilingual' => \ContentCore\Modules\Multilingual\MultilingualModule::class,
+            'media' => \ContentCore\Modules\Media\MediaModule::class,
+            'seo' => \ContentCore\Modules\Seo\SeoModule::class,
+            'language_mapping' => \ContentCore\Modules\LanguageMapping\LanguageMappingModule::class,
+            'forms' => \ContentCore\Modules\Forms\FormsModule::class,
+            'site_options' => \ContentCore\Modules\SiteOptions\SiteOptionsModule::class,
         ];
 
         foreach ($module_classes as $id => $class_name) {
             try {
-                if (class_exists($class_name)) {
+                if (is_string($class_name) && class_exists($class_name)) {
                     $this->modules[$id] = new $class_name();
                 }
-            }
-            catch (\Throwable $e) {
+            } catch (\Throwable $e) {
                 // Error logged by caller if necessary
 
                 // Capture actionable info for admin UI
@@ -135,8 +153,7 @@ class Plugin
                 try {
                     $instance->init();
                     $this->active_modules[$module_id] = get_class($instance);
-                }
-                catch (\Throwable $e) {
+                } catch (\Throwable $e) {
                     // Error logged by caller if necessary
 
                     $this->missing_modules[] = sprintf(
@@ -148,12 +165,19 @@ class Plugin
                     );
                     unset($this->modules[$module_id]);
                 }
-            }
-            else {
+            } else {
                 $this->missing_modules[] = (is_object($instance) ? get_class($instance) : $module_id) . ' (Invalid module)';
                 unset($this->modules[$module_id]);
             }
         }
+    }
+
+    /**
+     * Get all registered modules (including failures)
+     */
+    public function get_modules(): array
+    {
+        return $this->modules;
     }
 
     /**
@@ -177,7 +201,15 @@ class Plugin
      */
     public function get_version(): string
     {
-        return '1.0.5';
+        return '1.0.7';
+    }
+
+    /**
+     * Get the REST namespace and version string
+     */
+    public function get_rest_namespace(): string
+    {
+        return self::REST_NAMESPACE . '/' . self::REST_VERSION;
     }
 
     /**

@@ -1095,3 +1095,46 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* --- Phase 7: Premium UI Polish --- */
+
+.cc-quick-link {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: transparent;
+}
+
+.cc-quick-link:hover {
+    background: rgba(34, 113, 177, 0.08);
+    transform: translateY(-1px);
+}
+
+.cc-quick-link:active {
+    transform: translateY(0);
+}
+
+.cc-btn-link {
+    font-weight: 600;
+    transition: opacity 0.2s;
+}
+
+.cc-btn-link:hover {
+    opacity: 0.8;
+}
+
+/* Health Score Pulse Effect (subtle) */
+@keyframes cc-score-pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.02); opacity: 0.95; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.cc-health-score-value {
+    animation: none;
+}
+
+.cc-card-full:hover .cc-health-score-value {
+    /* Subtle interaction feedback */
+    color: var(--cc-primary);
+}

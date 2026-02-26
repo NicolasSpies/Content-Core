@@ -6,6 +6,13 @@ use ContentCore\Modules\CustomFields\Data\FieldRegistry;
 
 class RestApiModule implements ModuleInterface
 {
+    /**
+     * Internal diagnostics storage
+     */
+    private static $diagnostics = [
+        'route_count' => 0,
+        'namespace_registered' => false,
+    ];
 
     /**
      * Initialize the REST API module
@@ -19,6 +26,9 @@ class RestApiModule implements ModuleInterface
 
         // Register dedicated v1 endpoints
         add_action('rest_api_init', [$this, 'register_v1_routes']);
+
+        // Record diagnostics at the end of registration
+        add_action('rest_api_init', [$this, 'record_diagnostics'], 999);
     }
 
     /**
@@ -26,7 +36,7 @@ class RestApiModule implements ModuleInterface
      */
     public function register_v1_routes(): void
     {
-        $namespace = 'content-core/v1';
+        $namespace = \ContentCore\Plugin::REST_NAMESPACE . '/' . \ContentCore\Plugin::REST_VERSION;
 
         // Single post endpoint
         register_rest_route($namespace, '/post/(?P<type>[a-zA-Z0-9_-]+)/(?P<id>\d+)', [
@@ -34,13 +44,21 @@ class RestApiModule implements ModuleInterface
             'callback' => [$this, 'get_v1_single_post'],
             'permission_callback' => [$this, 'check_read_permission'],
             'args' => [
+                'type' => [
+                    'sanitize_callback' => 'sanitize_key',
+                ],
+                'id' => [
+                    'sanitize_callback' => 'absint',
+                ],
                 'includeMedia' => [
                     'default' => 'basic',
                     'enum' => ['basic', 'full'],
+                    'sanitize_callback' => 'sanitize_text_field',
                 ],
                 'includeEmptyFields' => [
                     'default' => false,
                     'type' => 'boolean',
+                    'sanitize_callback' => 'rest_sanitize_boolean',
                 ],
             ],
         ]);
@@ -58,21 +76,28 @@ class RestApiModule implements ModuleInterface
             'callback' => [$this, 'get_v1_posts_list'],
             'permission_callback' => [$this, 'check_read_permission'],
             'args' => [
+                'type' => [
+                    'sanitize_callback' => 'sanitize_key',
+                ],
                 'per_page' => [
                     'default' => 10,
                     'type' => 'integer',
+                    'sanitize_callback' => 'absint',
                 ],
                 'page' => [
                     'default' => 1,
                     'type' => 'integer',
+                    'sanitize_callback' => 'absint',
                 ],
                 'includeMedia' => [
                     'default' => 'basic',
                     'enum' => ['basic', 'full'],
+                    'sanitize_callback' => 'sanitize_text_field',
                 ],
                 'includeEmptyFields' => [
                     'default' => false,
                     'type' => 'boolean',
+                    'sanitize_callback' => 'rest_sanitize_boolean',
                 ],
             ],
         ]);
@@ -83,13 +108,18 @@ class RestApiModule implements ModuleInterface
             'callback' => [$this, 'get_v1_options'],
             'permission_callback' => [$this, 'check_options_permission'],
             'args' => [
+                'slug' => [
+                    'sanitize_callback' => 'sanitize_key',
+                ],
                 'includeMedia' => [
                     'default' => 'basic',
                     'enum' => ['basic', 'full'],
+                    'sanitize_callback' => 'sanitize_text_field',
                 ],
                 'includeEmptyFields' => [
                     'default' => false,
                     'type' => 'boolean',
+                    'sanitize_callback' => 'rest_sanitize_boolean',
                 ],
             ],
         ]);
@@ -99,6 +129,13 @@ class RestApiModule implements ModuleInterface
             'methods' => \WP_REST_Server::READABLE,
             'callback' => [$this, 'get_v1_cookies'],
             'permission_callback' => '__return_true', // Open to everyone
+            'args' => [
+                'lang' => [
+                    'required' => false,
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_key',
+                ],
+            ],
         ]);
 
         // Site options endpoint
@@ -111,6 +148,11 @@ class RestApiModule implements ModuleInterface
                     'required' => false,
                     'type' => 'string',
                     'sanitize_callback' => 'sanitize_key',
+                ],
+                'includeMedia' => [
+                    'default' => 'basic',
+                    'enum' => ['basic', 'full'],
+                    'sanitize_callback' => 'sanitize_text_field',
                 ],
             ],
         ]);
@@ -132,15 +174,15 @@ class RestApiModule implements ModuleInterface
             register_rest_field(
                 $post_type,
                 'customFields',
-            [
-                'get_callback' => [$this, 'get_custom_fields_value'],
-                'update_callback' => null, // Phase 2 is read-only for headless consumption
-                'schema' => [
-                    'description' => __('Custom Fields assigned via Content Core', 'content-core'),
-                    'type' => 'object',
-                    'context' => ['view', 'edit'],
-                ],
-            ]
+                [
+                    'get_callback' => [$this, 'get_custom_fields_value'],
+                    'update_callback' => null, // Phase 2 is read-only for headless consumption
+                    'schema' => [
+                        'description' => __('Custom Fields assigned via Content Core', 'content-core'),
+                        'type' => 'object',
+                        'context' => ['view', 'edit'],
+                    ],
+                ]
             );
         }
     }
@@ -156,8 +198,8 @@ class RestApiModule implements ModuleInterface
             return new \WP_Error(
                 'rest_post_invalid_id',
                 __('Invalid post ID.', 'content-core'),
-            ['status' => 404]
-                );
+                ['status' => 404]
+            );
         }
 
         $type = $request->get_param('type');
@@ -237,7 +279,7 @@ class RestApiModule implements ModuleInterface
         $data = [
             'contentCoreVersion' => 'v1',
             'slug' => $slug,
-            'customFields' => (object)$custom_fields,
+            'customFields' => (object) $custom_fields,
         ];
 
         return new \WP_REST_Response($data, 200);
@@ -308,11 +350,11 @@ class RestApiModule implements ModuleInterface
         $data = array_replace_recursive($cookie_defaults, $saved_settings);
 
         // Ensure types
-        $data['enabled'] = (bool)$data['enabled'];
-        $data['categories']['analytics'] = (bool)$data['categories']['analytics'];
-        $data['categories']['marketing'] = (bool)$data['categories']['marketing'];
-        $data['categories']['preferences'] = (bool)$data['categories']['preferences'];
-        $data['behavior']['ttlDays'] = (int)$data['behavior']['ttlDays'];
+        $data['enabled'] = (bool) $data['enabled'];
+        $data['categories']['analytics'] = (bool) $data['categories']['analytics'];
+        $data['categories']['marketing'] = (bool) $data['categories']['marketing'];
+        $data['categories']['preferences'] = (bool) $data['categories']['preferences'];
+        $data['behavior']['ttlDays'] = (int) $data['behavior']['ttlDays'];
 
         return new \WP_REST_Response($data, 200);
     }
@@ -376,8 +418,11 @@ class RestApiModule implements ModuleInterface
     {
         $id = $request->get_param('id');
         if ($id) {
-            $post_type = get_post_type($id);
-            $post_type_obj = get_post_type_object($post_type);
+            $post = get_post($id);
+            if (!$post) {
+                return false;
+            }
+            $post_type_obj = get_post_type_object($post->post_type);
             if (!$post_type_obj || !current_user_can($post_type_obj->cap->read_post, $id)) {
                 return false;
             }
@@ -390,10 +435,17 @@ class RestApiModule implements ModuleInterface
      */
     public function check_options_permission(\WP_REST_Request $request): bool
     {
-        $slug = $request->get_param('slug');
+        $slug = sanitize_key($request->get_param('slug'));
         if ($slug === 'site-options') {
             return true;
         }
+
+        // Check if the options page actually exists to avoid probing
+        $page = get_page_by_path($slug, OBJECT, 'cc_options_page');
+        if (!$page || $page->post_status !== 'publish') {
+            return false;
+        }
+
         return current_user_can('manage_options');
     }
 
@@ -422,7 +474,7 @@ class RestApiModule implements ModuleInterface
 
             if ('' === $raw_value && !metadata_exists('post', $post_id, $name)) {
                 if (!$request->get_param('includeEmptyFields') && !is_a($request, '\WP_REST_Request')) {
-                // Legacy check (if not a v1 request, we might want to be more inclusive or follow old rules)
+                    // Legacy check (if not a v1 request, we might want to be more inclusive or follow old rules)
                 }
                 $raw_value = ('' !== $default) ? $default : null;
             }
@@ -434,7 +486,7 @@ class RestApiModule implements ModuleInterface
             $output[$name] = $this->format_value_for_v1($raw_value, $schema, $request);
         }
 
-        return (object)$output;
+        return (object) $output;
     }
 
     /**
@@ -444,17 +496,17 @@ class RestApiModule implements ModuleInterface
     {
         // Guard for invalid objects (e.g. Gutenberg global-styles preloading)
         if (!isset($post_obj['id']) || !is_numeric($post_obj['id'])) {
-            return (object)[];
+            return (object) [];
         }
 
         $post_id = absint($post_obj['id']);
         if ($post_id <= 0) {
-            return (object)[];
+            return (object) [];
         }
 
         $post = get_post($post_id);
         if (!$post) {
-            return (object)[];
+            return (object) [];
         }
 
         // Mock a request for default behavior
@@ -548,10 +600,10 @@ class RestApiModule implements ModuleInterface
                     $sub_val = $value[$sub_name] ?? null;
                     $formatted_group[$sub_name] = $this->format_value_for_v1($sub_val, $sub, $request);
                 }
-                return (object)$formatted_group;
+                return (object) $formatted_group;
 
             default:
-                return (string)$value;
+                return (string) $value;
         }
     }
 
@@ -689,8 +741,7 @@ class RestApiModule implements ModuleInterface
                     if ($field['type'] === 'image' && !empty($val)) {
                         $media = $this->format_media_v1($val, $request);
                         $filtered_options[$field_id] = $media;
-                    }
-                    else {
+                    } else {
                         $filtered_options[$field_id] = $val;
                     }
                 }
@@ -706,8 +757,53 @@ class RestApiModule implements ModuleInterface
             'requestedLanguage' => $requested_lang,
             'resolvedLanguage' => $resolved_lang,
             'isFallback' => $is_fallback,
-            'schema' => (object)$filtered_schema,
-            'data' => (object)$filtered_options,
+            'schema' => (object) $filtered_schema,
+            'data' => (object) $filtered_options,
         ], 200);
+    }
+
+    /**
+     * Record internal diagnostics for the REST server.
+     * Hooks into rest_api_init at a very late priority.
+     */
+    public function record_diagnostics(): void
+    {
+        if (!function_exists('rest_get_server')) {
+            return;
+        }
+
+        $server = rest_get_server();
+        $namespace = \ContentCore\Plugin::REST_NAMESPACE . '/' . \ContentCore\Plugin::REST_VERSION;
+        $ns_with_slash = '/' . ltrim($namespace, '/');
+
+        // 1. Check if namespace is registered
+        $namespaces = $server->get_namespaces();
+        self::$diagnostics['namespace_registered'] = in_array($namespace, $namespaces, true);
+
+        // 2. Count routes in our namespace
+        $routes = $server->get_routes();
+        $count = 0;
+        foreach ($routes as $route => $handlers) {
+            if (strpos($route, $ns_with_slash) === 0) {
+                $count++;
+            }
+        }
+        self::$diagnostics['route_count'] = $count;
+    }
+
+    /**
+     * Get the diagnostic route count
+     */
+    public static function get_diagnostic_route_count(): int
+    {
+        return self::$diagnostics['route_count'];
+    }
+
+    /**
+     * Get the diagnostic namespace status
+     */
+    public static function is_diagnostic_namespace_registered(): bool
+    {
+        return self::$diagnostics['namespace_registered'];
     }
 }

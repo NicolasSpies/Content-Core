@@ -27,11 +27,18 @@ class MultilingualRestHandler
         }
 
         add_action('rest_api_init', function () {
-            register_rest_route('cc/v1', '/sitemap', [
-                'methods' => 'GET',
-                'callback' => [$this, 'get_sitemap'],
-                'permission_callback' => '__return_true',
-            ]);
+            $namespaces = [
+                \ContentCore\Plugin::get_instance()->get_rest_namespace(),
+                'cc/v1' // Backward compatibility alias
+            ];
+
+            foreach ($namespaces as $ns) {
+                register_rest_route($ns, '/sitemap', [
+                    'methods' => 'GET',
+                    'callback' => [$this, 'get_sitemap'],
+                    'permission_callback' => '__return_true',
+                ]);
+            }
         });
 
         add_filter('rest_request_after_callbacks', [$this, 'handle_rest_fallback'], 10, 3);
@@ -68,22 +75,22 @@ class MultilingualRestHandler
 
             register_rest_field($post_type, 'cc_language', [
                 'get_callback' => function ($data) {
-                return get_post_meta($data['id'], '_cc_language', true) ?: $this->module->get_settings()['default_lang'];
-            },
+                    return get_post_meta($data['id'], '_cc_language', true) ?: $this->module->get_settings()['default_lang'];
+                },
                 'schema' => ['type' => 'string']
             ]);
 
             register_rest_field($post_type, 'cc_translation_group', [
                 'get_callback' => function ($data) {
-                return get_post_meta($data['id'], '_cc_translation_group', true);
-            },
+                    return get_post_meta($data['id'], '_cc_translation_group', true);
+                },
                 'schema' => ['type' => 'string']
             ]);
 
             register_rest_field($post_type, 'cc_permalink', [
                 'get_callback' => function ($data) {
-                return get_permalink($data['id']);
-            },
+                    return get_permalink($data['id']);
+                },
                 'schema' => ['type' => 'string']
             ]);
 
@@ -103,16 +110,16 @@ class MultilingualRestHandler
         foreach ($taxonomies as $taxonomy) {
             register_rest_field($taxonomy, 'cc_language', [
                 'get_callback' => function ($data) {
-                return get_term_meta($data['id'], '_cc_language', true) ?: $this->module->get_settings()['default_lang'];
-            },
+                    return get_term_meta($data['id'], '_cc_language', true) ?: $this->module->get_settings()['default_lang'];
+                },
                 'schema' => ['type' => 'string']
             ]);
 
             register_rest_field($taxonomy, 'cc_permalink', [
                 'get_callback' => function ($data) {
-                $link = get_term_link((int)$data['id']);
-                return is_wp_error($link) ? '' : $link;
-            },
+                    $link = get_term_link((int) $data['id']);
+                    return is_wp_error($link) ? '' : $link;
+                },
                 'schema' => ['type' => 'string']
             ]);
 
@@ -167,7 +174,7 @@ class MultilingualRestHandler
             return null;
         }
 
-        $term_id = (int)$term_data['id'];
+        $term_id = (int) $term_data['id'];
         $current_lang = get_term_meta($term_id, '_cc_language', true) ?: $settings['default_lang'];
         $link = get_term_link($term_id);
         if (is_wp_error($link))
@@ -242,7 +249,7 @@ class MultilingualRestHandler
         if ($response instanceof \WP_REST_Response && $response->get_status() === 404) {
             $route = $request->get_route();
             if (preg_match('/^\/wp\/v2\/(posts|pages|cc_[^\/]+)\/(?P<id>\d+)$/', $route, $matches)) {
-                $post_id = (int)$matches['id'];
+                $post_id = (int) $matches['id'];
                 $post = get_post($post_id);
                 if ($post && $post->post_status === 'publish') {
                     $post_type_obj = get_post_type_object($post->post_type);
@@ -283,7 +290,8 @@ class MultilingualRestHandler
         $default_lang = $settings['default_lang'];
         $post_types = get_post_types(['public' => true], 'names');
         foreach ($post_types as $post_type) {
-            if ($post_type === 'attachment') continue;
+            if ($post_type === 'attachment')
+                continue;
             $posts = get_posts(['post_type' => $post_type, 'posts_per_page' => -1, 'post_status' => 'publish']);
             foreach ($posts as $post) {
                 $lang = get_post_meta($post->ID, '_cc_language', true) ?: $default_lang;
@@ -300,11 +308,12 @@ class MultilingualRestHandler
         $taxonomies = get_taxonomies(['public' => true], 'names');
         foreach ($taxonomies as $taxonomy) {
             $terms = get_terms(['taxonomy' => $taxonomy, 'hide_empty' => false]);
-            if (is_wp_error($terms)) continue;
+            if (is_wp_error($terms))
+                continue;
             foreach ($terms as $term) {
                 $lang = get_term_meta($term->term_id, '_cc_language', true) ?: $default_lang;
                 $sitemap[] = [
-                    'url' => get_term_link((int)$term->term_id),
+                    'url' => get_term_link((int) $term->term_id),
                     'lang' => $lang,
                     'type' => 'taxonomy:' . $taxonomy,
                     'id' => $term->term_id

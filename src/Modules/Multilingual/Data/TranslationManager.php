@@ -135,7 +135,7 @@ class TranslationManager
 
         $translations = [];
         foreach ($results as $row) {
-            $translations[$row->lang] = (int)$row->post_id;
+            $translations[$row->lang] = (int) $row->post_id;
         }
 
         $this->group_cache[$group_id] = $translations;
@@ -157,7 +157,7 @@ class TranslationManager
      * @param array $post_ids
      * @return array [post_id => [lang => tid]]
      */
-    public function get_batch_translations(array $post_ids): array
+    public function get_batch_translations(array $post_ids, ?string $post_type = null): array
     {
         if (empty($post_ids)) {
             return [];
@@ -165,50 +165,85 @@ class TranslationManager
 
         global $wpdb;
         $ids_string = implode(',', array_map('intval', $post_ids));
+        $mapping = [];
 
-        // 1. Get groups for these posts
-        $groups = $wpdb->get_results("
+        // Initialize mapping for all requested IDs
+        foreach ($post_ids as $pid) {
+            $mapping[$pid] = [];
+        }
+
+        $groups_results = $wpdb->get_results("
             SELECT post_id, meta_value as group_id 
             FROM {$wpdb->postmeta} 
             WHERE meta_key = '_cc_translation_group' 
             AND post_id IN ($ids_string)
-        ", OBJECT_K);
+        ", defined('ARRAY_A') ? ARRAY_A : 'ARRAY_A');
 
-        if (empty($groups)) {
-            return [];
+        $groups = [];
+        foreach ($groups_results as $row) {
+            $groups[(int) $row['post_id']] = $row['group_id'];
         }
 
-        $group_ids = array_unique(array_column($groups, 'group_id'));
-        $group_placeholders = implode(',', array_fill(0, count($group_ids), '%s'));
+        if (!empty($groups)) {
+            $group_ids = array_unique(array_values($groups));
+            $group_placeholders = implode(',', array_fill(0, count($group_ids), '%s'));
 
-        // 2. Get all posts belonging to these groups
-        $results = $wpdb->get_results($wpdb->prepare("
-            SELECT g.meta_value as group_id, p.post_id, p.meta_value as lang
-            FROM {$wpdb->postmeta} g
-            JOIN {$wpdb->postmeta} p ON g.post_id = p.post_id
-            WHERE g.meta_key = '_cc_translation_group' AND g.meta_value IN ($group_placeholders)
-            AND p.meta_key = '_cc_language'
-        ", ...$group_ids));
+            $prepare_args = $group_ids;
 
-        // 3. Map back to original post IDs
-        $mapping = [];
-        $group_to_translations = [];
-        foreach ($results as $row) {
-            $group_to_translations[$row->group_id][$row->lang] = (int)$row->post_id;
-        }
+            $results = $wpdb->get_results($wpdb->prepare("
+                SELECT g.meta_value as group_id, p.post_id, p.meta_value as lang
+                FROM {$wpdb->postmeta} g
+                JOIN {$wpdb->postmeta} p ON g.post_id = p.post_id
+                JOIN {$wpdb->posts} po ON p.post_id = po.ID
+                WHERE g.meta_key = '_cc_translation_group' AND g.meta_value IN ($group_placeholders)
+                AND p.meta_key = '_cc_language'
+                AND po.post_status NOT IN ('trash', 'auto-draft')
+            ", ...$prepare_args));
 
-        // Fill cache
-        foreach ($group_to_translations as $gid => $trans) {
-            $this->group_cache[$gid] = $trans;
-        }
-
-        foreach ($post_ids as $pid) {
-            if (isset($groups[$pid])) {
-                $gid = $groups[$pid]->group_id;
-                $mapping[$pid] = $group_to_translations[$gid] ?? [];
+            $group_to_translations = [];
+            foreach ($results as $row) {
+                $group_to_translations[$row->group_id][$row->lang] = (int) $row->post_id;
             }
-            else {
-                $mapping[$pid] = [];
+
+            // Fill cache and mapping
+            foreach ($group_to_translations as $gid => $trans) {
+                $this->group_cache[$gid] = $trans;
+            }
+
+            foreach ($post_ids as $pid) {
+                if (isset($groups[$pid])) {
+                    $gid = $groups[$pid];
+                    $mapping[$pid] = $group_to_translations[$gid] ?? [];
+                }
+            }
+        }
+
+        // 3. Legacy Support: Fetch _cc_translations mapping for any post that still has empty results
+        $check_legacy = [];
+        foreach ($mapping as $pid => $trans) {
+            if (empty($trans)) {
+                $check_legacy[] = (int) $pid;
+            }
+        }
+
+        if (!empty($check_legacy)) {
+            $legacy_ids = implode(',', $check_legacy);
+            $legacy_results = $wpdb->get_results("
+                SELECT post_id, meta_value 
+                FROM {$wpdb->postmeta} 
+                WHERE meta_key = '_cc_translations' 
+                AND post_id IN ($legacy_ids)
+            ");
+
+            foreach ($legacy_results as $row) {
+                $data = maybe_unserialize($row->meta_value);
+                if (is_array($data)) {
+                    // Sanitize post IDs in legacy data
+                    foreach ($data as $l => $tid) {
+                        $data[$l] = (int) $tid;
+                    }
+                    $mapping[$row->post_id] = $data;
+                }
             }
         }
 

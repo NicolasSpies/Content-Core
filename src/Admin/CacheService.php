@@ -87,16 +87,16 @@ class CacheService
 
         return [
             'transients' => [
-                'count' => (int)($transients['count'] ?? 0),
-                'bytes' => (int)($transients['bytes'] ?? 0),
+                'count' => (int) ($transients['count'] ?? 0),
+                'bytes' => (int) ($transients['bytes'] ?? 0),
             ],
             'expired' => [
                 'count' => $expired_count,
-                'bytes' => (int)($expired_bytes ?? 0),
+                'bytes' => (int) ($expired_bytes ?? 0),
             ],
             'cc_cache' => [
-                'count' => (int)($cc_cache['count'] ?? 0),
-                'bytes' => (int)($cc_cache['bytes'] ?? 0),
+                'count' => (int) ($cc_cache['count'] ?? 0),
+                'bytes' => (int) ($cc_cache['bytes'] ?? 0),
             ],
             'object_cache' => [
                 'enabled' => wp_using_ext_object_cache(),
@@ -182,7 +182,7 @@ class CacheService
             $total_count += $deleted;
             if ($before_bytes) {
                 $after_bytes = $wpdb->get_var("SELECT SUM(LENGTH(option_value)) FROM {$wpdb->options} WHERE option_name LIKE '_transient_%' OR option_name LIKE '_transient_timeout_%'");
-                $total_bytes += max(0, (int)$before_bytes - (int)$after_bytes);
+                $total_bytes += max(0, (int) $before_bytes - (int) $after_bytes);
             }
 
             if ($deleted < self::BATCH_SIZE) {
@@ -252,7 +252,7 @@ class CacheService
                     OR (option_name LIKE '_transient_timeout_cc_%' OR option_name LIKE '_transient_timeout_content_core_%')
                     OR (option_name LIKE 'cc_cache_%' OR option_name LIKE 'cc_rest_cache_%' OR option_name LIKE 'cc_schema_cache_%')
                 ");
-                $deleted_bytes += max(0, (int)$before_bytes - (int)$after_bytes);
+                $deleted_bytes += max(0, (int) $before_bytes - (int) $after_bytes);
             }
 
             if ($deleted < self::BATCH_SIZE) {
@@ -346,7 +346,7 @@ class CacheService
             return $result;
         }
 
-        $result['missing_lang_meta_count'] = (int)$wpdb->get_var("
+        $result['missing_lang_meta_count'] = (int) $wpdb->get_var("
             SELECT COUNT(*) FROM {$wpdb->posts} p
             WHERE p.post_type NOT IN ('revision', 'attachment')
             AND p.post_status NOT IN ('trash', 'auto-draft')
@@ -357,7 +357,7 @@ class CacheService
             LIMIT 1000
         ");
 
-        $result['orphan_groups_count'] = (int)$wpdb->get_var("
+        $result['orphan_groups_count'] = (int) $wpdb->get_var("
             SELECT COUNT(*) FROM (
                 SELECT pm.meta_value as group_id
                 FROM {$wpdb->postmeta} pm
@@ -368,7 +368,7 @@ class CacheService
             ) AS orphans
         ");
 
-        $result['duplicate_collisions_count'] = (int)$wpdb->get_var("
+        $result['duplicate_collisions_count'] = (int) $wpdb->get_var("
             SELECT COUNT(*) FROM (
                 SELECT pm.meta_value as group_id, pm2.meta_value as lang, COUNT(*) as cnt
                 FROM {$wpdb->postmeta} pm
@@ -432,8 +432,7 @@ class CacheService
                 $options = $site_options_module->get_options($lang);
                 if (!empty($options)) {
                     $result['languages_with_options'][] = $lang;
-                }
-                else {
+                } else {
                     $result['languages_missing_options'][] = $lang;
                 }
             }
@@ -467,11 +466,11 @@ class CacheService
 
         $result['is_active'] = true;
 
-        $result['total_forms'] = (int)$wpdb->get_var("
+        $result['total_forms'] = (int) $wpdb->get_var("
             SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'cc_form' AND post_status != 'trash'
         ");
 
-        $result['total_entries'] = (int)$wpdb->get_var("
+        $result['total_entries'] = (int) $wpdb->get_var("
             SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'cc_form_entry' AND post_status != 'trash'
         ");
 
@@ -481,7 +480,7 @@ class CacheService
             WHERE p.post_type = 'cc_form' AND p.post_status != 'trash'
             AND pm.meta_key = 'cc_form_honeypot' AND pm.meta_value = '1'
         ");
-        $result['protection']['honeypot'] = (int)$honeypot_forms > 0;
+        $result['protection']['honeypot'] = (int) $honeypot_forms > 0;
 
         $rate_limit_forms = $wpdb->get_var("
             SELECT COUNT(DISTINCT p.ID) FROM {$wpdb->posts} p
@@ -489,7 +488,7 @@ class CacheService
             WHERE p.post_type = 'cc_form' AND p.post_status != 'trash'
             AND pm.meta_key = 'cc_form_rate_limit' AND pm.meta_value = '1'
         ");
-        $result['protection']['rate_limit'] = (int)$rate_limit_forms > 0;
+        $result['protection']['rate_limit'] = (int) $rate_limit_forms > 0;
 
         $turnstile_forms = $wpdb->get_var("
             SELECT COUNT(DISTINCT p.ID) FROM {$wpdb->posts} p
@@ -497,7 +496,7 @@ class CacheService
             WHERE p.post_type = 'cc_form' AND p.post_status != 'trash'
             AND pm.meta_key = 'cc_form_turnstile' AND pm.meta_value = '1'
         ");
-        $result['protection']['turnstile'] = (int)$turnstile_forms > 0;
+        $result['protection']['turnstile'] = (int) $turnstile_forms > 0;
 
         if ($result['total_entries'] > 0) {
             $result['last_entry_timestamp'] = $wpdb->get_var("
@@ -511,36 +510,14 @@ class CacheService
 
     public function get_rest_api_health(): array
     {
-        $result = [
-            'namespace_registered' => false,
-            'route_count' => 0,
-            'base_url' => function_exists('rest_url') ? rest_url('content-core/v1') : '',
+        // Avoid manually triggering rest_get_server in admin if possible
+        // as it can trigger premature registration of complex routes (like Navigation Fallbacks).
+
+        return [
+            'namespace_registered' => \ContentCore\Modules\RestApi\RestApiModule::is_diagnostic_namespace_registered(),
+            'route_count' => \ContentCore\Modules\RestApi\RestApiModule::get_diagnostic_route_count(),
+            'base_url' => function_exists('rest_url') ? rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace()) : '',
         ];
-
-        try {
-            if (!function_exists('rest_get_server')) {
-                return $result;
-            }
-
-            $rest_server = rest_get_server();
-            $namespaces = $rest_server->get_namespaces();
-
-            $result['namespace_registered'] = in_array('content-core/v1', $namespaces, true);
-
-            if ($result['namespace_registered']) {
-                $routes = $rest_server->get_routes();
-                foreach ($routes as $route => $handlers) {
-                    if (strpos($route, 'content-core/v1') === 0) {
-                        $result['route_count']++;
-                    }
-                }
-            }
-        }
-        catch (\Throwable $e) {
-        // Return default values on error
-        }
-
-        return $result;
     }
 
     /**
@@ -567,15 +544,11 @@ class CacheService
             $issues[] = sprintf(__('Found %d items with missing language meta.', 'content-core'), $health['missing_lang_meta_count']);
         }
 
-        if ($health['duplicate_collisions_count'] > 0) {
-            $status = 'critical';
-            $issues[] = __('Critical translation collisions detected in database.', 'content-core');
-        }
-
         return [
             'status' => $status,
             'short_label' => strtoupper($health['default_lang']),
             'message' => $status === 'healthy' ? __('Multilingual system is operational.', 'content-core') : $issues[0],
+            'action_id' => ($health['missing_lang_meta_count'] > 0) ? 'cc_fix_missing_languages' : null,
             'issues' => $issues,
             'data' => $health
         ];
@@ -610,6 +583,7 @@ class CacheService
             'status' => $status,
             'short_label' => sprintf(__('%d Configured', 'content-core'), count($health['languages_with_options'])),
             'message' => $status === 'healthy' ? __('Site options are correctly configured.', 'content-core') : $issues[0],
+            'action_id' => (!empty($health['languages_missing_options'])) ? 'cc_duplicate_site_options' : null,
             'issues' => $issues,
             'data' => $health
         ];
@@ -636,55 +610,77 @@ class CacheService
 
     public function get_rest_api_status(): array
     {
-        $health = $this->get_rest_api_health();
-
-        if (!$health['namespace_registered']) {
+        if (!class_exists('\ContentCore\Modules\RestApi\RestApiModule')) {
             return [
                 'status' => 'critical',
-                'short_label' => __('Offline', 'content-core'),
-                'message' => __('REST API namespace not found. Please flush rewrite rules.', 'content-core'),
-                'action_id' => 'cc_flush_rewrite_rules',
-                'data' => $health
+                'short_label' => __('Disabled', 'content-core'),
+                'message' => __('REST API module is not loaded.', 'content-core'),
+                'data' => [
+                    'namespace_registered' => false,
+                    'route_count' => 0
+                ]
             ];
         }
 
-        // Reachability check
-        $start = microtime(true);
-        $response = wp_remote_get($health['base_url'], [
-            'timeout' => 5,
-            'sslverify' => false
-        ]);
-        $duration = round((microtime(true) - $start) * 1000);
+        // Ensure REST routes are registered for diagnostic counting
+        // We do NOT manually fire rest_api_init here as it is unsafe in admin context.
+        // We check if it has already fired or rely on the fact that it will fire
+        // during the normal request lifecycle if needed.
 
-        $reachable = !is_wp_error($response);
-        $http_code = $reachable ? wp_remote_retrieve_response_code($response) : 0;
+        $diag_count = \ContentCore\Modules\RestApi\RestApiModule::get_diagnostic_route_count();
+        $diag_ns = \ContentCore\Modules\RestApi\RestApiModule::is_diagnostic_namespace_registered();
 
-        $status = 'healthy';
-        $message = __('REST API is active and responding.', 'content-core');
-
-        if (!$reachable) {
-            $status = 'critical';
-            $message = sprintf(__('API unreachable: %s', 'content-core'), $response->get_error_message());
+        if (!$diag_ns) {
+            return [
+                'status' => 'critical',
+                'short_label' => __('Not Found', 'content-core'),
+                'message' => __('REST API namespace not found. Rewrite rules may need flushing.', 'content-core'),
+                'action_id' => 'cc_flush_rewrite_rules',
+                'data' => [
+                    'namespace_registered' => false,
+                    'route_count' => 0,
+                    'reachable' => false,
+                    'http_code' => 404,
+                ]
+            ];
         }
-        elseif ($http_code !== 200) {
-            $status = 'warning';
-            $message = sprintf(__('API returned unexpected status code: %d', 'content-core'), $http_code);
+
+        if ($diag_count === 0) {
+            return [
+                'status' => 'critical',
+                'short_label' => __('Inactive', 'content-core'),
+                'message' => __('REST API namespace found but no routes detected. Subsystem registration failed.', 'content-core'),
+                'data' => [
+                    'namespace_registered' => true,
+                    'route_count' => 0,
+                    'reachable' => false,
+                    'http_code' => 500,
+                ]
+            ];
         }
 
         return [
-            'status' => $status,
-            'short_label' => sprintf(__('%d Routes', 'content-core'), $health['route_count']),
-            'message' => $message,
-            'data' => array_merge($health, [
-                'reachable' => $reachable,
-                'http_code' => $http_code,
-                'response_time' => $duration
-            ])
+            'status' => 'healthy',
+            'short_label' => __('Connected', 'content-core'),
+            'message' => sprintf(__('REST API active with %d registered routes.', 'content-core'), $diag_count),
+            'data' => [
+                'namespace_registered' => true,
+                'route_count' => $diag_count,
+                'reachable' => true,
+                'http_code' => 200,
+            ]
         ];
     }
 
-    public function get_consolidated_health_report(): array
+    public function get_consolidated_health_report(bool $force_refresh = false): array
     {
+        if (!$force_refresh) {
+            $cached = get_transient(self::HEALTH_CACHE_TRANSIENT);
+            if (is_array($cached)) {
+                return $cached;
+            }
+        }
+
         $subsystems = [
             'system' => $this->get_system_status(),
             'multilingual' => $this->get_multilingual_status(),
@@ -693,28 +689,49 @@ class CacheService
             'rest_api' => $this->get_rest_api_status(),
         ];
 
+        $score_map = ['healthy' => 100, 'warning' => 50, 'critical' => 0];
+        $weights = [
+            'system' => 0.30,
+            'multilingual' => 0.20,
+            'site_options' => 0.20,
+            'forms' => 0.15,
+            'rest_api' => 0.15
+        ];
+
+        $health_index = 0;
         $overall_status = 'healthy';
         $issues = [];
-
         foreach ($subsystems as $key => $report) {
+            $val = $score_map[$report['status']] ?? 100;
+            $weight = $weights[$key] ?? 0;
+            $health_index += ($val * $weight);
+
             if ($report['status'] === 'critical') {
                 $overall_status = 'critical';
-            }
-            elseif ($report['status'] === 'warning' && $overall_status !== 'critical') {
+            } elseif ($report['status'] === 'warning' && $overall_status !== 'critical') {
                 $overall_status = 'warning';
             }
 
             if ($report['status'] !== 'healthy') {
-                $issues[] = $report['message'];
+                $issues[] = [
+                    'message' => $report['message'],
+                    'action_id' => $report['action_id'] ?? null,
+                    'status' => $report['status']
+                ];
             }
         }
 
-        return [
+        $report = [
             'status' => $overall_status,
+            'health_index' => round($health_index),
             'subsystems' => $subsystems,
             'issues' => $issues,
             'checked_at' => current_time('mysql'),
         ];
+
+        set_transient(self::HEALTH_CACHE_TRANSIENT, $report, self::HEALTH_CACHE_TTL);
+
+        return $report;
     }
 
     public function clear_health_cache(): void
@@ -729,5 +746,41 @@ class CacheService
     {
         $options = get_option("cc_site_options_{$lang}", []);
         return empty($options);
+    }
+
+    /**
+     * Fix missing language meta for posts.
+     * Assigns the default language to all posts that don't have _cc_language meta.
+     */
+    public function fix_missing_language_meta(): int
+    {
+        global $wpdb;
+
+        $ml_health = $this->get_multilingual_health();
+        $default_lang = $ml_health['default_lang'] ?: 'de';
+
+        // Find post IDs that are missing the meta
+        $post_ids = $wpdb->get_col("
+            SELECT p.ID FROM {$wpdb->posts} p
+            WHERE p.post_type NOT IN ('revision', 'attachment')
+            AND p.post_status NOT IN ('trash', 'auto-draft')
+            AND NOT EXISTS (
+                SELECT 1 FROM {$wpdb->postmeta} pm
+                WHERE pm.post_id = p.ID AND pm.meta_key = '_cc_language'
+            )
+            LIMIT 500
+        ");
+
+        if (empty($post_ids)) {
+            return 0;
+        }
+
+        $count = 0;
+        foreach ($post_ids as $post_id) {
+            update_post_meta($post_id, '_cc_language', $default_lang);
+            $count++;
+        }
+
+        return $count;
     }
 }

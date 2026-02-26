@@ -27,20 +27,14 @@ class MultilingualModule implements ModuleInterface
             $this->columns = new LanguageListColumns($this);
             $this->columns->init();
 
-            Admin\TranslationColumnManager::set_module($this);
 
             add_action('registered_post_type', [$this, 'handle_registered_post_type'], 10, 2);
             add_action('admin_bar_menu', [$this, 'add_admin_bar_switcher'], 100);
 
-            // Handle admin language switching
-            add_action('admin_action_cc_switch_admin_language', [$this, 'handle_switch_admin_language']);
 
             add_action('admin_action_cc_create_translation', [$this, 'handle_create_translation']);
 
-            // Toolbar styles
-            add_action('admin_enqueue_scripts', [$this, 'enqueue_toolbar_styles']);
-            add_action('wp_enqueue_scripts', [$this, 'enqueue_toolbar_styles']);
-
+            add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_styles']);
             add_action('admin_init', [$this, 'handle_forms_backfill']);
         }
 
@@ -83,6 +77,7 @@ class MultilingualModule implements ModuleInterface
             'enable_headless_fallback' => false,
             'enable_localized_taxonomies' => false,
             'enable_sitemap_endpoint' => false,
+            'show_admin_bar' => false,
         ];
         $settings = get_option(self::SETTINGS_KEY, []);
         return array_merge($defaults, is_array($settings) ? $settings : []);
@@ -94,7 +89,6 @@ class MultilingualModule implements ModuleInterface
             add_post_type_support($post_type, 'cc-multilingual');
 
             if (is_admin()) {
-                Admin\TranslationColumnManager::register_for_post_type($post_type);
             }
         }
     }
@@ -145,8 +139,8 @@ class MultilingualModule implements ModuleInterface
                 global $wpdb;
                 $wpdb->update(
                     $wpdb->posts,
-                ['post_name' => $unique_slug],
-                ['ID' => $post_id]
+                    ['post_name' => $unique_slug],
+                    ['ID' => $post_id]
                 );
                 // Clean cache
                 clean_post_cache($post_id);
@@ -154,21 +148,6 @@ class MultilingualModule implements ModuleInterface
         }
     }
 
-    public function handle_switch_admin_language(): void
-    {
-        check_admin_referer('cc_switch_admin_language', 'nonce');
-
-        if (!current_user_can('manage_options') && !current_user_can('edit_posts')) {
-            wp_die(__('You do not have permission to switch language.', 'content-core'));
-        }
-
-        $lang = sanitize_text_field($_GET['lang'] ?? 'all');
-        update_user_meta(get_current_user_id(), 'cc_admin_language', $lang);
-
-        $referer = wp_get_referer();
-        wp_safe_redirect($referer ?: admin_url());
-        exit;
-    }
 
     public function handle_create_translation(): void
     {
@@ -178,7 +157,7 @@ class MultilingualModule implements ModuleInterface
             wp_die(__('You do not have permission to create translations.', 'content-core'));
         }
 
-        $source_id = (int)$_GET['post'];
+        $source_id = (int) $_GET['post'];
         $target_lang = sanitize_text_field($_GET['lang']);
 
         $new_id = $this->translation_manager->create_translation($source_id, $target_lang);
@@ -202,10 +181,91 @@ class MultilingualModule implements ModuleInterface
     }
 
     /**
+     * Enqueue column styles only on relevant admin screens
+     */
+    public function enqueue_admin_styles($hook): void
+    {
+        if (!in_array($hook, ['edit.php', 'post.php', 'post-new.php'], true)) {
+            return;
+        }
+
+        if (!$this->is_active()) {
+            return;
+        }
+
+        $css = "
+            /* Translation Column Flags - Unified Styling */
+            .column-cc_translations {
+                text-align: left !important;
+                width: 125px !important;
+            }
+            .column-cc_translations .cc-translation-column-wrap {
+                display: flex !important;
+                flex-direction: row !important;
+                justify-content: flex-start !important;
+                gap: 6px !important;
+                align-items: center !important;
+                vertical-align: middle !important;
+                flex-wrap: nowrap !important;
+                line-height: 1 !important;
+            }
+            .column-cc_translations .cc-flag {
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                text-decoration: none !important;
+                transition: all 0.2s ease-in-out !important;
+                height: 20px !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                line-height: 0 !important;
+            }
+            
+            /* Semantic Opacity Rules */
+            .cc-flag.cc-flag--missing,
+            .cc-flag.cc-flag--missing img,
+            .cc-flag.cc-flag--missing span {
+                opacity: 0.3 !important;
+            }
+            
+            .cc-flag.cc-flag--exists,
+            .cc-flag.cc-flag--exists img,
+            .cc-flag.cc-flag--exists span {
+                opacity: 1.0 !important;
+            }
+            
+            /* Hover interactions */
+            .cc-flag:hover,
+            .cc-flag:hover img,
+            .cc-flag:hover span {
+                opacity: 1.0 !important;
+                transform: scale(1.1) !important;
+            }
+            
+            /* Content consistency */
+            .cc-flag img,
+            .cc-flag span {
+                max-width: 18px !important;
+                height: auto !important;
+                border-radius: 1px !important;
+                display: inline-block !important;
+            }
+        ";
+
+        wp_add_inline_style('common', $css);
+    }
+
+    /**
      * Enqueue minimal styles for the admin toolbar switcher badge
      */
     public function enqueue_toolbar_styles(): void
     {
+        if (!$this->get_settings()['show_admin_bar']) {
+            return;
+        }
+
+        // Guard clause: Toolbar styles are only enqueued when admin bar UI is enabled
+
         if (!is_admin_bar_showing() || !$this->is_active()) {
             return;
         }
@@ -287,90 +347,6 @@ class MultilingualModule implements ModuleInterface
                     margin-top: 11px !important;
                 }
             }
-
-            /* Translation Column Flags Refined - Perfect Centering */
-            .column-cc_translation {
-                text-align: center !important;
-            }
-            .column-cc_translation .cc-translation-column-wrap {
-                display: flex !important;
-                justify-content: center !important;
-                gap: 8px !important;
-                align-items: center !important;
-                vertical-align: middle !important;
-                line-height: 1 !important;
-                width: 100% !important;
-            }
-            .column-cc_translation .cc-tr-flag,
-            .column-cc_translation .cc-tr-flag:link,
-            .column-cc_translation .cc-tr-flag:visited {
-                display: inline-flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                text-decoration: none !important;
-                transition: all 0.2s ease !important;
-                position: relative !important;
-                height: 24px !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                box-sizing: border-box !important;
-                background: transparent !important;
-                border: 0 !important;
-                box-shadow: none !important;
-            }
-            .column-cc_translation .cc-tr-flag img,
-            .column-cc_translation .cc-tr-flag .cc-chip-emoji,
-            .column-cc_translation .cc-tr-flag span[style*='font-size: 16px'] {
-                height: 18px !important;
-                width: auto !important;
-                margin: 0 !important;
-                display: block !important;
-                border-radius: 2px !important;
-                background: transparent !important;
-                border: 0 !important;
-                box-shadow: none !important;
-                padding: 0 !important;
-            }
-            /* Clickable items: hover effect and cursor */
-            .column-cc_translation a.cc-tr-flag {
-                cursor: pointer !important;
-            }
-            .column-cc_translation a.cc-tr-flag:hover {
-                transform: scale(1.15) !important;
-                z-index: 10 !important;
-                background: transparent !important;
-            }
-            /* Current state: WP-style soft pill badge */
-            .column-cc_translation .cc-tr-flag.is-current {
-                background: #e6f4ea !important;
-                border: 1px solid #8fd19e !important;
-                padding: 0 8px !important;
-                height: 22px !important;
-                border-radius: 999px !important;
-            }
-            .column-cc_translation .cc-tr-flag.is-current img,
-            .column-cc_translation .cc-tr-flag.is-current .cc-chip-emoji,
-            .column-cc_translation .cc-tr-flag.is-current span[style*='font-size: 16px'] {
-                height: 14px !important;
-                box-shadow: none !important;
-            }
-            /* Missing state: Greyscale/Ghost */
-            .column-cc_translation .cc-tr-flag.is-missing img,
-            .column-cc_translation .cc-tr-flag.is-missing .cc-chip-emoji,
-            .column-cc_translation .cc-tr-flag.is-missing span[style*='font-size: 16px'] {
-                filter: grayscale(100%) !important;
-                opacity: 0.25 !important;
-            }
-            .column-cc_translation .cc-tr-flag.is-missing:hover img,
-            .column-cc_translation .cc-tr-flag.is-missing:hover .cc-chip-emoji,
-            .column-cc_translation .cc-tr-flag.is-missing:hover span[style*='font-size: 16px'] {
-                opacity: 0.6 !important;
-                filter: grayscale(50%) !important;
-            }
-            /* Existing state: Subtle hover shadow */
-            .column-cc_translation .cc-tr-flag.is-exists:hover img {
-                box-shadow: 0 2px 4px rgba(0,0,0,0.15) !important;
-            }
         ";
 
         wp_add_inline_style('admin-bar', $css);
@@ -378,6 +354,12 @@ class MultilingualModule implements ModuleInterface
 
     public function add_admin_bar_switcher(\WP_Admin_Bar $wp_admin_bar): void
     {
+        // Internal: Admin bar language UI is intentionally disabled to reduce confusion
+        // While leaving list table filtering and translation management intact.
+        if (!$this->get_settings()['show_admin_bar']) {
+            return;
+        }
+
         if (!$this->is_active() || !current_user_can('edit_posts')) {
             return;
         }
@@ -465,8 +447,7 @@ class MultilingualModule implements ModuleInterface
                         if (isset($translations[$code])) {
                             $title = sprintf(__('Edit %s', 'content-core'), strtoupper($code));
                             $href = get_edit_post_link($translations[$code]);
-                        }
-                        else {
+                        } else {
                             $title = sprintf(__('Translate to %s', 'content-core'), strtoupper($code));
                             $href = add_query_arg([
                                 'action' => 'cc_create_translation',
@@ -493,16 +474,29 @@ class MultilingualModule implements ModuleInterface
         if ($flag_id > 0) {
             $img = wp_get_attachment_image_src($flag_id, [32, 32]);
             if ($img) {
-                return '<img src="' . esc_url($img[0]) . '" style="width:18px; height:12px; object-fit:cover; vertical-align:middle; border-radius:1px; margin-right:4px;" />';
+                return '<img src="' . esc_url($img[0]) . '" alt="' . esc_attr($code) . '" />';
             }
         }
 
         $flags = [
-            'de' => '🇩🇪', 'en' => '🇬🇧', 'fr' => '🇫🇷', 'it' => '🇮🇹', 'es' => '🇪🇸',
-            'nl' => '🇳🇱', 'pt' => '🇵🇹', 'pl' => '🇵🇱', 'ru' => '🇷🇺', 'tr' => '🇹🇷'
+            'de' => '🇩🇪',
+            'en' => '🇬🇧',
+            'fr' => '🇫🇷',
+            'it' => '🇮🇹',
+            'es' => '🇪🇸',
+            'nl' => '🇳🇱',
+            'pt' => '🇵🇹',
+            'pl' => '🇵🇱',
+            'ru' => '🇷🇺',
+            'tr' => '🇹🇷'
         ];
-        $emoji = $flags[$code] ?? '🌐';
-        return '<span style="font-size: 16px; margin-right: 4px;">' . $emoji . '</span>';
+
+        if (isset($flags[$code])) {
+            return '<span class="cc-chip-emoji">' . $flags[$code] . '</span>';
+        }
+
+        // Fallback to text badge
+        return '<span class="cc-lang-badge">' . esc_html(strtoupper($code)) . '</span>';
     }
 
     public function cc_filter_post_link(string $post_link, \WP_Post $post): string

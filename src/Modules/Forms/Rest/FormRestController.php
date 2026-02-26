@@ -8,7 +8,12 @@ use ContentCore\Modules\Forms\Handlers\FormSubmissionHandler;
 
 class FormRestController
 {
-    private string $namespace = 'content-core/v1';
+    private string $namespace;
+
+    public function __construct()
+    {
+        $this->namespace = \ContentCore\Plugin::REST_NAMESPACE . '/' . \ContentCore\Plugin::REST_VERSION;
+    }
 
     public function init(): void
     {
@@ -20,8 +25,11 @@ class FormRestController
         register_rest_route($this->namespace, '/forms/(?P<slug>[a-zA-Z0-9-_]+)', [
             'methods' => WP_REST_Server::READABLE,
             'callback' => [$this, 'get_form'],
-            'permission_callback' => '__return_true',
+            'permission_callback' => '__return_true', // Publicly readable for frontend consumption
             'args' => [
+                'slug' => [
+                    'sanitize_callback' => 'sanitize_key',
+                ],
                 'lang' => [
                     'required' => false,
                     'sanitize_callback' => 'sanitize_key',
@@ -33,7 +41,12 @@ class FormRestController
         register_rest_route($this->namespace, '/forms/(?P<slug>[a-zA-Z0-9-_]+)/submit', [
             'methods' => WP_REST_Server::CREATABLE,
             'callback' => [$this, 'submit_form'],
-            'permission_callback' => '__return_true',
+            'permission_callback' => '__return_true', // Protected by internal CSRF/Turnstile in the handler
+            'args' => [
+                'slug' => [
+                    'sanitize_callback' => 'sanitize_key',
+                ]
+            ]
         ]);
     }
 
