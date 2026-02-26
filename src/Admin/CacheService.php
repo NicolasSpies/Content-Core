@@ -1,14 +1,13 @@
 <?php
 namespace ContentCore\Admin;
 
-/**
- * Class CacheService
- *
- * Handles transient and plugin-specific cache measurement and cleanup.
- */
+use ContentCore\Plugin;
+
 class CacheService
 {
     const LAST_ACTIONS_OPTION = 'cc_cache_last_actions';
+    const HEALTH_CACHE_TRANSIENT = 'cc_health_cache';
+    const HEALTH_CACHE_TTL = 300;
     const BATCH_SIZE = 100;
 
     private function get_last_actions(): array
@@ -269,5 +268,466 @@ class CacheService
         $this->update_last_action('cc_caches', $count, $deleted_bytes);
 
         return $result;
+    }
+
+    public function get_system_status(): array
+    {
+        $status = 'healthy';
+        $issues = [];
+        $php_version = PHP_VERSION;
+        $wp_version = get_bloginfo('version');
+
+        // 1. PHP Version check
+        if (version_compare($php_version, '7.4', '<')) {
+            $status = 'critical';
+            $issues[] = sprintf(__('PHP version %s is below recommended 7.4.', 'content-core'), $php_version);
+        }
+
+        // 2. Module Load check
+        $plugin = Plugin::get_instance();
+        $missing = $plugin->get_missing_modules();
+        if (!empty($missing)) {
+            $status = 'warning';
+            $issues[] = sprintf(__('%d module(s) failed to initialize.', 'content-core'), count($missing));
+        }
+
+        // 3. Optional: Check for important modules
+        if (!$plugin->is_module_active('custom_fields')) {
+            $status = ($status === 'healthy') ? 'warning' : $status;
+            $issues[] = __('Custom Fields module is inactive.', 'content-core');
+        }
+
+        return [
+            'status' => $status,
+            'short_label' => sprintf(__('v%s', 'content-core'), CONTENT_CORE_VERSION),
+            'message' => $status === 'healthy' ? __('System core is stable.', 'content-core') : __('System has configuration issues.', 'content-core'),
+            'issues' => $issues,
+            'data' => [
+                'php' => $php_version,
+                'wp' => $wp_version,
+                'modules_missing' => $missing
+            ]
+        ];
+    }
+
+    public function get_multilingual_health(): array
+    {
+        global $wpdb;
+
+        $plugin = Plugin::get_instance();
+        $ml_module = $plugin->get_module('multilingual');
+
+        $result = [
+            'is_active' => false,
+            'default_lang' => '',
+            'enabled_languages' => [],
+            'fallback_enabled' => false,
+            'missing_lang_meta_count' => 0,
+            'orphan_groups_count' => 0,
+            'duplicate_collisions_count' => 0,
+        ];
+
+        if (!$ml_module || !method_exists($ml_module, 'is_active') || !$ml_module->is_active()) {
+            return $result;
+        }
+
+        if (!method_exists($ml_module, 'get_settings')) {
+            return $result;
+        }
+
+        $settings = $ml_module->get_settings();
+        $result['is_active'] = true;
+        $result['default_lang'] = $settings['default_lang'] ?? 'de';
+        $result['enabled_languages'] = array_column($settings['languages'] ?? [], 'code');
+        $result['fallback_enabled'] = !empty($settings['fallback_enabled']);
+
+        $langs = $result['enabled_languages'];
+        if (empty($langs)) {
+            return $result;
+        }
+
+        $result['missing_lang_meta_count'] = (int)$wpdb->get_var("
+            SELECT COUNT(*) FROM {$wpdb->posts} p
+            WHERE p.post_type NOT IN ('revision', 'attachment')
+            AND p.post_status NOT IN ('trash', 'auto-draft')
+            AND NOT EXISTS (
+                SELECT 1 FROM {$wpdb->postmeta} pm
+                WHERE pm.post_id = p.ID AND pm.meta_key = '_cc_language'
+            )
+            LIMIT 1000
+        ");
+
+        $result['orphan_groups_count'] = (int)$wpdb->get_var("
+            SELECT COUNT(*) FROM (
+                SELECT pm.meta_value as group_id
+                FROM {$wpdb->postmeta} pm
+                WHERE pm.meta_key = '_cc_translation_group'
+                GROUP BY pm.meta_value
+                HAVING COUNT(*) = 1
+                LIMIT 100
+            ) AS orphans
+        ");
+
+        $result['duplicate_collisions_count'] = (int)$wpdb->get_var("
+            SELECT COUNT(*) FROM (
+                SELECT pm.meta_value as group_id, pm2.meta_value as lang, COUNT(*) as cnt
+                FROM {$wpdb->postmeta} pm
+                INNER JOIN {$wpdb->postmeta} pm2 ON pm.meta_value = pm2.meta_value AND pm2.meta_key = '_cc_language'
+                WHERE pm.meta_key = '_cc_translation_group'
+                GROUP BY pm.meta_value, pm2.meta_value
+                HAVING COUNT(*) > 1
+                LIMIT 100
+            ) AS duplicates
+        ");
+
+        return $result;
+    }
+
+    public function get_site_options_health(): array
+    {
+        global $wpdb;
+
+        $plugin = Plugin::get_instance();
+        $site_options_module = $plugin->get_module('site_options');
+
+        $result = [
+            'is_active' => false,
+            'languages_with_options' => [],
+            'languages_missing_options' => [],
+            'translation_group_id_present' => false,
+            'fallback_lang' => '',
+        ];
+
+        if (!$site_options_module) {
+            return $result;
+        }
+
+        $result['is_active'] = true;
+
+        if (method_exists($site_options_module, 'get_translation_group_id')) {
+            $group_id = $site_options_module->get_translation_group_id();
+            $result['translation_group_id_present'] = !empty($group_id);
+        }
+
+        $ml_module = $plugin->get_module('multilingual');
+        $languages = ['de'];
+        $fallback_lang = '';
+
+        if ($ml_module && method_exists($ml_module, 'is_active') && method_exists($ml_module, 'get_settings')) {
+            if ($ml_module->is_active()) {
+                $settings = $ml_module->get_settings();
+                $languages = array_column($settings['languages'] ?? [], 'code');
+                $fallback_lang = $settings['fallback_lang'] ?? '';
+            }
+        }
+
+        $result['fallback_lang'] = $fallback_lang;
+
+        if (empty($languages)) {
+            $languages = ['de'];
+        }
+
+        foreach ($languages as $lang) {
+            if (method_exists($site_options_module, 'get_options')) {
+                $options = $site_options_module->get_options($lang);
+                if (!empty($options)) {
+                    $result['languages_with_options'][] = $lang;
+                }
+                else {
+                    $result['languages_missing_options'][] = $lang;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    public function get_forms_overview(): array
+    {
+        global $wpdb;
+
+        $plugin = Plugin::get_instance();
+        $forms_module = $plugin->get_module('forms');
+
+        $result = [
+            'is_active' => false,
+            'total_forms' => 0,
+            'total_entries' => 0,
+            'protection' => [
+                'honeypot' => false,
+                'rate_limit' => false,
+                'turnstile' => false,
+            ],
+            'last_entry_timestamp' => null,
+        ];
+
+        if (!$forms_module) {
+            return $result;
+        }
+
+        $result['is_active'] = true;
+
+        $result['total_forms'] = (int)$wpdb->get_var("
+            SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'cc_form' AND post_status != 'trash'
+        ");
+
+        $result['total_entries'] = (int)$wpdb->get_var("
+            SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'cc_form_entry' AND post_status != 'trash'
+        ");
+
+        $honeypot_forms = $wpdb->get_var("
+            SELECT COUNT(DISTINCT p.ID) FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+            WHERE p.post_type = 'cc_form' AND p.post_status != 'trash'
+            AND pm.meta_key = 'cc_form_honeypot' AND pm.meta_value = '1'
+        ");
+        $result['protection']['honeypot'] = (int)$honeypot_forms > 0;
+
+        $rate_limit_forms = $wpdb->get_var("
+            SELECT COUNT(DISTINCT p.ID) FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+            WHERE p.post_type = 'cc_form' AND p.post_status != 'trash'
+            AND pm.meta_key = 'cc_form_rate_limit' AND pm.meta_value = '1'
+        ");
+        $result['protection']['rate_limit'] = (int)$rate_limit_forms > 0;
+
+        $turnstile_forms = $wpdb->get_var("
+            SELECT COUNT(DISTINCT p.ID) FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+            WHERE p.post_type = 'cc_form' AND p.post_status != 'trash'
+            AND pm.meta_key = 'cc_form_turnstile' AND pm.meta_value = '1'
+        ");
+        $result['protection']['turnstile'] = (int)$turnstile_forms > 0;
+
+        if ($result['total_entries'] > 0) {
+            $result['last_entry_timestamp'] = $wpdb->get_var("
+                SELECT MAX(p.post_date) FROM {$wpdb->posts} p
+                WHERE p.post_type = 'cc_form_entry' AND post_status != 'trash'
+            ");
+        }
+
+        return $result;
+    }
+
+    public function get_rest_api_health(): array
+    {
+        $result = [
+            'namespace_registered' => false,
+            'route_count' => 0,
+            'base_url' => function_exists('rest_url') ? rest_url('content-core/v1') : '',
+        ];
+
+        try {
+            if (!function_exists('rest_get_server')) {
+                return $result;
+            }
+
+            $rest_server = rest_get_server();
+            $namespaces = $rest_server->get_namespaces();
+
+            $result['namespace_registered'] = in_array('content-core/v1', $namespaces, true);
+
+            if ($result['namespace_registered']) {
+                $routes = $rest_server->get_routes();
+                foreach ($routes as $route => $handlers) {
+                    if (strpos($route, 'content-core/v1') === 0) {
+                        $result['route_count']++;
+                    }
+                }
+            }
+        }
+        catch (\Throwable $e) {
+        // Return default values on error
+        }
+
+        return $result;
+    }
+
+    /**
+     * Unified Health Model Methods
+     */
+
+    public function get_multilingual_status(): array
+    {
+        $health = $this->get_multilingual_health();
+        if (!$health['is_active']) {
+            return [
+                'status' => 'healthy',
+                'short_label' => __('Inactive', 'content-core'),
+                'message' => __('Multilingual module is not active or not required.', 'content-core'),
+                'data' => $health
+            ];
+        }
+
+        $status = 'healthy';
+        $issues = [];
+
+        if ($health['missing_lang_meta_count'] > 0 || $health['orphan_groups_count'] > 0) {
+            $status = 'warning';
+            $issues[] = sprintf(__('Found %d items with missing language meta.', 'content-core'), $health['missing_lang_meta_count']);
+        }
+
+        if ($health['duplicate_collisions_count'] > 0) {
+            $status = 'critical';
+            $issues[] = __('Critical translation collisions detected in database.', 'content-core');
+        }
+
+        return [
+            'status' => $status,
+            'short_label' => strtoupper($health['default_lang']),
+            'message' => $status === 'healthy' ? __('Multilingual system is operational.', 'content-core') : $issues[0],
+            'issues' => $issues,
+            'data' => $health
+        ];
+    }
+
+    public function get_site_options_status(): array
+    {
+        $health = $this->get_site_options_health();
+        if (!$health['is_active']) {
+            return [
+                'status' => 'healthy',
+                'short_label' => __('Inactive', 'content-core'),
+                'message' => __('Site Options module is not active.', 'content-core'),
+                'data' => $health
+            ];
+        }
+
+        $status = 'healthy';
+        $issues = [];
+
+        if (!empty($health['languages_missing_options'])) {
+            $status = 'warning';
+            $issues[] = sprintf(__('Missing options for: %s', 'content-core'), implode(', ', $health['languages_missing_options']));
+        }
+
+        if (!$health['translation_group_id_present']) {
+            $status = 'critical';
+            $issues[] = __('Site Options Translation Group ID is missing.', 'content-core');
+        }
+
+        return [
+            'status' => $status,
+            'short_label' => sprintf(__('%d Configured', 'content-core'), count($health['languages_with_options'])),
+            'message' => $status === 'healthy' ? __('Site options are correctly configured.', 'content-core') : $issues[0],
+            'issues' => $issues,
+            'data' => $health
+        ];
+    }
+
+    public function get_forms_status(): array
+    {
+        $health = $this->get_forms_overview();
+        if (!$health['is_active']) {
+            return [
+                'status' => 'healthy',
+                'short_label' => __('Inactive', 'content-core'),
+                'message' => __('Forms module is not active.', 'content-core'),
+            ];
+        }
+
+        return [
+            'status' => 'healthy',
+            'short_label' => sprintf(__('%d Forms', 'content-core'), $health['total_forms']),
+            'message' => sprintf(__('%d total entries recorded.', 'content-core'), $health['total_entries']),
+            'data' => $health
+        ];
+    }
+
+    public function get_rest_api_status(): array
+    {
+        $health = $this->get_rest_api_health();
+
+        if (!$health['namespace_registered']) {
+            return [
+                'status' => 'critical',
+                'short_label' => __('Offline', 'content-core'),
+                'message' => __('REST API namespace not found. Please flush rewrite rules.', 'content-core'),
+                'action_id' => 'cc_flush_rewrite_rules',
+                'data' => $health
+            ];
+        }
+
+        // Reachability check
+        $start = microtime(true);
+        $response = wp_remote_get($health['base_url'], [
+            'timeout' => 5,
+            'sslverify' => false
+        ]);
+        $duration = round((microtime(true) - $start) * 1000);
+
+        $reachable = !is_wp_error($response);
+        $http_code = $reachable ? wp_remote_retrieve_response_code($response) : 0;
+
+        $status = 'healthy';
+        $message = __('REST API is active and responding.', 'content-core');
+
+        if (!$reachable) {
+            $status = 'critical';
+            $message = sprintf(__('API unreachable: %s', 'content-core'), $response->get_error_message());
+        }
+        elseif ($http_code !== 200) {
+            $status = 'warning';
+            $message = sprintf(__('API returned unexpected status code: %d', 'content-core'), $http_code);
+        }
+
+        return [
+            'status' => $status,
+            'short_label' => sprintf(__('%d Routes', 'content-core'), $health['route_count']),
+            'message' => $message,
+            'data' => array_merge($health, [
+                'reachable' => $reachable,
+                'http_code' => $http_code,
+                'response_time' => $duration
+            ])
+        ];
+    }
+
+    public function get_consolidated_health_report(): array
+    {
+        $subsystems = [
+            'system' => $this->get_system_status(),
+            'multilingual' => $this->get_multilingual_status(),
+            'site_options' => $this->get_site_options_status(),
+            'forms' => $this->get_forms_status(),
+            'rest_api' => $this->get_rest_api_status(),
+        ];
+
+        $overall_status = 'healthy';
+        $issues = [];
+
+        foreach ($subsystems as $key => $report) {
+            if ($report['status'] === 'critical') {
+                $overall_status = 'critical';
+            }
+            elseif ($report['status'] === 'warning' && $overall_status !== 'critical') {
+                $overall_status = 'warning';
+            }
+
+            if ($report['status'] !== 'healthy') {
+                $issues[] = $report['message'];
+            }
+        }
+
+        return [
+            'status' => $overall_status,
+            'subsystems' => $subsystems,
+            'issues' => $issues,
+            'checked_at' => current_time('mysql'),
+        ];
+    }
+
+    public function clear_health_cache(): void
+    {
+        delete_transient(self::HEALTH_CACHE_TRANSIENT);
+    }
+
+    /**
+     * Check if site options for a specific language are empty.
+     */
+    public function is_site_options_empty(string $lang): bool
+    {
+        $options = get_option("cc_site_options_{$lang}", []);
+        return empty($options);
     }
 }

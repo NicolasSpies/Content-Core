@@ -21,9 +21,31 @@ class AdminMenu
         add_action('admin_post_cc_clear_all_transients', [$this, 'handle_clear_all_transients']);
         add_action('admin_post_cc_clear_plugin_caches', [$this, 'handle_clear_plugin_caches']);
         add_action('admin_post_cc_flush_object_cache', [$this, 'handle_flush_object_cache']);
+        add_action('admin_post_cc_duplicate_site_options', [$this, 'handle_duplicate_site_options']);
+        add_action('admin_post_cc_refresh_health', [$this, 'handle_refresh_health']);
 
-        add_filter('admin_footer_text', '__return_empty_string');
-        add_filter('update_footer', '__return_empty_string', 11);
+        add_filter('admin_footer_text', [$this, 'maybe_remove_footer_text'], 11);
+        add_filter('update_footer', [$this, 'maybe_remove_footer_text'], 11);
+    }
+
+    /**
+     * Check if the current page is a Content Core page
+     */
+    private function is_cc_page(): bool
+    {
+        $screen = get_current_screen();
+        if (!$screen) {
+            return false;
+        }
+        return (strpos($screen->id, 'content-core') !== false || strpos($screen->id, 'cc_') !== false);
+    }
+
+    /**
+     * Clear footer text on CC pages
+     */
+    public function maybe_remove_footer_text($text)
+    {
+        return $this->is_cc_page() ? '' : $text;
     }
 
     /**
@@ -52,7 +74,7 @@ class AdminMenu
             __('Content Core', 'content-core'),
             'manage_options',
             'content-core',
-            [$this, 'render_main_dashboard'],
+        [$this, 'render_main_dashboard'],
             'dashicons-layout',
             30
         );
@@ -89,7 +111,7 @@ class AdminMenu
                 'edit.php?post_type=cc_taxonomy_def'
             );
         }
- 
+
         // Submenu: Language Mapping (Management UI)
         if ($plugin->is_module_active('language_mapping')) {
             add_submenu_page(
@@ -98,19 +120,20 @@ class AdminMenu
                 __('Language Mapping', 'content-core'),
                 'manage_options',
                 'content-core-language-mapping',
-                function() {
-                    $plugin = \ContentCore\Plugin::get_instance();
-                    $module = $plugin->get_module('language_mapping');
-                    if ($module instanceof \ContentCore\Modules\LanguageMapping\LanguageMappingModule) {
-                        $admin = new \ContentCore\Modules\LanguageMapping\Admin\LanguageMappingAdmin($module);
-                        $admin->render_page();
-                    } else {
-                        error_log('Language Mapping module not found or invalid: ' . gettype($module));
-                        if (is_admin()) {
-                            echo '<div class="wrap"><h1>Language Mapping</h1><p>Module integration error. Please check logs.</p></div>';
-                        }
+                function () {
+                $plugin = \ContentCore\Plugin::get_instance();
+                $module = $plugin->get_module('language_mapping');
+                if ($module instanceof \ContentCore\Modules\LanguageMapping\LanguageMappingModule) {
+                    $admin = new \ContentCore\Modules\LanguageMapping\Admin\LanguageMappingAdmin($module);
+                    $admin->render_page();
+                }
+                else {
+                    error_log('Language Mapping module not found or invalid: ' . gettype($module));
+                    if (is_admin()) {
+                        echo '<div class="wrap"><h1>Language Mapping</h1><p>Module integration error. Please check logs.</p></div>';
                     }
                 }
+            }
             );
         }
 
@@ -122,9 +145,18 @@ class AdminMenu
                 __('REST API', 'content-core'),
                 'manage_options',
                 'cc-api-info',
-                [$this, 'render_api_page']
+            [$this, 'render_api_page']
             );
         }
+
+        add_submenu_page(
+            'content-core',
+            __('Diagnostics', 'content-core'),
+            __('Diagnostics', 'content-core'),
+            'manage_options',
+            'cc-diagnostics',
+        [$this, 'render_diagnostics_page']
+        );
 
 
         // Rename the first submenu item (which defaults to the same name as the top-level)
@@ -141,14 +173,18 @@ class AdminMenu
     {
         $plugin = \ContentCore\Plugin::get_instance();
         $cache_service = new CacheService();
-        $snapshot = $cache_service->get_snapshot();
 
-        $format_bytes = function($bytes) {
-            if ($bytes <= 0) return '0 B';
+        $format_bytes = function ($bytes) {
+            if ($bytes <= 0)
+                return '0 B';
             $base = log($bytes, 1024);
             $suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
             return round(pow(1024, $base - floor($base)), 2) . ' ' . $suffixes[floor($base)];
         };
+
+        $snapshot = $cache_service->get_snapshot();
+        $health_report = $cache_service->get_consolidated_health_report();
+        $subsystems = $health_report['subsystems'];
 
         $last_expired = $cache_service->get_last_action_info('expired_transients');
         $last_all = $cache_service->get_last_action_info('all_transients');
@@ -156,378 +192,597 @@ class AdminMenu
         $last_obj = $cache_service->get_last_action_info('object_cache');
 
         $object_cache_active = $snapshot['object_cache']['enabled'];
-        ?>
-        <div class="wrap content-core-admin">
-            <div class="cc-header">
-                <h1><?php _e('Content Core Dashboard', 'content-core'); ?></h1>
-            </div>
+        $wp_version = get_bloginfo('version');
+        $plugin_version = $plugin->get_version();
+?>
+<div class="wrap content-core-admin">
+    <div class="cc-header">
+        <h1>
+            <?php _e('Dashboard', 'content-core'); ?>
+        </h1>
+    </div>
 
+    <?php
+        settings_errors('cc_dashboard');
 
-            <?php 
-            settings_errors('cc_dashboard'); 
+        if (isset($_GET['cc_action'])) {
+            $bytes = isset($_GET['cc_bytes']) ? (int)$_GET['cc_bytes'] : 0;
+            $count = isset($_GET['cc_count']) ? (int)$_GET['cc_count'] : 0;
+            $msg = '';
 
-            if (isset($_GET['cc_action'])) {
-                $bytes = isset($_GET['cc_bytes']) ? (int)$_GET['cc_bytes'] : 0;
-                $count = isset($_GET['cc_count']) ? (int)$_GET['cc_count'] : 0;
-                $msg = '';
-                
-                switch ($_GET['cc_action']) {
-                    case 'expired_cleared':
-                        $msg = sprintf(__('Cleared %d expired transients (%s).', 'content-core'), $count, $format_bytes($bytes));
-                        break;
-                    case 'all_cleared':
-                        $msg = sprintf(__('Cleared ALL transients: %d items removed (%s).', 'content-core'), $count, $format_bytes($bytes));
-                        break;
-                    case 'cc_cleared':
-                        $msg = sprintf(__('Cleared Content Core caches: %d items removed (%s).', 'content-core'), $count, $format_bytes($bytes));
-                        break;
-                    case 'obj_flushed':
-                        $msg = __('Object cache flushed successfully.', 'content-core');
-                        break;
-                }
-
-                if ($msg) {
-                    echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($msg) . '</p></div>';
-                }
+            switch ($_GET['cc_action']) {
+                case 'expired_cleared':
+                    $msg = sprintf(__('Cleared %d expired transients (%s).', 'content-core'), $count, $format_bytes($bytes));
+                    break;
+                case 'all_cleared':
+                    $msg = sprintf(__('Cleared ALL transients: %d items removed (%s).', 'content-core'), $count, $format_bytes($bytes));
+                    break;
+                case 'cc_cleared':
+                    $msg = sprintf(__('Cleared Content Core caches: %d items removed (%s).', 'content-core'), $count, $format_bytes($bytes));
+                    break;
+                case 'obj_flushed':
+                    $msg = __('Object cache flushed successfully.', 'content-core');
+                    break;
+                case 'options_duplicated':
+                    $msg = __('Site options duplicated successfully.', 'content-core');
+                    break;
+                case 'health_refreshed':
+                    $msg = __('Health status refreshed.', 'content-core');
+                    break;
             }
-            ?>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                <div class="cc-card">
-                    <h2><?php _e('Headless API', 'content-core'); ?></h2>
-                    <p><?php _e('Your API is active at:', 'content-core'); ?></p>
-                    <input type="text" class="regular-text" style="width: 100%; font-family: monospace; background: var(--cc-bg-soft); border: 1px solid var(--cc-border); padding: 8px;" value="<?php echo esc_url(rest_url('content-core/v1')); ?>" readonly>
-                </div>
+            if ($msg) {
+                echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($msg) . '</p></div>';
+            }
+        }
+?>
 
-                <div class="cc-card">
-                    <h2><?php _e('Cache Management', 'content-core'); ?></h2>
-                    <table class="cc-mini-table" style="width: 100%; margin-bottom: 15px;">
-                        <tr>
-                            <td><?php _e('Expired Transients (temporary cache entries)', 'content-core'); ?>:</td>
-                            <td align="right"><strong><?php echo (int)$snapshot['expired']['count']; ?></strong> (<?php echo $format_bytes($snapshot['expired']['bytes']); ?>)</td>
-                        </tr>
-                        <tr>
-                            <td><?php _e('Total Transients', 'content-core'); ?>:</td>
-                            <td align="right"><strong><?php echo (int)$snapshot['transients']['count']; ?></strong> (<?php echo $format_bytes($snapshot['transients']['bytes']); ?>)</td>
-                        </tr>
-                        <tr>
-                            <td><?php _e('Content Core Caches', 'content-core'); ?>:</td>
-                            <td align="right"><strong><?php echo (int)$snapshot['cc_cache']['count']; ?></strong> (<?php echo $format_bytes($snapshot['cc_cache']['bytes']); ?>)</td>
-                        </tr>
-                        <tr>
-                            <td><?php _e('Object Cache', 'content-core'); ?>:</td>
-                            <td align="right">
-                                <?php if ($snapshot['object_cache']['enabled']) : ?>
-                                    <span style="color: #008a20; font-weight: bold;"><?php _e('Active', 'content-core'); ?></span>
-                                <?php else : ?>
-                                    <span style="color: #646970; font-weight: bold;"><?php _e('Inactive', 'content-core'); ?></span>
-                                <?php endif; ?>
-                                <span style="opacity: 0.6; font-size: 11px;">(<?php echo $snapshot['object_cache']['dropin'] ? 'Drop-in found' : 'No drop-in'; ?>)</span>
-                            </td>
-                        </tr>
-                    </table>
-
-                    <style>
-                        .cc-cache-section { margin-bottom: 20px; }
-                        .cc-cache-section-header { 
-                            cursor: pointer; 
-                            padding: 10px 12px; 
-                            background: #f0f0f1; 
-                            border-radius: 4px; 
-                            margin-bottom: 10px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: space-between;
-                        }
-                        .cc-cache-section-header:hover { background: #e0e0e3; }
-                        .cc-cache-section-header .dashicons { transition: transform 0.2s; }
-                        .cc-cache-section.collapsed .cc-cache-section-header .dashicons { transform: rotate(-90deg); }
-                        .cc-cache-section.collapsed .cc-cache-section-content { display: none; }
-                        .cc-cache-danger-btn {
-                            width: 100%;
-                            border: 1px solid #d63638 !important;
-                            background: transparent !important;
-                            color: #d63638 !important;
-                            border-radius: 4px;
-                        }
-                        .cc-cache-danger-btn:hover {
-                            background: #d63638 !important;
-                            color: #fff !important;
-                        }
-                        .cc-cache-danger-btn:disabled {
-                            opacity: 0.5;
-                            cursor: not-allowed;
-                        }
-                        .cc-cache-safe-btn {
-                            width: 100%;
-                            border-radius: 4px;
-                        }
-                        .cc-cache-help-text {
-                            font-size: 11px;
-                            color: #646970;
-                            margin-top: 4px;
-                            display: block;
-                        }
-                        .cc-last-cleared {
-                            font-size: 11px;
-                            color: #646970;
-                            margin-top: 6px;
-                        }
-                    </style>
-
-                    <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        var toggleLinks = document.querySelectorAll('.cc-cache-toggle');
-                        toggleLinks.forEach(function(link) {
-                            link.addEventListener('click', function(e) {
-                                e.preventDefault();
-                                var section = this.closest('.cc-cache-section');
-                                section.classList.toggle('collapsed');
-                            });
-                        });
-
-                        var confirmCheckbox = document.getElementById('cc_confirm_all_transients');
-                        var dangerousBtn = document.getElementById('cc_clear_all_btn');
-                        if (confirmCheckbox && dangerousBtn) {
-                            confirmCheckbox.addEventListener('change', function() {
-                                dangerousBtn.disabled = !this.checked;
-                            });
-                            dangerousBtn.disabled = true;
-                        }
-
-                        var dangerousForm = document.getElementById('cc_dangerous_form');
-                        if (dangerousForm) {
-                            dangerousForm.addEventListener('submit', function(e) {
-                                if (!confirm('<?php echo esc_js(__('This will delete ALL transients from the database. Continue?', 'content-core')); ?>')) {
-                                    e.preventDefault();
-                                    return false;
-                                }
-                            });
-                        }
-                    });
-                    </script>
-
-                    <!-- Safe Cache Actions -->
-                    <div class="cc-cache-section">
-                        <div class="cc-cache-section-header" style="background: #e6f4ea; cursor: default;">
-                            <strong><?php _e('Safe Cache Actions', 'content-core'); ?></strong>
-                        </div>
-                        <div class="cc-cache-section-content">
-                            <form action="<?php echo admin_url('admin-post.php'); ?>" method="post" style="margin-bottom: 12px;">
-                                <input type="hidden" name="action" value="cc_clear_plugin_caches">
-                                <?php wp_nonce_field('cc_cache_nonce'); ?>
-                                <button type="submit" class="button button-primary cc-cache-safe-btn"><?php _e('Clear CC Caches', 'content-core'); ?></button>
-                                <span class="cc-cache-help-text"><?php _e('Deletes only Content Core cache entries.', 'content-core'); ?></span>
-                                <?php if ($last_cc): ?>
-                                <div class="cc-last-cleared"><?php echo esc_html(sprintf(__('Last cleared: %s', 'content-core'), $last_cc['timestamp'])); ?></div>
-                                <?php endif; ?>
-                            </form>
-
-                            <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
-                                <input type="hidden" name="action" value="cc_clear_expired_transients">
-                                <?php wp_nonce_field('cc_cache_nonce'); ?>
-                                <button type="submit" class="button button-secondary cc-cache-safe-btn" style="background: #fff;"><?php _e('Clear Expired Transients', 'content-core'); ?></button>
-                                <span class="cc-cache-help-text"><?php _e('Deletes only expired entries. Active ones remain untouched.', 'content-core'); ?></span>
-                                <?php if ($last_expired): ?>
-                                <div class="cc-last-cleared"><?php echo esc_html(sprintf(__('Last cleared: %s', 'content-core'), $last_expired['timestamp'])); ?></div>
-                                <?php endif; ?>
-                            </form>
-                        </div>
+    <div class="cc-dashboard-grid">
+        <!-- Header: Global Status -->
+        <div class="cc-card cc-card-full" style="padding: 24px 32px;">
+            <div class="cc-system-overview"
+                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px;">
+                <div style="display:flex; align-items:center; gap:32px;">
+                    <?php
+        $overall_status = $health_report['status'];
+        $status_text = __('All systems operational', 'content-core');
+        if ($overall_status === 'warning')
+            $status_text = __('Needs attention', 'content-core');
+        if ($overall_status === 'critical')
+            $status_text = __('Action required', 'content-core');
+?>
+                    <div class="cc-status-badge cc-status-<?php echo esc_attr($overall_status); ?>"
+                        style="margin:0; padding:10px 24px; font-size:12px;">
+                        <span class="cc-status-icon"></span>
+                        <span class="cc-status-label">
+                            <?php echo esc_html($status_text); ?>
+                        </span>
                     </div>
-                        <div class="cc-cache-section-content">
-                            <form action="<?php echo admin_url('admin-post.php'); ?>" method="post" style="margin-bottom: 12px;">
-                                <input type="hidden" name="action" value="cc_clear_plugin_caches">
-                                <?php wp_nonce_field('cc_cache_nonce'); ?>
-                                <button type="submit" class="button button-primary cc-cache-safe-btn"><?php _e('Clear CC Caches', 'content-core'); ?></button>
-                                <span class="cc-cache-help-text"><?php _e('Deletes only Content Core cache entries.', 'content-core'); ?></span>
-                                <?php if ($last_cc): ?>
-                                <div class="cc-last-cleared"><?php echo esc_html(sprintf(__('Last cleared: %s', 'content-core'), $last_cc['timestamp'])); ?></div>
-                                <?php endif; ?>
-                            </form>
-
-                            <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
-                                <input type="hidden" name="action" value="cc_clear_expired_transients">
-                                <?php wp_nonce_field('cc_cache_nonce'); ?>
-                                <button type="submit" class="button button-secondary cc-cache-safe-btn" style="background: #fff;"><?php _e('Clear Expired Transients', 'content-core'); ?></button>
-                                <span class="cc-cache-help-text"><?php _e('Deletes only expired entries. Active ones remain untouched.', 'content-core'); ?></span>
-                                <?php if ($last_expired): ?>
-                                <div class="cc-last-cphp echo esc_htmlleared"><?(sprintf(__('Last cleared: %s', 'content-core'), $last_expired['timestamp'])); ?></div>
-                                <?php endif; ?>
-                            </form>
-                        </div>
-                    </div>
-
-                    <!-- Advanced / Dangerous Actions -->
-                    <div class="cc-cache-section collapsed">
-                        <div class="cc-cache-section-header" onclick="document.querySelectorAll('.cc-cache-section')[1].classList.toggle('collapsed');">
-                            <strong><?php _e('Advanced / Dangerous Actions', 'content-core'); ?></strong>
-                            <span class="dashicons dashicons-arrow-down"></span>
-                        </div>
-                        <div class="cc-cache-section-content">
-                            <form action="<?php echo admin_url('admin-post.php'); ?>" method="post" id="cc_dangerous_form" style="margin-bottom: 12px;">
-                                <input type="hidden" name="action" value="cc_clear_all_transients">
-                                <?php wp_nonce_field('cc_cache_nonce'); ?>
-                                <div style="margin-bottom: 8px;">
-                                    <label style="font-size: 12px; display: block; color: #d63638; cursor: pointer;">
-                                        <input type="checkbox" id="cc_confirm_all_transients"> 
-                                        <?php _e('I confirm this will delete ALL WordPress transients, including other plugins.', 'content-core'); ?>
-                                    </label>
-                                </div>
-                                <button type="submit" id="cc_clear_all_btn" class="button cc-cache-danger-btn" disabled><?php _e('Clear ALL Transients', 'content-core'); ?></button>
-                                <span class="cc-cache-help-text"><?php _e('Deletes all transient cache entries from WordPress.', 'content-core'); ?></span>
-                                <?php if ($last_all): ?>
-                                <div class="cc-last-cleared"><?php echo esc_html(sprintf(__('Last cleared: %s', 'content-core'), $last_all['timestamp'])); ?></div>
-                                <?php endif; ?>
-                            </form>
-
-                            <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
-                                <input type="hidden" name="action" value="cc_flush_object_cache">
-                                <?php wp_nonce_field('cc_cache_nonce'); ?>
-                                <button type="submit" class="button cc-cache-danger-btn" <?php echo $object_cache_active ? '' : 'disabled'; ?>><?php _e('Flush Object Cache', 'content-core'); ?></button>
-                                <span class="cc-cache-help-text"><?php _e('Flushes external object cache if available.', 'content-core'); ?></span>
-                                <?php if ($last_obj): ?>
-                                <div class="cc-last-cleared"><?php echo esc_html(sprintf(__('Last cleared: %s', 'content-core'), $last_obj['timestamp'])); ?></div>
-                                <?php endif; ?>
-                            </form>
-                        </div>
+                    <div style="font-size:13px; color:var(--cc-text-muted); line-height:1.4;">
+                        <strong>
+                            <?php echo esc_html($plugin_version); ?>
+                        </strong> / WordPress
+                        <?php echo esc_html($wp_version); ?><br>
+                        <span style="opacity:0.7; font-size:11px;">
+                            <?php echo esc_html(sprintf(__('Last checked: %s', 'content-core'), $health_report['checked_at'])); ?>
+                        </span>
                     </div>
                 </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <form action="<?php echo admin_url('admin-post.php'); ?>" method="post"
+                        style="display:inline; margin:0;">
+                        <input type="hidden" name="action" value="cc_refresh_health">
+                        <?php wp_nonce_field('cc_refresh_health_nonce'); ?>
+                        <button type="submit" class="button button-secondary"
+                            style="height:36px; display:flex; align-items:center; gap:6px;">
+                            <span class="dashicons dashicons-update"
+                                style="font-size:16px; width:16px; height:16px; margin-top:2px;"></span>
+                            <?php _e('Refresh Status', 'content-core'); ?>
+                        </button>
+                    </form>
+                    <a href="<?php echo admin_url('admin.php?page=cc-diagnostics'); ?>" class="button button-secondary"
+                        style="height:36px; display:flex; align-items:center; gap:6px;">
+                        <span class="dashicons dashicons-admin-tools"
+                            style="font-size:16px; width:16px; height:16px; margin-top:2px;"></span>
+                        <?php _e('Diagnostics', 'content-core'); ?>
+                    </a>
+                </div>
             </div>
-
-            <!-- Moved from Tools -->
-            <div class="cc-card" style="margin-top: 24px;">
-                <h2><?php _e('System Maintenance', 'content-core'); ?></h2>
-                <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
-                    <input type="hidden" name="action" value="cc_flush_rewrite_rules">
-                    <?php wp_nonce_field('cc_flush_rules_nonce'); ?>
-                    <p><?php _e('Flush your rewrite rules if you experience 404 errors after adding new Post Types or Taxonomies.', 'content-core'); ?></p>
-                    <input type="submit" class="button button-primary" value="<?php _e('Flush Rewrite Rules', 'content-core'); ?>">
-                </form>
+            <?php if (!empty($health_report['issues'])): ?>
+            <div class="cc-health-issues">
+                <?php foreach ($health_report['issues'] as $issue): ?>
+                <div class="cc-health-issue" style="color:#d63638; display:flex; align-items:center; gap:8px;">
+                    <span class="dashicons dashicons-warning" style="font-size:16px; width:16px; height:16px;"></span>
+                    <?php echo esc_html($issue); ?>
+                </div>
+                <?php
+            endforeach; ?>
             </div>
+            <?php
+        endif; ?>
+        </div>
 
-            <div class="cc-card" style="margin-top: 24px;">
-                <h2><?php _e('Admin UI Health', 'content-core'); ?></h2>
-                <p><?php _e('Diagnostic information for Content Core admin interfaces. Use this to verify that layouts are loading correctly.', 'content-core'); ?></p>
-                
-                <h3><?php _e('Current Screen Info', 'content-core'); ?></h3>
-                <table class="wp-list-table widefat fixed striped" style="margin-top: 10px; margin-bottom: 20px;">
-                    <thead>
-                        <tr>
-                            <th style="width: 200px;"><?php _e('Property', 'content-core'); ?></th>
-                            <th><?php _e('Value', 'content-core'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php 
-                        $screen = get_current_screen();
-                        global $hook_suffix;
-                        $screen_data = [
-                            'Screen ID'   => $screen ? $screen->id : 'N/A',
-                            'Base'        => $screen ? $screen->base : 'N/A',
-                            'Post Type'   => $screen ? $screen->post_type : 'N/A',
-                            'Hook Suffix' => $hook_suffix ?: 'N/A',
-                        ];
-                        foreach ($screen_data as $prop => $val) : ?>
-                        <tr>
-                            <td><strong><?php echo esc_html($prop); ?></strong></td>
-                            <td><code><?php echo esc_html($val); ?></code></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-
-                <h3><?php _e('Asset Enqueue Status', 'content-core'); ?></h3>
-                <p style="font-size: 12px; color: #646970; margin-bottom: 10px;">
-                    <em><?php _e('Note: Post-edit specific assets (cc-post-edit, cc-metabox-ui) are intentionally not enqueued on the Dashboard. They should show as "Registered" here if the files exist.', 'content-core'); ?></em>
-                </p>
-                <table class="wp-list-table widefat fixed striped" style="margin-top: 10px;">
-                    <thead>
-                        <tr>
-                            <th style="width: 200px;"><?php _e('Handle', 'content-core'); ?></th>
-                            <th><?php _e('Details', 'content-core'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong><?php _e('Plugin Version', 'content-core'); ?></strong></td>
-                            <td><code><?php echo esc_html($plugin->get_version()); ?></code></td>
-                        </tr>
-                        <?php 
-                        $asset_map = [
-                            'cc-admin-modern' => ['type' => 'style', 'path' => 'assets/css/admin.css'],
-                            'cc-post-edit'    => ['type' => 'style', 'path' => 'assets/css/post-edit.css'],
-                            'cc-metabox-ui'   => ['type' => 'style', 'path' => 'assets/css/metabox-ui.css'],
-                            'cc-admin-js'     => ['type' => 'script', 'path' => 'assets/js/admin.js', 'handle' => 'cc-admin-js']
-                        ];
-                        
-                        foreach ($asset_map as $label => $info) : 
-                            $handle = $info['handle'] ?? $label;
-                            $type = $info['type'];
-                            $file_path = CONTENT_CORE_PLUGIN_DIR . $info['path'];
-                            $exists = file_exists($file_path);
-                            
-                            $is_registered = ($type === 'style') ? wp_styles()->query($handle) : wp_scripts()->query($handle);
-                            $is_enqueued = ($type === 'style') ? wp_style_is($handle, 'enqueued') : wp_script_is($handle, 'enqueued');
-                            
-                            if (!$is_registered) {
-                                $status = __('Missing', 'content-core');
-                                $style = 'color: #d63638;';
-                            } elseif ($is_enqueued) {
-                                $status = __('Enqueued', 'content-core');
-                                $style = 'color: #008a20;';
-                            } else {
-                                $status = __('Registered', 'content-core');
-                                $style = 'color: #2271b1;';
-                            }
-                        ?>
-                        <tr>
-                            <td><strong><?php echo esc_html($label); ?> (<?php echo strtoupper($type); ?>)</strong></td>
-                            <td>
-                                <span style="<?php echo $style; ?> font-weight: bold;"><?php echo esc_html($status); ?></span>
-                                <?php if ($is_registered) : 
-                                    $obj = ($type === 'style') ? wp_styles()->registered[$handle] : wp_scripts()->registered[$handle];
-                                    $src = $obj->src ?? 'N/A';
-                                    $ver = $obj->ver ?? 'N/A';
-                                ?>
-                                    <div style="font-size: 11px; margin-top: 4px; opacity: 0.8;">
-                                        <strong>Src:</strong> <code><?php echo esc_html($src); ?></code><br>
-                                        <strong>Ver:</strong> <code><?php echo esc_html($ver); ?></code><br>
-                                        <strong>File Exists:</strong> <code><?php echo $exists ? 'true' : 'false'; ?></code>
-                                    </div>
-                                <?php else: ?>
-                                    <div style="font-size: 11px; margin-top: 4px; opacity: 0.8;">
-                                        <strong>File Exists:</strong> <code><?php echo $exists ? 'true' : 'false'; ?></code>
-                                    </div>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-
-                        <tr id="cc-js-health-check">
-                            <td><strong><?php _e('JS Runtime Status', 'content-core'); ?></strong></td>
-                            <td id="cc-js-status-val"><?php _e('Checking...', 'content-core'); ?></td>
-                        </tr>
-                    </tbody>
-                </table>
+        <!-- BLOCK ONE: Environment & System -->
+        <div class="cc-card cc-card-full">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0; font-size:16px; font-weight:700;">
+                    <?php _e('Environment & System', 'content-core'); ?>
+                </h2>
+                <span class="cc-status-pill cc-status-<?php echo esc_attr($subsystems['system']['status']); ?>">
+                    <?php echo esc_html($subsystems['system']['short_label']); ?>
+                </span>
+            </div>
+            <div class="cc-grid-3">
+                <div class="cc-data-group">
+                    <span class="cc-data-label">
+                        <?php _e('Core Runtime', 'content-core'); ?>
+                    </span>
+                    <div class="cc-data-value">
+                        <strong>PHP:</strong>
+                        <code><?php echo esc_html($subsystems['system']['data']['php']); ?></code><br>
+                        <strong>WP:</strong> <code><?php echo esc_html($subsystems['system']['data']['wp']); ?></code>
+                    </div>
+                </div>
+                <div class="cc-data-group">
+                    <span class="cc-data-label">
+                        <?php _e('Module Status', 'content-core'); ?>
+                    </span>
+                    <div class="cc-data-value">
+                        <strong>
+                            <?php _e('Active:', 'content-core'); ?>
+                        </strong>
+                        <?php echo count($plugin->get_active_modules()); ?><br>
+                        <strong>
+                            <?php _e('Failures:', 'content-core'); ?>
+                        </strong>
+                        <?php echo count($plugin->get_missing_modules()); ?>
+                    </div>
+                </div>
+                <div class="cc-data-group">
+                    <span class="cc-data-label">
+                        <?php _e('Assets & Runtime', 'content-core'); ?>
+                    </span>
+                    <div class="cc-data-value">
+                        <strong>JS Runtime:</strong> <span id="cc-js-status" style="color:#d63638;">
+                            <?php _e('Detecting...', 'content-core'); ?>
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <script>
-            jQuery(document).ready(function($) {
-                var $status = $('#cc-js-status-val');
-                if (window.ContentCoreHealth && window.ContentCoreHealth.fieldGroupAdminLoaded) {
-                    $status.html('<span style="color: #008a20;">' + <?php echo wp_json_encode(__('Healthy (Builder JS Localized)', 'content-core')); ?> + '</span>');
+        <!-- BLOCK TWO: Headless API Connectivity -->
+        <div class="cc-card cc-card-full">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                <h2 style="margin:0; font-size:16px; font-weight:700;">
+                    <?php _e('Headless API Connectivity', 'content-core'); ?>
+                </h2>
+                <span class="cc-status-pill cc-status-<?php echo esc_attr($subsystems['rest_api']['status']); ?>">
+                    <?php
+        $api_status_label = $subsystems['rest_api']['short_label'];
+        if ($subsystems['rest_api']['status'] === 'healthy')
+            $api_status_label = __('Operational', 'content-core');
+        echo esc_html($api_status_label);
+?>
+                </span>
+            </div>
+
+            <?php if ($subsystems['rest_api']['status'] !== 'healthy'): ?>
+            <div
+                style="background:rgba(214, 54, 56, 0.05); border-left:4px solid #d63638; padding:12px 16px; margin-bottom:24px; font-size:13px; color:#d63638;">
+                <strong>
+                    <?php _e('Connectivity Issue:', 'content-core'); ?>
+                </strong>
+                <?php echo esc_html($subsystems['rest_api']['message']); ?>
+            </div>
+            <?php
+        endif; ?>
+
+            <div class="cc-grid-3">
+                <div class="cc-data-group">
+                    <span class="cc-data-label">
+                        <?php _e('Response Timing', 'content-core'); ?>
+                    </span>
+                    <div class="cc-data-value">
+                        <span
+                            style="font-size:24px; font-weight:700; color:<?php echo $subsystems['rest_api']['data']['reachable'] ? 'var(--cc-health-healthy-text)' : 'var(--cc-health-critical-text)'; ?>;">
+                            <?php echo esc_html($subsystems['rest_api']['data']['response_time']); ?>ms
+                        </span>
+                        <div style="font-size:11px; color:var(--cc-text-muted); margin-top:4px;">
+                            <?php _e('Internal Loopback Latency', 'content-core'); ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="cc-data-group">
+                    <span class="cc-data-label">
+                        <?php _e('API Protocol', 'content-core'); ?>
+                    </span>
+                    <div class="cc-data-value">
+                        <strong>
+                            <?php _e('HTTP Status:', 'content-core'); ?>
+                        </strong> <code><?php echo esc_html($subsystems['rest_api']['data']['http_code']); ?></code><br>
+                        <strong>
+                            <?php _e('Routes:', 'content-core'); ?>
+                        </strong>
+                        <?php echo (int)$subsystems['rest_api']['data']['route_count']; ?>
+                    </div>
+                </div>
+                <div class="cc-data-group">
+                    <span class="cc-data-label">
+                        <?php _e('Base Endpoint', 'content-core'); ?>
+                    </span>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="cc-api-url"
+                            value="<?php echo esc_url($subsystems['rest_api']['data']['base_url'] ?? ''); ?>" readonly
+                            style="font-size:12px; flex:1; background:var(--cc-bg-soft); height:32px; border:1px solid var(--cc-border);">
+                        <button type="button" class="button button-small" onclick="copyToClipboard('cc-api-url')"
+                            style="height:32px;">
+                            <?php _e('Copy', 'content-core'); ?>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BLOCK THREE: Data Integrity -->
+        <div class="cc-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0; font-size:15px; font-weight:600;">
+                    <?php _e('Multilingual Integrity', 'content-core'); ?>
+                </h2>
+                <span class="cc-status-pill cc-status-<?php echo esc_attr($subsystems['multilingual']['status']); ?>">
+                    <?php echo esc_html($subsystems['multilingual']['short_label']); ?>
+                </span>
+            </div>
+            <div class="cc-data-group" style="margin-bottom:16px;">
+                <span class="cc-data-label">
+                    <?php _e('Configuration', 'content-core'); ?>
+                </span>
+                <div class="cc-data-value">
+                    <strong>Default:</strong>
+                    <?php echo strtoupper($subsystems['multilingual']['data']['default_lang']); ?><br>
+                    <strong>Active:</strong>
+                    <code><?php echo implode(', ', array_map('strtoupper', $subsystems['multilingual']['data']['enabled_languages'])); ?></code>
+                </div>
+            </div>
+            <div class="cc-divider"></div>
+            <div class="cc-grid-2">
+                <div class="cc-data-group">
+                    <span class="cc-data-label">
+                        <?php _e('Missing Meta', 'content-core'); ?>
+                    </span>
+                    <div class="cc-data-value"
+                        style="font-size:18px; font-weight:700; color:<?php echo $subsystems['multilingual']['data']['missing_lang_meta_count'] > 0 ? 'var(--cc-health-warning-text)' : 'var(--cc-health-healthy-text)'; ?>;">
+                        <?php echo (int)$subsystems['multilingual']['data']['missing_lang_meta_count']; ?>
+                    </div>
+                </div>
+                <div class="cc-data-group">
+                    <span class="cc-data-label">
+                        <?php _e('Collisions', 'content-core'); ?>
+                    </span>
+                    <div class="cc-data-value"
+                        style="font-size:18px; font-weight:700; color:<?php echo $subsystems['multilingual']['data']['duplicate_collisions_count'] > 0 ? 'var(--cc-health-critical-text)' : 'var(--cc-health-healthy-text)'; ?>;">
+                        <?php echo (int)$subsystems['multilingual']['data']['duplicate_collisions_count']; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cc-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0; font-size:15px; font-weight:600;">
+                    <?php _e('Site Options Integrity', 'content-core'); ?>
+                </h2>
+                <span class="cc-status-pill cc-status-<?php echo esc_attr($subsystems['site_options']['status']); ?>">
+                    <?php echo esc_html($subsystems['site_options']['short_label']); ?>
+                </span>
+            </div>
+            <div class="cc-data-group">
+                <span class="cc-data-label">
+                    <?php _e('Translation Group', 'content-core'); ?>
+                </span>
+                <div class="cc-data-value">
+                    <?php echo $subsystems['site_options']['data']['translation_group_id_present'] ? 
+            '<span style="color:var(--cc-health-healthy-text); font-weight:600;">Operational</span>' :
+            '<span style="color:var(--cc-health-critical-text); font-weight:600;">Missing ID</span>'; ?>
+                </div>
+            </div>
+            <div class="cc-divider"></div>
+            <div class="cc-data-group">
+                <span class="cc-data-label">
+                    <?php _e('Languages Status', 'content-core'); ?>
+                </span>
+                <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+                    <?php foreach ($subsystems['site_options']['data']['languages_with_options'] as $lang): ?>
+                    <span class="cc-status-pill cc-status-healthy"
+                        style="font-size:10px; padding:2px 8px; opacity:0.8;">
+                        <?php echo strtoupper($lang); ?>
+                    </span>
+                    <?php
+        endforeach; ?>
+                    <?php foreach ($subsystems['site_options']['data']['languages_missing_options'] as $lang): ?>
+                    <span class="cc-status-pill cc-status-warning" style="font-size:10px; padding:2px 8px;">
+                        <?php echo strtoupper($lang); ?>
+                    </span>
+                    <?php
+        endforeach; ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="cc-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0; font-size:15px; font-weight:600;">
+                    <?php _e('Forms Health', 'content-core'); ?>
+                </h2>
+                <span class="cc-status-pill cc-status-<?php echo esc_attr($subsystems['forms']['status']); ?>">
+                    <?php echo esc_html($subsystems['forms']['short_label']); ?>
+                </span>
+            </div>
+            <div class="cc-data-group">
+                <span class="cc-data-label">
+                    <?php _e('Status Message', 'content-core'); ?>
+                </span>
+                <div class="cc-data-value" style="font-size:13px; line-height:1.5;">
+                    <?php echo esc_html($subsystems['forms']['message']); ?>
+                </div>
+            </div>
+            <div class="cc-divider"></div>
+            <div class="cc-data-group">
+                <span class="cc-data-label">
+                    <?php _e('Protection', 'content-core'); ?>
+                </span>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <?php
+        $prot = $subsystems['forms']['data']['protection'];
+        $badges = [
+            'honeypot' => 'Honeypot',
+            'rate_limit' => 'Rate Limit',
+            'turnstile' => 'Turnstile'
+        ];
+        foreach ($badges as $key => $label): ?>
+                    <span class="cc-status-pill <?php echo $prot[$key] ? 'cc-status-healthy' : 'cc-status-warning'; ?>"
+                        style="font-size:9px; opacity:<?php echo $prot[$key] ? '1' : '0.5'; ?>;">
+                        <?php echo esc_html($label); ?>
+                    </span>
+                    <?php
+        endforeach; ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Safe Actions & Maintenance -->
+        <div class="cc-card cc-card-full">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0; font-size:16px; font-weight:700;">
+                    <?php _e('Safe Actions & Maintenance', 'content-core'); ?>
+                </h2>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap:24px;">
+                <!-- Safe Action: CC Cache -->
+                <div
+                    style="background:var(--cc-bg-soft); padding:20px; border-radius:8px; border:1px solid var(--cc-border);">
+                    <span class="cc-data-label">
+                        <?php _e('Core Cache', 'content-core'); ?>
+                    </span>
+                    <div style="margin:12px 0;">
+                        <span style="font-size:20px; font-weight:700; color:var(--cc-text);">
+                            <?php echo (int)($snapshot['cc_cache']['count'] ?? 0); ?>
+                        </span>
+                        <span style="font-size:12px; color:var(--cc-text-muted); margin-left:4px;">(
+                            <?php echo $format_bytes($snapshot['cc_cache']['bytes'] ?? 0); ?>)
+                        </span>
+                    </div>
+                    <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
+                        <input type="hidden" name="action" value="cc_clear_plugin_caches">
+                        <?php wp_nonce_field('cc_cache_nonce'); ?>
+                        <button type="submit" class="button button-primary" style="width:100%; justify-content:center;">
+                            <?php _e('Flush CC Cache', 'content-core'); ?>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Safe Action: Expired Transients -->
+                <div
+                    style="background:var(--cc-bg-soft); padding:20px; border-radius:8px; border:1px solid var(--cc-border);">
+                    <span class="cc-data-label">
+                        <?php _e('Expired Data', 'content-core'); ?>
+                    </span>
+                    <div style="margin:12px 0;">
+                        <span style="font-size:20px; font-weight:700; color:var(--cc-text);">
+                            <?php echo (int)($snapshot['expired']['count'] ?? 0); ?>
+                        </span>
+                        <span style="font-size:12px; color:var(--cc-text-muted); margin-left:4px;">(
+                            <?php echo $format_bytes($snapshot['expired']['bytes'] ?? 0); ?>)
+                        </span>
+                    </div>
+                    <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
+                        <input type="hidden" name="action" value="cc_clear_expired_transients">
+                        <?php wp_nonce_field('cc_cache_nonce'); ?>
+                        <button type="submit" class="button button-secondary"
+                            style="width:100%; justify-content:center;">
+                            <?php _e('Clear Expired', 'content-core'); ?>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Dangerous Actions (Collapsible) -->
+                <div
+                    style="background:rgba(214, 54, 56, 0.03); padding:20px; border-radius:8px; border:1px solid rgba(214, 54, 56, 0.15);">
+                    <span class="cc-data-label" style="color:#d63638;">
+                        <?php _e('System Repair', 'content-core'); ?>
+                    </span>
+                    <p style="font-size:12px; color:var(--cc-text-muted); margin:12px 0; line-height:1.4;">
+                        <?php _e('Powerful actions for troubleshooting. Use with caution.', 'content-core'); ?>
+                    </p>
+
+                    <details style="margin-top:10px;">
+                        <summary
+                            style="font-size:13px; font-weight:600; cursor:pointer; color:#d63638; display:flex; align-items:center; gap:5px;">
+                            <span class="dashicons dashicons-warning"
+                                style="font-size:18px; width:18px; height:18px;"></span>
+                            <?php _e('Open Dangerous Actions', 'content-core'); ?>
+                        </summary>
+                        <div style="margin-top:15px; padding-top:15px; border-top:1px solid rgba(214, 54, 56, 0.1);">
+                            <label
+                                style="font-size:12px; display:flex; align-items:flex-start; gap:8px; color:#d63638; margin-bottom:15px; cursor:pointer; line-height:1.4;">
+                                <input type="checkbox" id="cc_dangerous_confirm_check" style="margin-top:2px;">
+                                <span>
+                                    <?php _e('I understand these actions may impact performance temporarily or clear all cached session data.', 'content-core'); ?>
+                                </span>
+                            </label>
+
+                            <div style="display:grid; gap:10px;">
+                                <form action="<?php echo admin_url('admin-post.php'); ?>" method="post"
+                                    id="cc_clear_all_form">
+                                    <input type="hidden" name="action" value="cc_clear_all_transients">
+                                    <?php wp_nonce_field('cc_cache_nonce'); ?>
+                                    <button type="submit" id="cc_clear_all_btn" class="button"
+                                        style="width:100%; color:#d63638; border-color:#d63638;" disabled>
+                                        <?php _e('Flush ALL Transients', 'content-core'); ?>
+                                    </button>
+                                </form>
+
+                                <form action="<?php echo admin_url('admin-post.php'); ?>" method="post">
+                                    <input type="hidden" name="action" value="cc_flush_rewrite_rules">
+                                    <?php wp_nonce_field('cc_flush_rules_nonce'); ?>
+                                    <button type="submit" id="cc_flush_rules_btn" class="button" style="width:100%;"
+                                        disabled>
+                                        <?php _e('Regenerate Permalinks', 'content-core'); ?>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyToClipboard(id) {
+        var copyText = document.getElementById(id);
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value).then(() => {
+            const btn = event.target || document.querySelector('[onclick="copyToClipboard(\'' + id + '\')"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<?php echo esc_js(__('Copied!', 'content - core')); ?>';
+            setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // JS Detection
+        const jsStatus = document.getElementById('cc-js-status');
+        if (jsStatus) {
+            jsStatus.innerText = '<?php echo esc_js(__('Active', 'content - core')); ?>';
+            jsStatus.style.color = '#008a20';
+        }
+
+        var dangerousCheckbox = document.getElementById('cc_dangerous_confirm_check');
+        var clearAllBtn = document.getElementById('cc_clear_all_btn');
+        var flushRulesBtn = document.getElementById('cc_flush_rules_btn');
+
+        if (dangerousCheckbox) {
+            dangerousCheckbox.addEventListener('change', function () {
+                var isChecked = this.checked;
+                if (clearAllBtn) clearAllBtn.disabled = !isChecked;
+                if (flushRulesBtn) flushRulesBtn.disabled = !isChecked;
+
+                if (isChecked) {
+                    if (clearAllBtn) {
+                        clearAllBtn.style.backgroundColor = '#d63638';
+                        clearAllBtn.style.color = '#fff';
+                    }
                 } else {
-                    // Check if admin.js is working by setting a generic flag
-                    if (typeof jQuery !== 'undefined') {
-                        $status.html('<span style="color: #008a20;">' + <?php echo wp_json_encode(__('Healthy (jQuery Active)', 'content-core')); ?> + '</span>');
-                    } else {
-                        $status.html('<span style="color: #d63638;">' + <?php echo wp_json_encode(__('Error: JS Runtime Failure', 'content-core')); ?> + '</span>');
+                    if (clearAllBtn) {
+                        clearAllBtn.style.backgroundColor = '';
+                        clearAllBtn.style.color = '#d63638';
                     }
                 }
             });
-        </script>
-        <?php
+        }
+
+            });
+        }
+    });
+</script>
+
+<!-- Section: Activity Log -->
+<div class="cc-card cc-card-full" style="margin-top:24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="margin:0; font-size:16px; font-weight:700;">
+            <?php _e('Recent Activity Log', 'content-core'); ?>
+        </h2>
+        <span style="font-size:12px; color:var(--cc-text-muted);">
+            <?php _e('Showing last 50 administrative actions', 'content-core'); ?>
+        </span>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table class="wp-list-table widefat fixed striped" style="border:1px solid var(--cc-border); box-shadow:none;">
+            <thead>
+                <tr>
+                    <th style="width:180px; font-weight:700;">
+                        <?php _e('Timestamp', 'content-core'); ?>
+                    </th>
+                    <th style="width:120px; font-weight:700;">
+                        <?php _e('User', 'content-core'); ?>
+                    </th>
+                    <th style="width:150px; font-weight:700;">
+                        <?php _e('Action', 'content-core'); ?>
+                    </th>
+                    <th style="font-weight:700;">
+                        <?php _e('Details', 'content-core'); ?>
+                    </th>
+                    <th style="width:100px; text-align:center; font-weight:700;">
+                        <?php _e('Status', 'content-core'); ?>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+        $audit_service = new AuditService();
+        $logs = $audit_service->get_logs();
+
+        if (empty($logs)): ?>
+                <tr>
+                    <td colspan="5" style="text-align:center; padding:20px; color:var(--cc-text-muted);">
+                        <?php _e('No activity recorded yet.', 'content-core'); ?>
+                    </td>
+                </tr>
+                <?php
+        else:
+            foreach ($logs as $log): ?>
+                <tr>
+                    <td style="font-size:12px;">
+                        <?php echo esc_html($log['timestamp']); ?>
+                    </td>
+                    <td style="font-weight:600;">
+                        <?php echo esc_html($log['user']); ?>
+                    </td>
+                    <td><code><?php echo esc_html($log['action']); ?></code></td>
+                    <td style="font-size:13px;">
+                        <?php echo esc_html($log['message']); ?>
+                    </td>
+                    <td style="text-align:center;">
+                        <span
+                            class="cc-status-pill cc-status-<?php echo esc_attr($log['status'] === 'success' ? 'healthy' : ($log['status'] === 'warning' ? 'warning' : 'critical')); ?>"
+                            style="font-size:10px; padding:2px 8px;">
+                            <?php echo esc_html(ucfirst($log['status'])); ?>
+                        </span>
+                    </td>
+                </tr>
+                <?php
+            endforeach;
+        endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+<?php
     }
 
     /**
@@ -535,49 +790,71 @@ class AdminMenu
      */
     public function render_api_page(): void
     {
-        ?>
-        <div class="wrap content-core-admin">
-            <div class="cc-header">
-                <h1><?php _e('REST API Reference', 'content-core'); ?></h1>
-            </div>
+?>
+<div class="wrap content-core-admin">
+    <div class="cc-header">
+        <h1>
+            <?php _e('REST API Reference', 'content-core'); ?>
+        </h1>
+    </div>
 
-            <div class="cc-card">
-                <h2><?php _e('Introduction', 'content-core'); ?></h2>
-                <p><?php _e('Content Core provides dedicated, high-performance REST API endpoints for your headless application. All responses return clean, production-ready JSON.', 'content-core'); ?></p>
-            </div>
+    <div class="cc-card">
+        <h2>
+            <?php _e('Introduction', 'content-core'); ?>
+        </h2>
+        <p>
+            <?php _e('Content Core provides dedicated, high-performance REST API endpoints for your headless application. All responses return clean, production-ready JSON.', 'content-core'); ?>
+        </p>
+    </div>
 
-            <div class="cc-card">
-                <h2><?php _e('Endpoints', 'content-core'); ?></h2>
-                <table class="wp-list-table widefat fixed striped">
-                    <thead>
-                        <tr>
-                            <th style="width: 300px;"><?php _e('Endpoint', 'content-core'); ?></th>
-                            <th><?php _e('Description', 'content-core'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><code>/content-core/v1/post/{type}/{id}</code></td>
-                            <td><?php _e('Get a single post by ID and type, including all custom fields.', 'content-core'); ?></td>
-                        </tr>
-                        <tr>
-                            <td><code>/content-core/v1/posts/{type}</code></td>
-                            <td><?php _e('Query multiple posts of a specific type. Supports pagination.', 'content-core'); ?></td>
-                        </tr>
-                        <tr>
-                            <td><code>/content-core/v1/options/{slug}</code></td>
-                            <td><?php _e('Get all custom fields for a specific options page.', 'content-core'); ?></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            
-            <div class="cc-card">
-                <h2><?php _e('Global Custom Fields Object', 'content-core'); ?></h2>
-                <p><?php _e('Content Core also attaches a "customFields" object to standard WordPress REST API post responses for easy integration.', 'content-core'); ?></p>
-            </div>
-        </div>
-        <?php
+    <div class="cc-card">
+        <h2>
+            <?php _e('Endpoints', 'content-core'); ?>
+        </h2>
+        <table class="wp-list-table widefat fixed striped">
+            <thead>
+                <tr>
+                    <th style="width: 300px;">
+                        <?php _e('Endpoint', 'content-core'); ?>
+                    </th>
+                    <th>
+                        <?php _e('Description', 'content-core'); ?>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>/content-core/v1/post/{type}/{id}</code></td>
+                    <td>
+                        <?php _e('Get a single post by ID and type, including all custom fields.', 'content-core'); ?>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>/content-core/v1/posts/{type}</code></td>
+                    <td>
+                        <?php _e('Query multiple posts of a specific type. Supports pagination.', 'content-core'); ?>
+                    </td>
+                </tr>
+                <tr>
+                    <td><code>/content-core/v1/options/{slug}</code></td>
+                    <td>
+                        <?php _e('Get all custom fields for a specific options page.', 'content-core'); ?>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="cc-card">
+        <h2>
+            <?php _e('Global Custom Fields Object', 'content-core'); ?>
+        </h2>
+        <p>
+            <?php _e('Content Core also attaches a "customFields" object to standard WordPress REST API post responses for easy integration.', 'content-core'); ?>
+        </p>
+    </div>
+</div>
+<?php
     }
 
     /**
@@ -585,6 +862,10 @@ class AdminMenu
      */
     public function handle_clear_expired_transients(): void
     {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            wp_die(__('Invalid request method.', 'content-core'), 405);
+        }
+
         if (!current_user_can('manage_options')) {
             wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
         }
@@ -593,6 +874,9 @@ class AdminMenu
 
         $service = new CacheService();
         $res = $service->clear_expired_transients();
+
+        $audit = new AuditService();
+        $audit->log_action('clear_expired_transients', 'success', sprintf(__('Cleared %d expired transients.', 'content-core'), $res['count']));
 
         wp_safe_redirect(admin_url('admin.php?page=content-core&cc_action=expired_cleared&cc_count=' . $res['count'] . '&cc_bytes=' . $res['bytes']));
         exit;
@@ -603,6 +887,10 @@ class AdminMenu
      */
     public function handle_clear_all_transients(): void
     {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            wp_die(__('Invalid request method.', 'content-core'), 405);
+        }
+
         if (!current_user_can('manage_options')) {
             wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
         }
@@ -611,6 +899,9 @@ class AdminMenu
 
         $service = new CacheService();
         $res = $service->clear_all_transients();
+
+        $audit = new AuditService();
+        $audit->log_action('clear_all_transients', 'success', sprintf(__('Cleared ALL transients (%d items).', 'content-core'), $res['count']));
 
         wp_safe_redirect(admin_url('admin.php?page=content-core&cc_action=all_cleared&cc_count=' . $res['count'] . '&cc_bytes=' . $res['bytes']));
         exit;
@@ -621,6 +912,10 @@ class AdminMenu
      */
     public function handle_clear_plugin_caches(): void
     {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            wp_die(__('Invalid request method.', 'content-core'), 405);
+        }
+
         if (!current_user_can('manage_options')) {
             wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
         }
@@ -629,6 +924,9 @@ class AdminMenu
 
         $service = new CacheService();
         $res = $service->clear_content_core_caches();
+
+        $audit = new AuditService();
+        $audit->log_action('clear_plugin_caches', 'success', sprintf(__('Cleared Content Core plugin caches (%d items).', 'content-core'), $res['count']));
 
         wp_safe_redirect(admin_url('admin.php?page=content-core&cc_action=cc_cleared&cc_count=' . $res['count'] . '&cc_bytes=' . $res['bytes']));
         exit;
@@ -639,6 +937,10 @@ class AdminMenu
      */
     public function handle_flush_object_cache(): void
     {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            wp_die(__('Invalid request method.', 'content-core'), 405);
+        }
+
         if (!current_user_can('manage_options')) {
             wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
         }
@@ -650,6 +952,9 @@ class AdminMenu
 
         wp_cache_flush();
 
+        $audit = new AuditService();
+        $audit->log_action('flush_object_cache', 'success', __('Flushed persistent object cache.', 'content-core'));
+
         wp_safe_redirect(admin_url('admin.php?page=content-core&cc_action=obj_flushed'));
         exit;
     }
@@ -659,18 +964,281 @@ class AdminMenu
      */
     public function handle_flush_rewrite_rules(): void
     {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            wp_die(__('Invalid request method.', 'content-core'), 405);
+        }
+
         if (!current_user_can('manage_options')) {
-            wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
+            wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'), 403);
         }
 
         check_admin_referer('cc_flush_rules_nonce');
 
         flush_rewrite_rules();
 
-        add_settings_error('cc_dashboard', 'flushed', __('Rewrite rules flushed successfully.', 'content-core'), 'updated');
-        set_transient('settings_errors', get_settings_errors(), 30);
+        $audit = new AuditService();
+        $audit->log_action('flush_rewrite_rules', 'success', __('Flushed WordPress rewrite rules.', 'content-core'));
 
-        wp_safe_redirect(admin_url('admin.php?page=content-core&settings-updated=true'));
+        wp_safe_redirect(admin_url('admin.php?page=content-core&cc_action=rules_flushed'));
+        exit;
+    }
+
+    /**
+     * Handle duplicate site options via admin_post
+     */
+    public function handle_duplicate_site_options(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            wp_die(__('Invalid request method.', 'content-core'), 405);
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
+        }
+
+        check_admin_referer('cc_duplicate_site_options_nonce');
+
+        $target_lang = sanitize_text_field($_POST['target_lang'] ?? '');
+        if (empty($target_lang)) {
+            wp_safe_redirect(admin_url('admin.php?page=content-core'));
+            exit;
+        }
+
+        $cache_service = new CacheService();
+        $target_lang_display = strtoupper($target_lang);
+
+        if (!$cache_service->is_site_options_empty($target_lang)) {
+            wp_die(sprintf(__('Site options for %s are not empty. Overwrite is not allowed.', 'content-core'), $target_lang_display));
+        }
+
+        $plugin = \ContentCore\Plugin::get_instance();
+        $site_options_module = $plugin->get_module('site_options');
+
+        $source_lang = 'de';
+        if ($site_options_module && method_exists($site_options_module, 'get_options')) {
+            $ml_module = $plugin->get_module('multilingual');
+
+            if ($ml_module && method_exists($ml_module, 'is_active') && method_exists($ml_module, 'get_settings')) {
+                if ($ml_module->is_active()) {
+                    $settings = $ml_module->get_settings();
+                    $source_lang = $settings['default_lang'] ?? 'de';
+                }
+            }
+
+            $source_options = $site_options_module->get_options($source_lang);
+            if (!empty($source_options)) {
+                update_option("cc_site_options_{$target_lang}", $source_options);
+            }
+        }
+
+        $audit = new AuditService();
+        $audit->log_action('duplicate_site_options', 'success', sprintf(__('Duplicated site options from %s to %s.', 'content-core'), strtoupper($source_lang), $target_lang_display));
+
+        wp_safe_redirect(admin_url('admin.php?page=content-core&cc_action=options_duplicated'));
+        exit;
+    }
+
+    /**
+     * Render the Diagnostics page
+     */
+    public function render_diagnostics_page(): void
+    {
+        $cache_service = new CacheService();
+        $report = $cache_service->get_consolidated_health_report();
+        $subsystems = $report['subsystems'];
+        $plugin = \ContentCore\Plugin::get_instance();
+        $screen = get_current_screen();
+        global $hook_suffix;
+
+?>
+<div class="wrap content-core-admin">
+    <div class="cc-header">
+        <h1>
+            <?php _e('System Diagnostics', 'content-core'); ?>
+        </h1>
+        <div style="font-size:13px; color:var(--cc-text-muted);">
+            <?php echo esc_html(sprintf(__('Report generated at %s', 'content-core'), $report['checked_at'])); ?>
+        </div>
+    </div>
+
+    <div class="cc-dashboard-grid">
+        <!-- Section 1: Environment & Server -->
+        <div class="cc-card cc-card-full">
+            <h2 style="margin-bottom:20px; font-size:16px; font-weight:700;">
+                <?php _e('Environment & Server', 'content-core'); ?>
+            </h2>
+            <div class="cc-grid-3">
+                <div class="cc-data-group">
+                    <span class="cc-data-label">
+                        <?php _e('Core Software', 'content-core'); ?>
+                    </span>
+                    <div class="cc-data-value">
+                        <strong>PHP:</strong> <code><?php echo PHP_VERSION; ?></code><br>
+                        <strong>WP:</strong> <code><?php echo get_bloginfo('version'); ?></code><br>
+                        <strong>CC:</strong> <code><?php echo CONTENT_CORE_VERSION; ?></code>
+                    </div>
+                </div>
+                <div class="cc-data-group">
+                    <span class="cc-data-label">
+                        <?php _e('WordPress Context', 'content-core'); ?>
+                    </span>
+                    <div class="cc-data-value">
+                        <strong>Screen ID:</strong> <code><?php echo $screen->id; ?></code><br>
+                        <strong>Base:</strong> <code><?php echo $screen->base; ?></code><br>
+                        <strong>Hook:</strong> <code><?php echo $hook_suffix; ?></code>
+                    </div>
+                </div>
+                <div class="cc-data-group">
+                    <span class="cc-data-label">
+                        <?php _e('Memory & Time', 'content-core'); ?>
+                    </span>
+                    <div class="cc-data-value">
+                        <strong>Limit:</strong> <code><?php echo ini_get('memory_limit'); ?></code><br>
+                        <strong>Exec:</strong> <code><?php echo ini_get('max_execution_time'); ?>s</code><br>
+                        <strong>Upload:</strong> <code><?php echo ini_get('upload_max_filesize'); ?></code>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Module Audit -->
+        <div class="cc-card">
+            <h2 style="margin-bottom:20px; font-size:16px; font-weight:700;">
+                <?php _e('Module Audit', 'content-core'); ?>
+            </h2>
+            <div
+                style="background:var(--cc-bg-soft); border-radius:8px; border:1px solid var(--cc-border); padding:16px;">
+                <ul style="margin:0; padding:0; list-style:none;">
+                    <?php
+        $all_modules = $plugin->get_modules();
+        ksort($all_modules);
+        foreach ($all_modules as $id => $module): ?>
+                    <li
+                        style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--cc-border); last-child:border-bottom:0;">
+                        <span style="font-size:13px; font-weight:600;">
+                            <?php echo esc_html(ucwords(str_replace('_', ' ', $id))); ?>
+                        </span>
+                        <span class="cc-status-pill cc-status-healthy" style="font-size:10px;">
+                            <?php _e('Active', 'content-core'); ?>
+                        </span>
+                    </li>
+                    <?php
+        endforeach; ?>
+
+                    <?php
+        $missing = $plugin->get_missing_modules();
+        foreach ($missing as $id): ?>
+                    <li
+                        style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--cc-border); color:var(--cc-health-critical-text);">
+                        <span style="font-size:13px; font-weight:600;">
+                            <?php echo esc_html(ucwords(str_replace('_', ' ', $id))); ?>
+                        </span>
+                        <span class="cc-status-pill cc-status-critical" style="font-size:10px;">
+                            <?php _e('Failed', 'content-core'); ?>
+                        </span>
+                    </li>
+                    <?php
+        endforeach; ?>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 3: REST API Probe -->
+        <div class="cc-card">
+            <h2 style="margin-bottom:20px; font-size:16px; font-weight:700;">
+                <?php _e('REST API Discovery', 'content-core'); ?>
+            </h2>
+            <div class="cc-data-group" style="margin-bottom:16px;">
+                <span class="cc-data-label">
+                    <?php _e('Registered Routes', 'content-core'); ?>
+                </span>
+                <div
+                    style="max-height:200px; overflow-y:auto; background:var(--cc-bg-soft); border-radius:4px; padding:10px; border:1px solid var(--cc-border); font-family:monospace; font-size:11px;">
+                    <?php
+        $rest_server = function_exists('rest_get_server') ? rest_get_server() : null;
+        if ($rest_server):
+            $routes = $rest_server->get_routes();
+            foreach ($routes as $route => $handlers):
+                if (strpos($route, 'content-core/v1') === 0):
+                    echo 'GET ' . esc_html($route) . '<br>';
+                endif;
+            endforeach;
+        endif;
+?>
+                </div>
+            </div>
+            <div class="cc-data-group">
+                <span class="cc-data-label">
+                    <?php _e('Probe Result', 'content-core'); ?>
+                </span>
+                <div class="cc-data-value">
+                    <strong>Status:</strong>
+                    <?php echo (int)$subsystems['rest_api']['data']['http_code']; ?><br>
+                    <strong>Latency:</strong>
+                    <?php echo (int)$subsystems['rest_api']['data']['response_time']; ?>ms
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Raw Report -->
+        <div class="cc-card cc-card-full">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0; font-size:16px; font-weight:700;">
+                    <?php _e('Raw Health Report', 'content-core'); ?>
+                </h2>
+                <button type="button" class="button button-secondary" onclick="copyToClipboard('cc-raw-report')">
+                    <span class="dashicons dashicons-clipboard"
+                        style="font-size:16px; width:16px; height:16px; margin-top:2px;"></span>
+                    <?php _e('Copy JSON', 'content-core'); ?>
+                </button>
+            </div>
+            <textarea id="cc-raw-report" readonly
+                style="width:100%; height:200px; font-family:monospace; font-size:12px; background:var(--cc-bg-soft); border:1px solid var(--cc-border); padding:15px;"><?php echo esc_textarea(json_encode($report, JSON_PRETTY_PRINT)); ?></textarea>
+            <p style="font-size:12px; color:var(--cc-text-muted); margin-top:10px;">
+                <?php _e('This JSON report contains all gathered health data. Useful for debugging or providing to support.', 'content-core'); ?>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyToClipboard(id) {
+        var copyText = document.getElementById(id);
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value).then(() => {
+            const btn = event.target || document.querySelector('[onclick="copyToClipboard(\'' + id + '\')"]');
+            const originalText = btn.innerHTML;
+    btn.innerHTML = '<?php echo esc_js(__('Copied!', 'content - core')); ?>';
+            setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+        });
+    }
+</script>
+<?php
+    }
+
+    /**
+     * Handle health cache refresh via admin_post
+     */
+    public function handle_refresh_health(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            wp_die(__('Invalid request method.', 'content-core'), 405);
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
+        }
+
+        check_admin_referer('cc_refresh_health_nonce');
+
+        $cache_service = new CacheService();
+        $cache_service->clear_health_cache();
+
+        $audit = new AuditService();
+        $audit->log_action('refresh_health', 'success', __('Refreshed system health diagnostic cache.', 'content-core'));
+
+        wp_safe_redirect(admin_url('admin.php?page=content-core&cc_action=health_refreshed'));
         exit;
     }
 }
