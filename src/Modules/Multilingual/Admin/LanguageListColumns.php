@@ -26,23 +26,50 @@ class LanguageListColumns
 
         $post_types = get_post_types(["show_ui" => true]);
         foreach ($post_types as $post_type) {
-            if (post_type_supports($post_type, 'cc-multilingual')) {
-                // Determine hook names based on post type
-                if ($post_type === 'post') {
-                    $column_filter = "manage_posts_columns";
-                    $column_action = "manage_posts_custom_column";
-                } elseif ($post_type === 'page') {
+            if ($this->should_show_column($post_type)) {
+                // Use specific hooks for all post types to avoid overlapping generic hooks (like manage_posts_custom_column)
+                // which fire for all non-hierarchical post types.
+                $column_filter = "manage_{$post_type}_posts_columns";
+                $column_action = "manage_{$post_type}_posts_custom_column";
+
+                // Backward compatibility / specific overrides for core types if needed, 
+                // but manage_{$post_type}_posts_columns is standard since WP 3.1.
+                if ($post_type === 'page') {
+                    // Pages are hierarchical and historically use different hooks
                     $column_filter = "manage_pages_columns";
                     $column_action = "manage_pages_custom_column";
-                } else {
-                    $column_filter = "manage_{$post_type}_posts_columns";
-                    $column_action = "manage_{$post_type}_posts_custom_column";
                 }
 
                 add_filter($column_filter, [$this, 'add_columns']);
                 add_action($column_action, [$this, 'render_column'], 10, 2);
             }
         }
+    }
+
+    /**
+     * Determines if the Translations column should be shown for a given post type.
+     */
+    private function should_show_column(string $post_type): bool
+    {
+        // 1. Explicitly allow core content types usually managed by our plugin
+        if (in_array($post_type, ['post', 'page'], true)) {
+            return true;
+        }
+
+        // 2. Check if the post type explicitly supports our multilingual system
+        if (post_type_supports($post_type, 'cc-multilingual')) {
+            return true;
+        }
+
+        // 3. Check settings for explicitly enabled CPTs (permalink bases imply multilingual)
+        $settings = $this->module->get_settings();
+        $permalink_bases = $settings['permalink_bases'] ?? [];
+        if (isset($permalink_bases[$post_type])) {
+            return true;
+        }
+
+        // Config layer entities for which columns are explicitly suppressed.
+        return false;
     }
 
     /**
@@ -122,11 +149,19 @@ class LanguageListColumns
 
         $post_type = $query->get('post_type') ?: 'post';
 
+        // In the Trash view, never restrict by language — all languages must be visible
+        // so editors can permanently delete items regardless of which language they are in.
+        $requested_status = sanitize_text_field($_GET['post_status'] ?? '');
+        if ($requested_status === 'trash') {
+            return;
+        }
+
         $excluded_types = [
             'cc_field_group',
             'cc_post_type_def',
             'cc_taxonomy_def',
             'cc_options_page',
+            'cc_form_entry',
             'attachment',
             'revision',
             'nav_menu_item',
@@ -283,7 +318,18 @@ class LanguageListColumns
             }
 
             $classes = ['cc-flag'];
-            $classes[] = $exists ? 'cc-flag--exists' : 'cc-flag--missing';
+            $status = 'missing';
+
+            if ($exists) {
+                $post_status = get_post_status($t_id);
+                if ($post_status === 'publish') {
+                    $status = 'published';
+                } else {
+                    $status = 'unpublished';
+                }
+            }
+
+            $classes[] = 'cc-flag--' . $status;
             $class_attr = implode(' ', array_map('esc_attr', $classes));
 
             $flag_html = $this->module->get_flag_html($code, $l['flag_id'] ?? 0);
@@ -298,11 +344,19 @@ class LanguageListColumns
                     $flag_html
                 );
             } else {
+                // Build a redirect_to URL so that after creating the translation,
+                // the user is returned to the current list table (e.g. the Forms list).
+                $list_url = add_query_arg(
+                    ['post_type' => get_post_type($post_id)],
+                    admin_url('edit.php')
+                );
+
                 $create_url = add_query_arg([
                     'action' => 'cc_create_translation',
                     'post' => $post_id,
                     'lang' => $code,
-                    'nonce' => wp_create_nonce('cc_create_translation_' . $post_id)
+                    'nonce' => wp_create_nonce('cc_create_translation_' . $post_id),
+                    'redirect_to' => urlencode($list_url),
                 ], admin_url('admin.php'));
 
                 printf(

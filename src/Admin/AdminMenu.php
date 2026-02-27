@@ -24,6 +24,14 @@ class AdminMenu
         add_action('admin_post_cc_duplicate_site_options', [$this, 'handle_duplicate_site_options']);
         add_action('admin_post_cc_refresh_health', [$this, 'handle_refresh_health']);
         add_action('admin_post_cc_fix_missing_languages', [$this, 'handle_fix_missing_languages']);
+        add_action('admin_post_cc_terms_manager_action', [$this, 'handle_terms_manager_action']);
+
+        // Error Log actions — delegated to ErrorLogScreen
+        $logger = $GLOBALS['cc_error_logger'] ?? null;
+        if ($logger instanceof \ContentCore\Admin\ErrorLogger) {
+            $error_log_screen = new \ContentCore\Admin\ErrorLogScreen($logger);
+            $error_log_screen->init();
+        }
 
         add_filter('admin_footer_text', [$this, 'maybe_remove_footer_text'], 11);
         add_filter('update_footer', [$this, 'maybe_remove_footer_text'], 11);
@@ -69,6 +77,12 @@ class AdminMenu
      */
     public function register_menu(): void
     {
+        // Legacy redirect for mapping screen
+        if (isset($_GET['page']) && $_GET['page'] === 'content-core-language-mapping') {
+            wp_safe_redirect(admin_url('admin.php?page=cc-manage-terms'));
+            exit;
+        }
+
         // Add the top-level "Parent" item
         add_menu_page(
             __('Content Core', 'content-core'),
@@ -113,27 +127,15 @@ class AdminMenu
             );
         }
 
-        // Submenu: Language Mapping (Management UI)
-        if ($plugin->is_module_active('language_mapping')) {
+        // Submenu: Manage Terms (Multilingual term grid)
+        if ($plugin->is_module_active('multilingual')) {
             add_submenu_page(
                 'content-core',
-                __('Language Mapping', 'content-core'),
-                __('Language Mapping', 'content-core'),
+                __('Manage Terms', 'content-core'),
+                __('Manage Terms', 'content-core'),
                 'manage_options',
-                'content-core-language-mapping',
-                function () {
-                    $plugin = \ContentCore\Plugin::get_instance();
-                    $module = $plugin->get_module('language_mapping');
-                    if ($module instanceof \ContentCore\Modules\LanguageMapping\LanguageMappingModule) {
-                        $admin = new \ContentCore\Modules\LanguageMapping\Admin\LanguageMappingAdmin($module);
-                        $admin->render_page();
-                    } else {
-                        error_log('Language Mapping module not found or invalid: ' . gettype($module));
-                        if (is_admin()) {
-                            echo '<div class="wrap"><h1>Language Mapping</h1><p>Module integration error. Please check logs.</p></div>';
-                        }
-                    }
-                }
+                'cc-manage-terms',
+                [$this, 'render_manage_terms_page']
             );
         }
 
@@ -157,7 +159,6 @@ class AdminMenu
             'cc-diagnostics',
             [$this, 'render_diagnostics_page']
         );
-
 
         // Rename the first submenu item (which defaults to the same name as the top-level)
         global $submenu;
@@ -252,10 +253,12 @@ class AdminMenu
                             <!-- Block 1: System Health Index -->
                             <div style="display:flex; align-items:center; gap:16px;">
                                 <div style="display:flex; flex-direction:column;">
-                                    <div style="font-size:11px; color:var(--cc-text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">
+                                    <div
+                                        style="font-size:11px; color:var(--cc-text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">
                                         <?php _e('Core Health', 'content-core'); ?>
                                     </div>
-                                    <div style="font-size:24px; font-weight:800; color:var(--cc-text); margin-top:2px; display:flex; align-items:baseline; gap:4px;">
+                                    <div
+                                        style="font-size:24px; font-weight:800; color:var(--cc-text); margin-top:2px; display:flex; align-items:baseline; gap:4px;">
                                         <?php echo $health_report['health_index'] ?? 100; ?>
                                         <span style="font-size:14px; font-weight:500; color:var(--cc-text-muted);">/ 100</span>
                                     </div>
@@ -263,17 +266,20 @@ class AdminMenu
                             </div>
 
                             <!-- Block 2: REST API Connectivity -->
-                            <div style="display:flex; align-items:center; gap:16px; padding-left:40px; border-left:1px solid var(--cc-border-light);">
+                            <div
+                                style="display:flex; align-items:center; gap:16px; padding-left:40px; border-left:1px solid var(--cc-border-light);">
                                 <?php
                                 $rest_status = $subsystems['rest_api'] ?? ['status' => 'healthy', 'short_label' => 'Active'];
                                 $rest_color_class = esc_attr($rest_status['status']);
                                 ?>
                                 <div style="display:flex; flex-direction:column;">
-                                    <div style="font-size:11px; color:var(--cc-text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">
+                                    <div
+                                        style="font-size:11px; color:var(--cc-text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">
                                         <?php _e('REST Connectivity', 'content-core'); ?>
                                     </div>
                                     <div style="display:flex; align-items:center; gap:10px; margin-top:6px;">
-                                        <div class="cc-status-badge cc-status-<?php echo $rest_color_class; ?>" style="margin:0; padding:4px 12px; font-size:11px; border-radius:12px;">
+                                        <div class="cc-status-badge cc-status-<?php echo $rest_color_class; ?>"
+                                            style="margin:0; padding:4px 12px; font-size:11px; border-radius:12px;">
                                             <span class="cc-status-icon" style="width:6px; height:6px;"></span>
                                             <span class="cc-status-label" style="font-weight:700;">
                                                 <?php echo esc_html($rest_status['short_label']); ?>
@@ -349,7 +355,7 @@ class AdminMenu
                                 style="font-size:18px; color:var(--cc-primary);"></span>
                             <?php _e('Diagnostics', 'content-core'); ?>
                         </a>
-                        <a href="<?php echo admin_url('admin.php?page=cc-multilingual'); ?>" class="cc-quick-link"
+                        <a href="<?php echo admin_url('admin.php?page=cc-site-settings#multilingual'); ?>" class="cc-quick-link"
                             style="display:flex; align-items:center; gap:8px; text-decoration:none; color:var(--cc-text); font-weight:600; font-size:14px;">
                             <span class="dashicons dashicons-translation"
                                 style="font-size:18px; color:var(--cc-primary);"></span>
@@ -509,7 +515,7 @@ class AdminMenu
                         </span>
                         <div style="display:flex; gap:8px;">
                             <input type="text" id="cc-api-url"
-                                value="<?php echo esc_url($subsystems['rest_api']['data']['base_url'] ?? ''); ?>" readonly
+                                value="<?php echo esc_attr($subsystems['rest_api']['data']['base_url'] ?? ''); ?>" readonly
                                 style="font-size:12px; flex:1; background:var(--cc-bg-soft); height:32px; border:1px solid var(--cc-border);">
                             <button type="button" class="button button-small" onclick="copyToClipboard('cc-api-url')"
                                 style="height:32px;">
@@ -647,9 +653,44 @@ class AdminMenu
                             </div>
                         </div>
                         <?php echo esc_html($subsystems['forms']['message']); ?>
+
+                        <!-- Translation Overview -->
+                        <?php if (!empty($subsystems['forms']['data']['forms_translations'])): ?>
+                            <div style="margin-top:15px; border-top:1px solid var(--cc-border); padding-top:12px;">
+                                <div
+                                    style="font-size:11px; font-weight:600; color:var(--cc-text-muted); text-transform:uppercase; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                                    <?php _e('Translation Status', 'content-core'); ?>
+                                    <span style="font-weight:400; text-transform:none; font-size:10px;">
+                                        <?php printf(__('Default: %s', 'content-core'), strtoupper($subsystems['forms']['data']['default_lang'])); ?>
+                                    </span>
+                                </div>
+                                <div
+                                    style="display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto; padding-right:6px;">
+                                    <?php foreach ($subsystems['forms']['data']['forms_translations'] as $form): ?>
+                                        <div
+                                            style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.02); padding:5px 8px; border-radius:4px; border:1px solid rgba(0,0,0,0.03);">
+                                            <span
+                                                style="font-size:11px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px;"
+                                                title="<?php echo esc_attr($form['title']); ?>">
+                                                <?php echo esc_html($form['title']); ?>
+                                            </span>
+                                            <div style="display:flex; gap:3px;">
+                                                <?php foreach ($form['translations'] as $lang => $present): ?>
+                                                    <span
+                                                        style="font-size:8px; width:16px; height:16px; display:flex; align-items:center; justify-content:center; border-radius:2px; background:<?php echo $present ? 'rgba(34, 197, 94, 0.12)' : 'rgba(0, 0, 0, 0.04)'; ?>; color:<?php echo $present ? '#166534' : '#9ca3af'; ?>; font-weight:700; border:1px solid <?php echo $present ? 'rgba(34, 197, 94, 0.2)' : 'transparent'; ?>;"
+                                                        title="<?php echo strtoupper($lang); ?>: <?php echo $present ? 'Translated' : 'Missing'; ?>">
+                                                        <?php echo strtoupper($lang); ?>
+                                                    </span>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
-                <div class="cc-divider"></div>
+                <div class="cc-divider" style="margin-top:0;"></div>
                 <div class="cc-data-group">
                     <span class="cc-data-label">
                         <?php _e('Protection', 'content-core'); ?>
@@ -779,7 +820,6 @@ class AdminMenu
                 </div>
             </div>
         </div>
-        </div>
 
         <script>
             function copyToClipboard(id) {
@@ -827,6 +867,116 @@ class AdminMenu
                 }
             });
         </script>
+
+        <!-- Section: System Health (Error Logger) -->
+        <?php
+        $cc_logger = $GLOBALS['cc_error_logger'] ?? null;
+        if ($cc_logger instanceof \ContentCore\Admin\ErrorLogger):
+            $err_stats = $cc_logger->get_stats(86400);         // last 24h
+            $err_last_ts = $cc_logger->get_last_error_time(86400); // newest entry ts
+            $err_total = $err_stats['total'];
+            $err_fatals = ($err_stats['by_severity']['fatal'] ?? 0) + ($err_stats['by_severity']['error'] ?? 0);
+            $err_warnings = $err_stats['by_severity']['warning'] ?? 0;
+            $diag_url = admin_url('admin.php?page=cc-diagnostics&tab=error-log');
+            $err_ok = ($err_total === 0);
+            $now_display = function_exists('current_time') ? current_time('H:i:s') : gmdate('H:i:s');
+            $last_err_label = $err_last_ts > 0
+                ? wp_date(get_option('date_format') . ' ' . get_option('time_format'), $err_last_ts)
+                : '';
+
+            // Success notice after clearing old entries
+            if (isset($_GET['cc_msg']) && $_GET['cc_msg'] === 'old_cleared'):
+                ?>
+                <div class="notice notice-success is-dismissible" style="margin:12px 0 0;">
+                    <p><?php _e('Resolved log entries (older than 24&nbsp;h) have been cleared. Counters now reflect only recent activity.', 'content-core'); ?>
+                    </p>
+                </div>
+            <?php endif; ?>
+            <div class="cc-card" style="margin-top:24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h2 style="margin:0; font-size:15px; font-weight:600;">
+                        <?php _e('System Status', 'content-core'); ?>
+                    </h2>
+                    <span class="cc-status-pill cc-status-<?php echo $err_ok ? 'healthy' : 'critical'; ?>">
+                        <?php echo $err_ok ? esc_html__('OK', 'content-core') : esc_html__('Errors Detected', 'content-core'); ?>
+                    </span>
+                </div>
+
+                <?php if ($err_ok): ?>
+                    <div style="display:flex; align-items:center; gap:12px; color:var(--cc-health-healthy-text); padding:14px 0;">
+                        <span class="dashicons dashicons-yes-alt" style="font-size:28px; width:28px; height:28px;"></span>
+                        <div>
+                            <strong
+                                style="font-size:14px; display:block;"><?php _e('No errors in the last 24 hours', 'content-core'); ?></strong>
+                            <span
+                                style="font-size:12px; color:var(--cc-text-muted);"><?php _e('Content Core is running without issues.', 'content-core'); ?></span>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px; font-size:11px; color:var(--cc-text-muted);">
+                        <?php
+                        /* translators: %s = HH:MM:SS server time */
+                        printf(esc_html__('Last checked: %s (server time)', 'content-core'), esc_html($now_display));
+                        ?>
+                    </div>
+                <?php else: ?>
+                    <div class="cc-grid-2" style="margin-bottom:16px;">
+                        <div class="cc-data-group">
+                            <span class="cc-data-label"><?php _e('Total (24h)', 'content-core'); ?></span>
+                            <div class="cc-data-value"
+                                style="font-size:22px; font-weight:700; color:<?php echo $err_total > 0 ? '#d63638' : 'var(--cc-health-healthy-text)'; ?>;">
+                                <?php echo (int) $err_total; ?>
+                            </div>
+                        </div>
+                        <div class="cc-data-group">
+                            <span class="cc-data-label"><?php _e('Fatals / Errors (24h)', 'content-core'); ?></span>
+                            <div class="cc-data-value"
+                                style="font-size:22px; font-weight:700; color:<?php echo $err_fatals > 0 ? '#d63638' : 'var(--cc-health-healthy-text)'; ?>;">
+                                <?php echo (int) $err_fatals; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?php if ($err_warnings > 0): ?>
+                        <div class="cc-data-group" style="margin-bottom:16px;">
+                            <span class="cc-data-label"><?php _e('Warnings (24h)', 'content-core'); ?></span>
+                            <div class="cc-data-value" style="font-size:18px; font-weight:700; color:#dba617;">
+                                <?php echo (int) $err_warnings; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($last_err_label): ?>
+                        <div class="cc-data-group" style="margin-bottom:16px;">
+                            <span class="cc-data-label"><?php _e('Last error', 'content-core'); ?></span>
+                            <div style="font-size:13px; font-weight:600; color:var(--cc-text);">
+                                <?php echo esc_html($last_err_label); ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                <?php endif; ?>
+
+                <div class="cc-divider"></div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; align-items:center;">
+                    <a href="<?php echo esc_url($diag_url); ?>" class="button button-primary">
+                        <span class="dashicons dashicons-admin-tools"
+                            style="margin-top:3px; margin-right:5px; font-size:16px;"></span>
+                        <?php _e('Open Diagnostics', 'content-core'); ?>
+                    </a>
+                    <?php if (!$err_ok): ?>
+                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline;">
+                            <?php wp_nonce_field('cc_error_log_action'); ?>
+                            <input type="hidden" name="action" value="cc_clear_old_error_log">
+                            <button type="submit" class="button"
+                                onclick="return confirm('<?php echo esc_js(__('Clear all log entries older than 24 hours? Recent entries will be kept.', 'content-core')); ?>')"
+                                style="color:#d63638; border-color:#d63638;">
+                                <span class="dashicons dashicons-trash"
+                                    style="margin-top:3px; margin-right:4px; font-size:16px;"></span>
+                                <?php _e('Clear resolved entries', 'content-core'); ?>
+                            </button>
+                        </form>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
 
         <!-- Section: Activity Log -->
         <div class="cc-card cc-card-full" style="margin-top:24px;">
@@ -904,8 +1054,43 @@ class AdminMenu
     }
 
     /**
+     * Render the Error Log screen
+     */
+    public function render_error_log_page(): void
+    {
+        $logger = $GLOBALS['cc_error_logger'] ?? null;
+        if (!$logger instanceof \ContentCore\Admin\ErrorLogger) {
+            echo '<div class="wrap"><p>' . esc_html__('Error logger not available.', 'content-core') . '</p></div>';
+            return;
+        }
+        $screen = new \ContentCore\Admin\ErrorLogScreen($logger);
+        $screen->render();
+    }
+
+    /**
      * Render the REST API Info page
      */
+    // -------------------------------------------------------------------------
+    // Manage Terms page + action handler
+    // -------------------------------------------------------------------------
+
+    public function render_manage_terms_page(): void
+    {
+        $plugin = \ContentCore\Plugin::get_instance();
+        $ml_module = $plugin->get_module('multilingual');
+        if (!($ml_module instanceof \ContentCore\Modules\Multilingual\MultilingualModule)) {
+            echo '<div class="wrap"><p>' . esc_html__('Multilingual module not active.', 'content-core') . '</p></div>';
+            return;
+        }
+        $screen = new \ContentCore\Modules\Multilingual\Admin\TermsManagerAdmin($ml_module);
+        $screen->render_page();
+    }
+
+    /** @deprecated No longer used — all actions go through REST API now. */
+    public function handle_terms_manager_action(): void
+    {
+    }
+
     public function render_api_page(): void
     {
         ?>
@@ -1160,7 +1345,7 @@ class AdminMenu
     }
 
     /**
-     * Render the Diagnostics page
+     * Render the Diagnostics page (tabbed: Overview | Error Log)
      */
     public function render_diagnostics_page(): void
     {
@@ -1171,162 +1356,203 @@ class AdminMenu
         $screen = get_current_screen();
         global $hook_suffix;
 
+        // Determine active tab
+        $active_tab = sanitize_key($_GET['tab'] ?? 'overview');
+        $tab_base = admin_url('admin.php?page=cc-diagnostics');
+
         ?>
         <div class="wrap content-core-admin">
             <div class="cc-header">
-                <h1>
-                    <?php _e('System Diagnostics', 'content-core'); ?>
-                </h1>
+                <h1><?php _e('Diagnostics', 'content-core'); ?></h1>
                 <div style="font-size:13px; color:var(--cc-text-muted);">
                     <?php echo esc_html(sprintf(__('Report generated at %s', 'content-core'), $report['checked_at'])); ?>
                 </div>
             </div>
 
-            <div class="cc-dashboard-grid">
-                <!-- Section 1: Environment & Server -->
-                <div class="cc-card cc-card-full">
-                    <h2 style="margin-bottom:20px; font-size:16px; font-weight:700;">
-                        <?php _e('Environment & Server', 'content-core'); ?>
-                    </h2>
-                    <div class="cc-grid-3">
-                        <div class="cc-data-group">
-                            <span class="cc-data-label">
-                                <?php _e('Core Software', 'content-core'); ?>
-                            </span>
-                            <div class="cc-data-value">
-                                <strong>PHP:</strong> <code><?php echo PHP_VERSION; ?></code><br>
-                                <strong>WP:</strong> <code><?php echo get_bloginfo('version'); ?></code><br>
-                                <strong>CC:</strong> <code><?php echo CONTENT_CORE_VERSION; ?></code>
+            <!-- Tab navigation -->
+            <nav class="nav-tab-wrapper" style="margin-bottom:24px;">
+                <a href="<?php echo esc_url(add_query_arg('tab', 'overview', $tab_base)); ?>"
+                    class="nav-tab<?php echo $active_tab === 'overview' ? ' nav-tab-active' : ''; ?>">
+                    <span class="dashicons dashicons-admin-tools"
+                        style="font-size:16px; vertical-align:middle; margin-right:5px;"></span>
+                    <?php _e('System Overview', 'content-core'); ?>
+                </a>
+                <a href="<?php echo esc_url(add_query_arg('tab', 'error-log', $tab_base)); ?>"
+                    class="nav-tab<?php echo $active_tab === 'error-log' ? ' nav-tab-active' : ''; ?>">
+                    <span class="dashicons dashicons-warning"
+                        style="font-size:16px; vertical-align:middle; margin-right:5px;"></span>
+                    <?php _e('Error Log', 'content-core'); ?>
+                    <?php
+                    $cc_logger_diag = $GLOBALS['cc_error_logger'] ?? null;
+                    if ($cc_logger_diag instanceof \ContentCore\Admin\ErrorLogger) {
+                        $diag_stats = $cc_logger_diag->get_stats(86400);
+                        if ($diag_stats['total'] > 0) {
+                            echo '<span style="display:inline-block; background:#d63638; color:#fff; border-radius:10px; font-size:10px; font-weight:700; padding:1px 7px; margin-left:6px; vertical-align:middle;">';
+                            echo (int) $diag_stats['total'];
+                            echo '</span>';
+                        }
+                    }
+                    ?>
+                </a>
+            </nav>
+
+            <?php if ($active_tab === 'error-log'): ?>
+
+                <?php
+                $cc_logger_diag = $GLOBALS['cc_error_logger'] ?? null;
+                if ($cc_logger_diag instanceof \ContentCore\Admin\ErrorLogger) {
+                    $error_log_screen = new \ContentCore\Admin\ErrorLogScreen($cc_logger_diag);
+                    $error_log_screen->render_inline();
+                } else {
+                    echo '<div class="cc-card cc-card-full"><p>' . esc_html__('Error logger not available.', 'content-core') . '</p></div>';
+                }
+                ?>
+
+            <?php else: ?>
+
+                <div class="cc-dashboard-grid">
+                    <!-- Section 1: Environment & Server -->
+                    <div class="cc-card cc-card-full">
+                        <h2 style="margin-bottom:20px; font-size:16px; font-weight:700;">
+                            <?php _e('Environment & Server', 'content-core'); ?>
+                        </h2>
+                        <div class="cc-grid-3">
+                            <div class="cc-data-group">
+                                <span class="cc-data-label">
+                                    <?php _e('Core Software', 'content-core'); ?>
+                                </span>
+                                <div class="cc-data-value">
+                                    <strong>PHP:</strong> <code><?php echo PHP_VERSION; ?></code><br>
+                                    <strong>WP:</strong> <code><?php echo get_bloginfo('version'); ?></code><br>
+                                    <strong>CC:</strong> <code><?php echo CONTENT_CORE_VERSION; ?></code>
+                                </div>
                             </div>
-                        </div>
-                        <div class="cc-data-group">
-                            <span class="cc-data-label">
-                                <?php _e('WordPress Context', 'content-core'); ?>
-                            </span>
-                            <div class="cc-data-value">
-                                <strong>Screen ID:</strong> <code><?php echo $screen->id; ?></code><br>
-                                <strong>Base:</strong> <code><?php echo $screen->base; ?></code><br>
-                                <strong>Hook:</strong> <code><?php echo $hook_suffix; ?></code>
+                            <div class="cc-data-group">
+                                <span class="cc-data-label">
+                                    <?php _e('WordPress Context', 'content-core'); ?>
+                                </span>
+                                <div class="cc-data-value">
+                                    <strong>Screen ID:</strong> <code><?php echo $screen->id; ?></code><br>
+                                    <strong>Base:</strong> <code><?php echo $screen->base; ?></code><br>
+                                    <strong>Hook:</strong> <code><?php echo $hook_suffix; ?></code>
+                                </div>
                             </div>
-                        </div>
-                        <div class="cc-data-group">
-                            <span class="cc-data-label">
-                                <?php _e('Memory & Time', 'content-core'); ?>
-                            </span>
-                            <div class="cc-data-value">
-                                <strong>Limit:</strong> <code><?php echo ini_get('memory_limit'); ?></code><br>
-                                <strong>Exec:</strong> <code><?php echo ini_get('max_execution_time'); ?>s</code><br>
-                                <strong>Upload:</strong> <code><?php echo ini_get('upload_max_filesize'); ?></code>
+                            <div class="cc-data-group">
+                                <span class="cc-data-label">
+                                    <?php _e('Memory & Time', 'content-core'); ?>
+                                </span>
+                                <div class="cc-data-value">
+                                    <strong>Limit:</strong> <code><?php echo ini_get('memory_limit'); ?></code><br>
+                                    <strong>Exec:</strong> <code><?php echo ini_get('max_execution_time'); ?>s</code><br>
+                                    <strong>Upload:</strong> <code><?php echo ini_get('upload_max_filesize'); ?></code>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Section 2: Module Audit -->
-                <div class="cc-card">
-                    <h2 style="margin-bottom:20px; font-size:16px; font-weight:700;">
-                        <?php _e('Module Audit', 'content-core'); ?>
-                    </h2>
-                    <div
-                        style="background:var(--cc-bg-soft); border-radius:8px; border:1px solid var(--cc-border); padding:16px;">
-                        <ul style="margin:0; padding:0; list-style:none;">
-                            <?php
-                            $all_modules = $plugin->get_modules();
-                            if ($all_modules) {
-                                ksort($all_modules);
-                                foreach ($all_modules as $id => $module): ?>
+                    <!-- Section 2: Module Audit -->
+                    <div class="cc-card">
+                        <h2 style="margin-bottom:20px; font-size:16px; font-weight:700;">
+                            <?php _e('Module Audit', 'content-core'); ?>
+                        </h2>
+                        <div
+                            style="background:var(--cc-bg-soft); border-radius:8px; border:1px solid var(--cc-border); padding:16px;">
+                            <ul style="margin:0; padding:0; list-style:none;">
+                                <?php
+                                $all_modules = $plugin->get_modules();
+                                if ($all_modules) {
+                                    ksort($all_modules);
+                                    foreach ($all_modules as $id => $module): ?>
+                                        <li
+                                            style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--cc-border);">
+                                            <span style="font-size:13px; font-weight:600;">
+                                                <?php echo esc_html(ucwords(str_replace('_', ' ', $id))); ?>
+                                            </span>
+                                            <span class="cc-status-pill cc-status-healthy" style="font-size:10px;">
+                                                <?php _e('Active', 'content-core'); ?>
+                                            </span>
+                                        </li>
+                                        <?php
+                                    endforeach;
+                                } ?>
+
+                                <?php
+                                $missing = $plugin->get_missing_modules();
+                                foreach ($missing as $id): ?>
                                     <li
-                                        style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--cc-border); last-child:border-bottom:0;">
+                                        style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--cc-border); color:var(--cc-health-critical-text);">
                                         <span style="font-size:13px; font-weight:600;">
                                             <?php echo esc_html(ucwords(str_replace('_', ' ', $id))); ?>
                                         </span>
-                                        <span class="cc-status-pill cc-status-healthy" style="font-size:10px;">
-                                            <?php _e('Active', 'content-core'); ?>
+                                        <span class="cc-status-pill cc-status-critical" style="font-size:10px;">
+                                            <?php _e('Failed', 'content-core'); ?>
                                         </span>
                                     </li>
                                     <?php
-                                endforeach;
-                            } ?>
-
-                            <?php
-                            $missing = $plugin->get_missing_modules();
-                            foreach ($missing as $id): ?>
-                                <li
-                                    style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--cc-border); color:var(--cc-health-critical-text);">
-                                    <span style="font-size:13px; font-weight:600;">
-                                        <?php echo esc_html(ucwords(str_replace('_', ' ', $id))); ?>
-                                    </span>
-                                    <span class="cc-status-pill cc-status-critical" style="font-size:10px;">
-                                        <?php _e('Failed', 'content-core'); ?>
-                                    </span>
-                                </li>
-                                <?php
-                            endforeach; ?>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- Section 3: REST API Probe -->
-                <div class="cc-card">
-                    <h2 style="margin-bottom:20px; font-size:16px; font-weight:700;">
-                        <?php _e('REST API Discovery', 'content-core'); ?>
-                    </h2>
-                    <div class="cc-data-group" style="margin-bottom:16px;">
-                        <span class="cc-data-label">
-                            <?php _e('Registered Routes', 'content-core'); ?>
-                        </span>
-                        <div
-                            style="max-height:200px; overflow-y:auto; background:var(--cc-bg-soft); border-radius:4px; padding:10px; border:1px solid var(--cc-border); font-family:monospace; font-size:11px;">
-                            <?php
-                            if (!did_action('rest_api_init')) {
-                                do_action('rest_api_init');
-                            }
-                            $rest_server = function_exists('rest_get_server') ? rest_get_server() : null;
-                            if ($rest_server):
-                                $ns_match = \ContentCore\Plugin::get_instance()->get_rest_namespace();
-                                $ns_with_slash = '/' . ltrim($ns_match, '/');
-                                $all_routes = $rest_server->get_routes();
-                                foreach ($all_routes as $route => $handlers):
-                                    if (strpos($route, $ns_with_slash) === 0):
-                                        echo 'GET ' . esc_html($route) . '<br>';
-                                    endif;
-                                endforeach;
-                            endif;
-                            ?>
+                                endforeach; ?>
+                            </ul>
                         </div>
                     </div>
-                    <div class="cc-data-group">
-                        <span class="cc-data-label">
-                            <?php _e('Probe Result', 'content-core'); ?>
-                        </span>
-                        <div class="cc-data-value">
-                            <strong>Namespace:</strong>
-                            <?php echo $subsystems['rest_api']['data']['namespace_registered'] ? 'Registered' : 'Missing'; ?><br>
-                            <strong>Method:</strong>
-                            Internal Audit
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Section 4: Raw Report -->
-                <div class="cc-card cc-card-full">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <h2 style="margin:0; font-size:16px; font-weight:700;">
-                            <?php _e('Raw Health Report', 'content-core'); ?>
+                    <!-- Section 3: REST API Probe -->
+                    <div class="cc-card">
+                        <h2 style="margin-bottom:20px; font-size:16px; font-weight:700;">
+                            <?php _e('REST API Discovery', 'content-core'); ?>
                         </h2>
-                        <button type="button" class="button button-secondary" onclick="copyToClipboard('cc-raw-report')">
-                            <span class="dashicons dashicons-clipboard"
-                                style="font-size:16px; width:16px; height:16px; margin-top:2px;"></span>
-                            <?php _e('Copy JSON', 'content-core'); ?>
-                        </button>
+                        <div class="cc-data-group" style="margin-bottom:16px;">
+                            <span class="cc-data-label">
+                                <?php _e('Registered Routes', 'content-core'); ?>
+                            </span>
+                            <div
+                                style="max-height:200px; overflow-y:auto; background:var(--cc-bg-soft); border-radius:4px; padding:10px; border:1px solid var(--cc-border); font-family:monospace; font-size:11px;">
+                                <?php
+                                $routes = \ContentCore\Modules\RestApi\RestApiModule::get_registered_routes();
+                                if (empty($routes) && \ContentCore\Modules\RestApi\RestApiModule::get_last_error()):
+                                    echo '<span style="color:#d63638;">' . esc_html(\ContentCore\Modules\RestApi\RestApiModule::get_last_error()) . '</span>';
+                                elseif (empty($routes)):
+                                    _e('No routes found in this namespace.', 'content-core');
+                                else:
+                                    foreach ($routes as $route):
+                                        echo 'GET ' . esc_html($route) . '<br>';
+                                    endforeach;
+                                endif;
+                                ?>
+                            </div>
+                        </div>
+                        <div class="cc-data-group">
+                            <span class="cc-data-label">
+                                <?php _e('Probe Result', 'content-core'); ?>
+                            </span>
+                            <div class="cc-data-value">
+                                <strong>Namespace:</strong>
+                                <?php echo $subsystems['rest_api']['data']['namespace_registered'] ? 'Registered' : 'Missing'; ?><br>
+                                <strong>Method:</strong>
+                                Internal Audit
+                            </div>
+                        </div>
                     </div>
-                    <textarea id="cc-raw-report" readonly
-                        style="width:100%; height:200px; font-family:monospace; font-size:12px; background:var(--cc-bg-soft); border:1px solid var(--cc-border); padding:15px;"><?php echo esc_textarea(json_encode($report, JSON_PRETTY_PRINT)); ?></textarea>
-                    <p style="font-size:12px; color:var(--cc-text-muted); margin-top:10px;">
-                        <?php _e('This JSON report contains all gathered health data. Useful for debugging or providing to support.', 'content-core'); ?>
-                    </p>
+
+                    <!-- Section 4: Raw Report -->
+                    <div class="cc-card cc-card-full">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                            <h2 style="margin:0; font-size:16px; font-weight:700;">
+                                <?php _e('Raw Health Report', 'content-core'); ?>
+                            </h2>
+                            <button type="button" class="button button-secondary" onclick="copyToClipboard('cc-raw-report')">
+                                <span class="dashicons dashicons-clipboard"
+                                    style="font-size:16px; width:16px; height:16px; margin-top:2px;"></span>
+                                <?php _e('Copy JSON', 'content-core'); ?>
+                            </button>
+                        </div>
+                        <textarea id="cc-raw-report" readonly
+                            style="width:100%; height:200px; font-family:monospace; font-size:12px; background:var(--cc-bg-soft); border:1px solid var(--cc-border); padding:15px;"><?php echo esc_textarea(json_encode($report, JSON_PRETTY_PRINT)); ?></textarea>
+                        <p style="font-size:12px; color:var(--cc-text-muted); margin-top:10px;">
+                            <?php _e('This JSON report contains all gathered health data. Useful for debugging or providing to support.', 'content-core'); ?>
+                        </p>
+                    </div>
                 </div>
-            </div>
+
+            <?php endif; ?>
         </div>
 
         <script>
@@ -1366,7 +1592,7 @@ class AdminMenu
         $audit = new AuditService();
         $audit->log_action('refresh_health', 'success', __('Refreshed system health diagnostic cache.', 'content-core'));
 
-        wp_safe_redirect(admin_url('admin.php?page=content-core&cc_action=health_refreshed'));
+        wp_redirect(admin_url('admin.php?page=content-core&cc_action=health_refreshed'));
         exit;
     }
 

@@ -3,7 +3,7 @@
  * Plugin Name: Content Core
  * Plugin URI:  
  * Description: Content Core is a custom engineered WordPress framework built from scratch by Nicolas Spies. It provides structured content architecture, controlled admin environments, modular extensions, and scalable backend logic for modern agency projects..
- * Version:     1.1.1
+ * Version:     1.2.0
  * Author:      Nicolas Spies
  * Text Domain: content-core
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CONTENT_CORE_VERSION', '1.1.1');
+define('CONTENT_CORE_VERSION', '1.2.0');
 define('CONTENT_CORE_PLUGIN_FILE', __FILE__);
 define('CONTENT_CORE_PLUGIN_DIR', plugin_dir_path(CONTENT_CORE_PLUGIN_FILE));
 define('CONTENT_CORE_PLUGIN_URL', plugin_dir_url(CONTENT_CORE_PLUGIN_FILE));
@@ -35,6 +35,13 @@ spl_autoload_register(function ($class) {
 		require $file;
 	}
 });
+
+
+// ── Internal Error Logger ────────────────────────────────────────────────────
+// Instantiated immediately after the autoloader so errors during plugin
+// bootstrap are captured too. Stored in a global so AdminMenu can access it.
+$GLOBALS['cc_error_logger'] = new \ContentCore\Admin\ErrorLogger(CONTENT_CORE_PLUGIN_DIR);
+$GLOBALS['cc_error_logger']->register_handlers();
 
 // Initialize the Plugin
 function content_core_init()

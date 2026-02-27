@@ -27,7 +27,8 @@ class FieldRegistry
         $query = new \WP_Query([
             'post_type' => FieldGroupPostType::POST_TYPE,
             'posts_per_page' => -1,
-            'post_status' => 'publish',
+            'post_status' => 'any',
+            'suppress_filters' => true, // Ensure multilingual filters do not hide field groups
         ]);
 
         $matched_groups = [];
@@ -37,7 +38,7 @@ class FieldRegistry
                 $rule_groups = get_post_meta($group->ID, '_cc_assignment_rules', true);
 
                 // If no rules, default to not showing (prevents clutter)
-                if (!is_array($rule_groups) || empty($rule_groups)) {
+                if (!$rule_groups) {
                     continue;
                 }
 
@@ -50,6 +51,7 @@ class FieldRegistry
         self::$group_cache[$cache_key] = $matched_groups;
         return $matched_groups;
     }
+
 
     /**
      * Evaluate rule groups using OR logic (returns true if any group matches)
@@ -139,7 +141,7 @@ class FieldRegistry
                 return ($current_pt === $value || $current_op === $value);
 
             case 'page':
-                return isset($context['post_id']) && (int)$context['post_id'] === (int)$value;
+                return isset($context['post_id']) && (int) $context['post_id'] === (int) $value;
 
             case 'page_template':
                 $current_template = $context['page_template'] ?? '';
@@ -148,7 +150,7 @@ class FieldRegistry
             case 'taxonomy_term':
                 $taxonomy = $rule['taxonomy'] ?? '';
                 $current_terms = $context['taxonomy_terms'][$taxonomy] ?? [];
-                return in_array((int)$value, $current_terms, true);
+                return in_array((int) $value, $current_terms, true);
 
             default:
                 return false;
@@ -233,12 +235,10 @@ class FieldRegistry
                 }
                 $current_section = $field;
                 $current_section['sub_fields'] = [];
-            }
-            else {
+            } else {
                 if ($current_section !== null) {
                     $current_section['sub_fields'][] = $field;
-                }
-                else {
+                } else {
                     $tree[] = $field;
                 }
             }

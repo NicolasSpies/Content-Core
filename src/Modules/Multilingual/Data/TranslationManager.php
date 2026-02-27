@@ -87,6 +87,18 @@ class TranslationManager
         // Clear cache for this group
         unset($this->group_cache[$group_id]);
 
+        // Special Handling for Forms (Clone Fields and Settings)
+        if ($source_post->post_type === 'cc_form') {
+            $form_fields = get_post_meta($source_post_id, 'cc_form_fields', true);
+            if (!empty($form_fields)) {
+                update_post_meta($new_post_id, 'cc_form_fields', $form_fields);
+            }
+            $form_settings = get_post_meta($source_post_id, 'cc_form_settings', true);
+            if (!empty($form_settings)) {
+                update_post_meta($new_post_id, 'cc_form_settings', $form_settings);
+            }
+        }
+
         // Clone Content Core Meta (Deterministic Schema-Driven Formatted Copy)
         if (class_exists('\\ContentCore\\Modules\\CustomFields\\Data\\FieldRegistry')) {
             $context = [

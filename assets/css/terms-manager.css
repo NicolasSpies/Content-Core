@@ -1,0 +1,216 @@
+/* ============================================================
+   Content Core — Manage Multilingual Terms
+   ============================================================ */
+
+/* ── Layout ─────────────────────────────────────────────── */
+
+.cc-terms-manager {
+    max-width: 100%;
+}
+
+.cc-tm-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+}
+
+.cc-tm-toolbar label {
+    font-weight: 600;
+    margin-right: -6px;
+}
+
+.cc-tm-toolbar select,
+.cc-tm-toolbar input[type="text"] {
+    min-width: 160px;
+}
+
+.cc-tm-create-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+}
+
+/* ── Notice ─────────────────────────────────────────────── */
+
+.cc-tm-notice {
+    padding: 10px 14px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    border-left: 4px solid transparent;
+}
+
+.cc-tm-notice.notice-success {
+    background: #f0f6e8;
+    border-left-color: #46b450;
+    color: #1d7a1d;
+}
+
+.cc-tm-notice.notice-error {
+    background: #fef7f7;
+    border-left-color: #d63638;
+    color: #8a2223;
+}
+
+/* ── Table ──────────────────────────────────────────────── */
+
+.cc-tm-table {
+    border-collapse: collapse;
+    width: 100%;
+    background: #fff;
+}
+
+.cc-tm-table th,
+.cc-tm-table td {
+    padding: 10px 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.cc-tm-table thead th {
+    background: #f6f7f7;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #50575e;
+}
+
+.cc-tm-drag-col {
+    width: 24px;
+}
+
+.cc-tm-drag-handle {
+    cursor: grab;
+    color: #bbb;
+    text-align: center;
+}
+
+.cc-tm-drag-handle:active {
+    cursor: grabbing;
+}
+
+.cc-tm-group-label {
+    font-weight: 600;
+    min-width: 120px;
+}
+
+.cc-tm-lang-col {
+    min-width: 140px;
+}
+
+.cc-tm-cell {
+    min-width: 140px;
+}
+
+.cc-tm-missing {
+    color: #bbb;
+}
+
+.cc-tm-term-name {
+    font-weight: 500;
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
+
+.cc-tm-add-translation-btn {
+    color: #2271b1 !important;
+    border-color: #2271b1 !important;
+    background: transparent !important;
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+    height: auto !important;
+}
+
+.cc-tm-add-translation-btn:hover {
+    background: #f0f6fc !important;
+}
+
+.cc-btn-danger,
+.cc-tm-remove-btn {
+    color: #d63638 !important;
+    border-color: #d63638 !important;
+    background: transparent !important;
+    font-size: 11px !important;
+}
+
+.cc-btn-danger:hover,
+.cc-tm-remove-btn:hover {
+    background: #fef7f7 !important;
+}
+
+.cc-btn-destructive.cc-tm-delete-group-btn {
+    color: #fff !important;
+    background: #d63638 !important;
+    border-color: #d63638 !important;
+    font-size: 12px !important;
+}
+
+.cc-btn-destructive.cc-tm-delete-group-btn:hover {
+    background: #b32d2e !important;
+}
+
+/* ── Loading / error ────────────────────────────────────── */
+
+.cc-tm-loading td,
+.cc-tm-error td {
+    text-align: center;
+    padding: 24px;
+    color: #787c82;
+    font-style: italic;
+}
+
+.cc-tm-error td {
+    color: #d63638;
+}
+
+/* ── Sort highlight ─────────────────────────────────────── */
+
+.cc-tm-row.ui-sortable-helper {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    background: #fffbe6 !important;
+}
+
+/* ── Modal ──────────────────────────────────────────────── */
+
+.cc-tm-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cc-tm-modal-box {
+    background: #fff;
+    border-radius: 6px;
+    padding: 28px 32px;
+    max-width: 480px;
+    width: 90%;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+}
+
+.cc-tm-modal-box h2 {
+    margin-top: 0;
+    font-size: 18px;
+}
+
+.cc-tm-modal-box p {
+    color: #50575e;
+    margin-bottom: 20px;
+}
+
+.cc-tm-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}

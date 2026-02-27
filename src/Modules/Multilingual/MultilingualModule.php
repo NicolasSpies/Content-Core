@@ -4,8 +4,13 @@ namespace ContentCore\Modules\Multilingual;
 use ContentCore\Modules\ModuleInterface;
 use ContentCore\Modules\Multilingual\Admin\LanguageEditor;
 use ContentCore\Modules\Multilingual\Admin\LanguageListColumns;
+use ContentCore\Modules\Multilingual\Admin\TermLanguageColumns;
+use ContentCore\Modules\Multilingual\Admin\TermNativeLock;
+use ContentCore\Modules\Multilingual\Admin\TermsManagerAdmin;
 use ContentCore\Modules\Multilingual\Rest\MultilingualRestHandler;
+use ContentCore\Modules\Multilingual\Rest\TermsManagerRestController;
 use ContentCore\Modules\Multilingual\Data\TranslationManager;
+use ContentCore\Modules\Multilingual\Data\TermTranslationManager;
 
 class MultilingualModule implements ModuleInterface
 {
@@ -13,30 +18,61 @@ class MultilingualModule implements ModuleInterface
 
     private ?LanguageEditor $editor = null;
     private ?LanguageListColumns $columns = null;
+    private ?TermLanguageColumns $term_columns = null;
     private ?MultilingualRestHandler $rest = null;
     private ?TranslationManager $translation_manager = null;
+    private ?TermTranslationManager $term_translation_manager = null;
+    private ?TermNativeLock $term_lock = null;
+    private ?TermsManagerAdmin $terms_manager_admin = null;
+    private ?TermsManagerRestController $terms_manager_rest = null;
 
     public function init(): void
     {
         $this->translation_manager = new TranslationManager($this);
+        $this->term_translation_manager = new TermTranslationManager($this);
 
-        if (is_admin()) {
+        // Manually add support for core types because registered_post_type already fired
+        add_post_type_support('post', 'cc-multilingual');
+        add_post_type_support('page', 'cc-multilingual');
+
+        if (is_admin() || (defined('REST_REQUEST') && REST_REQUEST)) {
             $this->editor = new LanguageEditor($this);
             $this->editor->init();
 
             $this->columns = new LanguageListColumns($this);
             $this->columns->init();
 
+            $this->term_columns = new TermLanguageColumns($this, $this->term_translation_manager);
+            $this->term_columns->init();
 
             add_action('registered_post_type', [$this, 'handle_registered_post_type'], 10, 2);
             add_action('admin_bar_menu', [$this, 'add_admin_bar_switcher'], 100);
 
-
             add_action('admin_action_cc_create_translation', [$this, 'handle_create_translation']);
+            add_action('admin_action_cc_create_term_translation', [$this, 'handle_create_term_translation']);
 
             add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_styles']);
             add_action('admin_init', [$this, 'handle_forms_backfill']);
+            add_action('admin_init', [$this, 'maybe_migrate_legacy_terms']);
+
+            // TermNativeLock is now a no-op — WordPress admin is fully restored.
+            $this->term_lock = new TermNativeLock();
+            $this->term_lock->init();
+
+            // Terms Manager admin page (no AJAX, no legacy logic)
+            $this->terms_manager_admin = new TermsManagerAdmin($this);
+            add_action('admin_enqueue_scripts', [$this->terms_manager_admin, 'enqueue_assets']);
         }
+
+        // Register Terms Manager REST routes
+        add_action('rest_api_init', function () {
+            $ns = \ContentCore\Plugin::get_instance()->get_rest_namespace();
+            $this->terms_manager_rest = new TermsManagerRestController($this, $ns);
+            $this->terms_manager_rest->register_routes();
+        });
+
+        // Global term ordering filter
+        add_filter('get_terms_args', [$this, 'apply_cc_term_order'], 30, 2);
 
         $this->rest = new MultilingualRestHandler($this);
         $this->rest->init();
@@ -80,7 +116,10 @@ class MultilingualModule implements ModuleInterface
             'show_admin_bar' => false,
         ];
         $settings = get_option(self::SETTINGS_KEY, []);
-        return array_merge($defaults, is_array($settings) ? $settings : []);
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+        return array_merge($defaults, $settings);
     }
 
     public function handle_registered_post_type(string $post_type, \WP_Post_Type $args): void
@@ -166,13 +205,26 @@ class MultilingualModule implements ModuleInterface
             wp_die($new_id->get_error_message());
         }
 
-        wp_safe_redirect(get_edit_post_link($new_id, 'raw'));
+        // If a redirect_to was provided (e.g. pointing back to the list table), use it;
+        // otherwise fall back to the edit screen for the new translation.
+        if (!empty($_GET['redirect_to'])) {
+            $redirect_to = esc_url_raw(urldecode($_GET['redirect_to']));
+        } else {
+            $redirect_to = get_edit_post_link($new_id, 'raw');
+        }
+
+        wp_safe_redirect($redirect_to);
         exit;
     }
 
     public function get_translation_manager(): TranslationManager
     {
         return $this->translation_manager;
+    }
+
+    public function get_term_translation_manager(): TermTranslationManager
+    {
+        return $this->term_translation_manager;
     }
 
     public function get_columns_handler(): ?LanguageListColumns
@@ -215,37 +267,46 @@ class MultilingualModule implements ModuleInterface
                 justify-content: center !important;
                 text-decoration: none !important;
                 transition: all 0.2s ease-in-out !important;
-                height: 20px !important;
+                height: 24px !important;
+                width: 24px !important;
                 padding: 0 !important;
                 margin: 0 !important;
                 line-height: 0 !important;
+                border-radius: 4px !important;
             }
             
-            /* Semantic Opacity Rules */
-            .cc-flag.cc-flag--missing,
-            .cc-flag.cc-flag--missing img,
-            .cc-flag.cc-flag--missing span {
-                opacity: 0.3 !important;
-            }
-            
-            .cc-flag.cc-flag--exists,
-            .cc-flag.cc-flag--exists img,
-            .cc-flag.cc-flag--exists span {
+            /* Status Visual States */
+            .cc-flag.cc-flag--published {
+                background-color: rgba(34, 197, 94, 0.22) !important;
+                border: 1px solid rgba(34, 197, 94, 0.35) !important;
                 opacity: 1.0 !important;
+            }
+            
+            .cc-flag.cc-flag--unpublished {
+                background-color: rgba(0, 0, 0, 0.06) !important;
+                opacity: 1.0 !important;
+            }
+            
+            .cc-flag.cc-flag--missing {
+                opacity: 0.4 !important;
+                background-color: transparent !important;
             }
             
             /* Hover interactions */
-            .cc-flag:hover,
-            .cc-flag:hover img,
-            .cc-flag:hover span {
+            .cc-flag:hover {
                 opacity: 1.0 !important;
                 transform: scale(1.1) !important;
+                background-color: rgba(0, 0, 0, 0.1) !important;
+            }
+
+            .cc-flag.cc-flag--published:hover {
+                background-color: rgba(70, 180, 80, 0.2) !important;
             }
             
             /* Content consistency */
             .cc-flag img,
             .cc-flag span {
-                max-width: 18px !important;
+                max-width: 16px !important;
                 height: auto !important;
                 border-radius: 1px !important;
                 display: inline-block !important;
@@ -542,9 +603,111 @@ class MultilingualModule implements ModuleInterface
 
     public function handle_term_save(int $term_id, int $tt_id, string $taxonomy): void
     {
+        // Persist language selection from the edit-term form.
         if (isset($_POST['cc_term_language'])) {
             update_term_meta($term_id, '_cc_language', sanitize_text_field($_POST['cc_term_language']));
         }
+
+        // Auto-assign default language if still missing (first save on Add New).
+        if (!get_term_meta($term_id, '_cc_language', true)) {
+            $settings = $this->get_settings();
+            update_term_meta($term_id, '_cc_language', $settings['default_lang'] ?? 'de');
+        }
+
+        // Ensure every term has a translation group.
+        if (!get_term_meta($term_id, '_cc_translation_group', true)) {
+            update_term_meta($term_id, '_cc_translation_group', wp_generate_uuid4());
+        }
+    }
+
+    /**
+     * Handle flag click to create a new term translation.
+     * After creation, redirect back to the originating list table.
+     */
+    public function handle_create_term_translation(): void
+    {
+        $term_id = (int) ($_GET['term'] ?? 0);
+        $taxonomy = sanitize_key($_GET['taxonomy'] ?? '');
+        $lang = sanitize_text_field($_GET['lang'] ?? '');
+
+        check_admin_referer('cc_create_term_translation_' . $term_id, 'nonce');
+
+        if (!current_user_can('manage_categories')) {
+            wp_die(__('You do not have permission to create term translations.', 'content-core'));
+        }
+
+        $new_term_id = $this->term_translation_manager->create_term_translation($term_id, $lang, $taxonomy);
+
+        if (is_wp_error($new_term_id)) {
+            wp_die($new_term_id->get_error_message());
+        }
+
+        // Redirect back to the list (or to the edit screen if no redirect_to given)
+        if (!empty($_GET['redirect_to'])) {
+            $redirect = esc_url_raw(urldecode($_GET['redirect_to']));
+        } else {
+            $redirect = get_edit_term_link($new_term_id, $taxonomy);
+        }
+
+        wp_safe_redirect($redirect);
+        exit;
+    }
+
+    /**
+     * On post edit screens, restrict taxonomy terms shown in meta-boxes to
+     * ONLY those matching the post's language (strict separation).
+     *
+     * Relies on the one-time migration (maybe_migrate_legacy_terms) having already
+     * tagged all legacy terms with _cc_language = default language, so the strict
+     * filter is safe for every term in the database.
+     */
+    public function filter_terms_for_post_lang(array $args, $taxonomies): array
+    {
+        if (!is_admin() || !$this->is_active()) {
+            return $args;
+        }
+
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if (!$screen || !in_array($screen->base, ['post', 'post-new'], true)) {
+            return $args;
+        }
+
+        // Determine post language
+        $post_id = (int) ($_GET['post'] ?? 0);
+        $post_lang = '';
+        if ($post_id > 0) {
+            $post_lang = get_post_meta($post_id, '_cc_language', true);
+        }
+
+        $settings = $this->get_settings();
+        $default_lang = $settings['default_lang'] ?? 'de';
+
+        if (empty($post_lang)) {
+            $post_lang = $default_lang;
+        }
+
+        // Don't double-apply
+        if (isset($args['_cc_lang_filtered'])) {
+            return $args;
+        }
+        $args['_cc_lang_filtered'] = true;
+
+        // Normalize meta_query: WP core / theme.json queries can pass a non-array
+        // value (e.g. an empty string), which causes "[] operator not supported for
+        // strings" when we try to append to it.
+        $raw_mq = $args['meta_query'] ?? [];
+        $existing_mq = is_array($raw_mq) ? $raw_mq : [];
+
+        // Strict match: only show terms tagged with this exact language.
+        // All terms are guaranteed to have _cc_language after the one-time
+        // migration (maybe_migrate_legacy_terms) runs on admin_init.
+        $existing_mq[] = [
+            'key' => '_cc_language',
+            'value' => $post_lang,
+        ];
+
+        $args['meta_query'] = $existing_mq;
+        return $args;
     }
 
     public function cc_filter_term_link(string $url, \WP_Term $term, string $taxonomy): string
@@ -656,6 +819,68 @@ class MultilingualModule implements ModuleInterface
         update_option('cc_forms_migrated_v1', time());
     }
 
+    /**
+     * One-time migration: backfill _cc_language and _cc_translation_group on all
+     * legacy terms that pre-date the multilingual system (i.e. are missing those metas).
+     *
+     * Safe on large datasets:
+     *  - Uses get_terms() with NOT EXISTS meta_query so only un-tagged terms are fetched.
+     *  - Checks each individual meta before writing (never overwrites existing values).
+     *  - Guarded by a version option so it only runs once per installation.
+     */
+    public function maybe_migrate_legacy_terms(): void
+    {
+        if (!is_admin() || !current_user_can('manage_options')) {
+            return;
+        }
+
+        // Version flag — bump this string if you ever need to re-run the migration.
+        if (get_option('cc_terms_lang_migrated_v3')) {
+            return;
+        }
+
+        $settings = $this->get_settings();
+        $default_lang = $settings['default_lang'] ?? 'de';
+
+        // Get all public taxonomies (built-in + custom).
+        $taxonomies = get_taxonomies(['public' => true], 'names');
+        if (empty($taxonomies)) {
+            update_option('cc_terms_lang_migrated_v2', time());
+            return;
+        }
+
+        // Fetch terms that are missing EITHER meta — we'll check individually before writing.
+        $terms = get_terms([
+            'taxonomy' => array_values($taxonomies),
+            'hide_empty' => false,
+            'fields' => 'ids',
+            'meta_query' => [
+                'relation' => 'OR',
+                [
+                    'key' => '_cc_language',
+                    'compare' => 'NOT EXISTS',
+                ],
+                [
+                    'key' => '_cc_translation_group',
+                    'compare' => 'NOT EXISTS',
+                ],
+            ],
+        ]);
+
+        if (!is_wp_error($terms) && !empty($terms)) {
+            foreach ($terms as $term_id) {
+                if (!get_term_meta($term_id, '_cc_language', true)) {
+                    update_term_meta($term_id, '_cc_language', $default_lang);
+                }
+                if (!get_term_meta($term_id, '_cc_translation_group', true)) {
+                    update_term_meta($term_id, '_cc_translation_group', wp_generate_uuid4());
+                }
+            }
+        }
+
+        update_option('cc_terms_lang_migrated_v3', time());
+    }
+
     public static function get_language_catalog(): array
     {
         return [
@@ -665,5 +890,56 @@ class MultilingualModule implements ModuleInterface
             'it' => ['label' => 'Italiano', 'code' => 'it'],
             'es' => ['label' => 'Español', 'code' => 'es']
         ];
+    }
+
+    /**
+     * Apply custom 'cc_order' to term queries.
+     */
+    public function apply_cc_term_order(array $args, $taxonomies): array
+    {
+        if (!is_admin() && !defined('REST_REQUEST')) {
+            return $args;
+        }
+        add_filter('terms_clauses', [$this, 'inject_cc_term_order_clause'], 20, 3);
+        return $args;
+    }
+
+    public function inject_cc_term_order_clause(array $clauses, $taxonomies, array $args): array
+    {
+        remove_filter('terms_clauses', [$this, 'inject_cc_term_order_clause'], 20);
+
+        // Skip for count queries
+        if (isset($args['fields']) && $args['fields'] === 'count') {
+            return $clauses;
+        }
+
+        if (isset($args['orderby']) && !in_array($args['orderby'], ['name', 'term_id', 'id'])) {
+            return $clauses;
+        }
+
+        global $wpdb;
+        $tax_key = is_array($taxonomies) ? implode('_', $taxonomies) : (string) $taxonomies;
+        $join_alias = 'ccmetasort_' . substr(md5($tax_key), 0, 4);
+
+        $clauses['join'] .= " LEFT JOIN {$wpdb->termmeta} AS {$join_alias} ON (t.term_id = {$join_alias}.term_id AND {$join_alias}.meta_key = 'cc_order') ";
+
+        // Clean up existing orderby
+        $current_orderby = str_ireplace('ORDER BY', '', $clauses['orderby']);
+        $current_orderby = trim($current_orderby, ', ');
+
+        $new_fields = "{$join_alias}.meta_value+0 ASC, t.name";
+
+        if (!empty($current_orderby)) {
+            $new_fields .= ", " . $current_orderby;
+        }
+
+        // Explicitly include ORDER BY because WP Core prepends it PRIOR to this filter running.
+        // Therefore, clauses['orderby'] must start with ORDER BY.
+        $clauses['orderby'] = " ORDER BY " . $new_fields;
+
+        // Clear 'order' to prevent ASC/DESC being appended after our custom sort.
+        $clauses['order'] = '';
+
+        return $clauses;
     }
 }

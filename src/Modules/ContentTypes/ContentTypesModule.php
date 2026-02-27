@@ -126,11 +126,24 @@ class ContentTypesModule implements ModuleInterface
             $object_types = [];
         }
 
+        // Derive a reasonable singular name: stored singular or fall back to label.
+        $singular = get_post_meta($post->ID, '_cc_tax_singular', true) ?: $label;
+
         $args = [
             'label' => $label,
             'labels' => [
                 'name' => $label,
-                'singular_name' => $label,
+                'singular_name' => $singular,
+                'menu_name' => $label,
+                'all_items' => sprintf(__('All %s', 'content-core'), $label),
+                // Translators: %s = singular term label, e.g. "Referenz"
+                'add_new_item' => sprintf(__('Add %s', 'content-core'), $singular),
+                'new_item_name' => sprintf(__('New %s name', 'content-core'), $singular),
+                'most_used' => sprintf(__('Most Used %s', 'content-core'), $label),
+                'search_items' => sprintf(__('Search %s', 'content-core'), $label),
+                'not_found' => sprintf(__('No %s found.', 'content-core'), $label),
+                'back_to_items' => sprintf(__('Back to %s', 'content-core'), $label),
+                'popular_items' => null, // null = suppress for hierarchical
             ],
             'hierarchical' => $hierarchical,
             'show_in_rest' => true,

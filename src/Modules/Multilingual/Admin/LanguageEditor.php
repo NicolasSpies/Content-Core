@@ -26,7 +26,7 @@ class LanguageEditor
         $taxonomies = get_taxonomies(['public' => true]);
         foreach ($taxonomies as $taxonomy) {
             add_action("{$taxonomy}_add_form_fields", [$this, 'render_term_add_language_field']);
-            add_action("{$taxonomy}_edit_form_fields", [$this, 'render_term_edit_language_field']);
+            add_action("{$taxonomy}_edit_form_fields", [$this, 'render_term_edit_language_field'], 10, 2);
         }
     }
 
@@ -39,7 +39,7 @@ class LanguageEditor
         add_meta_box(
             'cc-language-box',
             __('Language', 'content-core'),
-        [$this, 'render_language_meta_box'],
+            [$this, 'render_language_meta_box'],
             $post_type,
             'side',
             'high'
@@ -54,23 +54,33 @@ class LanguageEditor
         }
 
         $settings = $this->module->get_settings();
+        $default_lang = $settings['default_lang'] ?? 'de';
+
+        wp_nonce_field('cc_save_language', 'cc_language_nonce');
+
+        // On the "Add New" screen, the post is a temporary auto-draft with no real ID.
+        // We must not show the language dropdown yet — that would allow accidental
+        // misassignment before the default-language logic has run.
+        // Instead, silently pre-assign the default language via a hidden field.
+        $is_new_post = ($post->post_status === 'auto-draft' || $post->ID === 0);
+
+        if ($is_new_post) {
+            echo '<input type="hidden" name="cc_language" value="' . esc_attr($default_lang) . '">';
+            echo '<p style="color: #646970; font-size: 12px; margin: 0;">';
+            echo esc_html(sprintf(
+                __('This item will be created in the default language (%s). You can change the language after saving.', 'content-core'),
+                strtoupper($default_lang)
+            ));
+            echo '</p>';
+            return;
+        }
 
         $current_lang = get_post_meta($post->ID, '_cc_language', true);
         if (!$current_lang) {
-            // Polylang parity: Pre-select admin context on truly new UI drafts ONLY
-            // This is just a UI pre-selection. Actual persistence follows on save.
-            $admin_lang = get_user_meta(get_current_user_id(), 'cc_admin_language', true);
-            if (!empty($admin_lang) && $admin_lang !== 'all' && in_array($admin_lang, array_column($settings['languages'], 'code'))) {
-                $current_lang = $admin_lang;
-            }
-            else {
-                $current_lang = $settings['default_lang'] ?? 'de';
-            }
+            $current_lang = $default_lang;
         }
 
         $group_id = get_post_meta($post->ID, '_cc_translation_group', true);
-
-        wp_nonce_field('cc_save_language', 'cc_language_nonce');
 
         echo '<div class="cc-language-selector" style="margin-bottom: 20px;">';
         echo '<label style="display: block; margin-bottom: 8px; font-weight: 600;">' . __('Current Language', 'content-core') . '</label>';
@@ -115,8 +125,7 @@ class LanguageEditor
                     echo '<span class="dashicons dashicons-edit" style="font-size: 16px; width: 16px; height: 16px;"></span>';
                     echo '<span style="font-size: 11px; font-weight: 500;">' . esc_html($status_label) . '</span>';
                     echo '</a>';
-                }
-                else {
+                } else {
                     $create_url = add_query_arg([
                         'action' => 'cc_create_translation',
                         'post' => $post->ID,
@@ -149,33 +158,29 @@ class LanguageEditor
     }
 
     /**
-     * Render language field on "Add New Term" screen
+     * Render language field on "Add New Term" screen.
+     * We do NOT show a dropdown — new terms are always assigned to the default language,
+     * matching the same behaviour as Posts ("Add New" = default lang, selector only after save).
      */
     public function render_term_add_language_field(string $taxonomy): void
     {
         if (!$this->module->is_active())
             return;
         $settings = $this->module->get_settings();
-        $admin_lang = get_user_meta(get_current_user_id(), 'cc_admin_language', true);
-        $default_lang = (!empty($admin_lang) && $admin_lang !== 'all') ? $admin_lang : ($settings['default_lang'] ?? 'de');
-?>
-<div class="form-field term-group">
-    <label for="cc_term_language">
-        <?php _e('Language', 'content-core'); ?>
-    </label>
-    <select name="cc_term_language" id="cc_term_language">
-        <?php foreach ($settings['languages'] as $l): ?>
-        <option value="<?php echo esc_attr($l['code']); ?>" <?php selected($default_lang, $l['code']); ?>>
-            <?php echo esc_html($l['label']); ?>
-        </option>
+        $default_lang = $settings['default_lang'] ?? 'de';
+        ?>
+        <div class="form-field term-group" style="display:none;">
+            <input type="hidden" name="cc_term_language" value="<?php echo esc_attr($default_lang); ?>">
+        </div>
+        <div class="form-field">
+            <p class="description" style="color:#646970; font-style:italic; margin-top:4px;">
+                <?php printf(
+                    esc_html__('This term will be created in the default language (%s). You can add translations after saving.', 'content-core'),
+                    strtoupper($default_lang)
+                ); ?>
+            </p>
+        </div>
         <?php
-        endforeach; ?>
-    </select>
-    <p class="description">
-        <?php _e('Assign a language to this term.', 'content-core'); ?>
-    </p>
-</div>
-<?php
     }
 
     /**
@@ -187,25 +192,25 @@ class LanguageEditor
             return;
         $settings = $this->module->get_settings();
         $current_lang = get_term_meta($term->term_id, '_cc_language', true) ?: $settings['default_lang'];
-?>
-<tr class="form-field term-group-wrap">
-    <th scope="row"><label for="cc_term_language">
-            <?php _e('Language', 'content-core'); ?>
-        </label></th>
-    <td>
-        <select name="cc_term_language" id="cc_term_language">
-            <?php foreach ($settings['languages'] as $l): ?>
-            <option value="<?php echo esc_attr($l['code']); ?>" <?php selected($current_lang, $l['code']); ?>>
-                <?php echo esc_html($l['label']); ?>
-            </option>
-            <?php
-        endforeach; ?>
-        </select>
-        <p class="description">
-            <?php _e('The language assigned to this term.', 'content-core'); ?>
-        </p>
-    </td>
-</tr>
-<?php
+        ?>
+        <tr class="form-field term-group-wrap">
+            <th scope="row"><label for="cc_term_language">
+                    <?php _e('Language', 'content-core'); ?>
+                </label></th>
+            <td>
+                <select name="cc_term_language" id="cc_term_language">
+                    <?php foreach ($settings['languages'] as $l): ?>
+                        <option value="<?php echo esc_attr($l['code']); ?>" <?php selected($current_lang, $l['code']); ?>>
+                            <?php echo esc_html($l['label']); ?>
+                        </option>
+                        <?php
+                    endforeach; ?>
+                </select>
+                <p class="description">
+                    <?php _e('The language assigned to this term.', 'content-core'); ?>
+                </p>
+            </td>
+        </tr>
+        <?php
     }
 }

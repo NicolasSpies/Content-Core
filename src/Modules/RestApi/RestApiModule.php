@@ -12,6 +12,7 @@ class RestApiModule implements ModuleInterface
     private static $diagnostics = [
         'route_count' => 0,
         'namespace_registered' => false,
+        'last_error' => null,
     ];
 
     /**
@@ -782,6 +783,10 @@ class RestApiModule implements ModuleInterface
 
         // 2. Count routes in our namespace
         $routes = $server->get_routes();
+        if (!is_array($routes)) {
+            $routes = [];
+        }
+
         $count = 0;
         foreach ($routes as $route => $handlers) {
             if (strpos($route, $ns_with_slash) === 0) {
@@ -805,5 +810,67 @@ class RestApiModule implements ModuleInterface
     public static function is_diagnostic_namespace_registered(): bool
     {
         return self::$diagnostics['namespace_registered'];
+    }
+
+    /**
+     * Safely perform discovery of REST routes.
+     * Triggers rest_api_init if it hasn't run yet.
+     */
+    public static function perform_safe_discovery(): void
+    {
+        if (!function_exists('rest_get_server')) {
+            return;
+        }
+
+        try {
+            if (!did_action('rest_api_init')) {
+                do_action('rest_api_init');
+            }
+
+            $module = \ContentCore\Plugin::get_instance()->get_module('rest_api');
+            if ($module instanceof self) {
+                $module->record_diagnostics();
+            }
+        } catch (\Throwable $e) {
+            self::$diagnostics['last_error'] = $e->getMessage();
+        }
+    }
+
+    /**
+     * Get the last discovery error
+     */
+    public static function get_last_error(): ?string
+    {
+        return self::$diagnostics['last_error'];
+    }
+
+    /**
+     * Get all registered routes for our namespace safely
+     */
+    public static function get_registered_routes(): array
+    {
+        if (!function_exists('rest_get_server')) {
+            return [];
+        }
+
+        try {
+            $server = rest_get_server();
+            $namespace = \ContentCore\Plugin::REST_NAMESPACE . '/' . \ContentCore\Plugin::REST_VERSION;
+            $ns_with_slash = '/' . ltrim($namespace, '/');
+
+            $all_routes = $server->get_routes();
+            $our_routes = [];
+
+            foreach ($all_routes as $route => $handlers) {
+                if (0 === strpos($route, $ns_with_slash)) {
+                    $our_routes[] = $route;
+                }
+            }
+
+            return $our_routes;
+        } catch (\Throwable $e) {
+            self::$diagnostics['last_error'] = $e->getMessage();
+            return [];
+        }
     }
 }

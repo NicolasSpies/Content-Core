@@ -17,16 +17,16 @@
     --cc-radius-pill: 50px;
     --cc-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     --cc-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
-    
+
     /* Premium Health Colors */
     --cc-health-healthy-bg: #e6f4ea;
     --cc-health-healthy-text: #008a20;
     --cc-health-healthy-border: #8fd19e;
-    
+
     --cc-health-warning-bg: #fff9e6;
     --cc-health-warning-text: #856404;
     --cc-health-warning-border: #ffeeba;
-    
+
     --cc-health-critical-bg: #fdf2f2;
     --cc-health-critical-text: #d63638;
     --cc-health-critical-border: #f8b4b4;
@@ -42,7 +42,8 @@
 .content-core-admin {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
     color: var(--cc-text);
-    margin-right: 20px;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 .content-core-admin .cc-header {
@@ -582,7 +583,7 @@
 .cc-builder-actions {
     margin-top: 16px;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
 }
 
@@ -596,6 +597,7 @@
     padding: 4px;
     transition: color 0.2s;
 }
+
 
 .cc-remove-btn-subtle:hover {
     color: #d63638;
@@ -740,6 +742,8 @@
 
 .cc-card-full {
     grid-column: 1 / -1;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* --- System Overview Section --- */
@@ -1125,9 +1129,20 @@
 
 /* Health Score Pulse Effect (subtle) */
 @keyframes cc-score-pulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.02); opacity: 0.95; }
-    100% { transform: scale(1); opacity: 1; }
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.02);
+        opacity: 0.95;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .cc-health-score-value {

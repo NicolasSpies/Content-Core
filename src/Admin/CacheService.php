@@ -447,6 +447,7 @@ class CacheService
 
         $plugin = Plugin::get_instance();
         $forms_module = $plugin->get_module('forms');
+        $ml_module = $plugin->get_module('multilingual');
 
         $result = [
             'is_active' => false,
@@ -458,6 +459,9 @@ class CacheService
                 'turnstile' => false,
             ],
             'last_entry_timestamp' => null,
+            'forms_translations' => [],
+            'enabled_languages' => [],
+            'default_lang' => 'de',
         ];
 
         if (!$forms_module) {
@@ -466,9 +470,69 @@ class CacheService
 
         $result['is_active'] = true;
 
-        $result['total_forms'] = (int) $wpdb->get_var("
-            SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'cc_form' AND post_status != 'trash'
-        ");
+        $default_lang = 'de';
+        $enabled_languages = [];
+        $is_ml_active = false;
+
+        if ($ml_module && method_exists($ml_module, 'is_active') && $ml_module->is_active()) {
+            $settings = $ml_module->get_settings();
+            $default_lang = $settings['default_lang'] ?? 'de';
+            $enabled_languages = array_column($settings['languages'] ?? [], 'code');
+            $is_ml_active = true;
+        }
+
+        $result['default_lang'] = $default_lang;
+        $result['enabled_languages'] = $enabled_languages;
+
+        if ($is_ml_active) {
+            // Count only forms in default language
+            $result['total_forms'] = (int) $wpdb->get_var($wpdb->prepare("
+                SELECT COUNT(DISTINCT p.ID) 
+                FROM {$wpdb->posts} p
+                INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_cc_language'
+                WHERE p.post_type = 'cc_form' 
+                AND p.post_status IN ('publish', 'draft', 'pending', 'private')
+                AND pm.meta_value = %s
+            ", $default_lang));
+
+            // Fetch forms to build translation status map
+            $forms = $wpdb->get_results($wpdb->prepare("
+                SELECT p.ID, p.post_title
+                FROM {$wpdb->posts} p
+                INNER JOIN {$wpdb->postmeta} pm_lang ON p.ID = pm_lang.post_id AND pm_lang.meta_key = '_cc_language'
+                WHERE p.post_type = 'cc_form'
+                AND p.post_status IN ('publish', 'draft', 'pending', 'private')
+                AND pm_lang.meta_value = %s
+                ORDER BY p.post_title ASC
+            ", $default_lang));
+
+            $form_ids = array_map('intval', array_column($forms, 'ID'));
+            if (!empty($form_ids) && method_exists($ml_module, 'get_translation_manager')) {
+                $tm = $ml_module->get_translation_manager();
+                if ($tm) {
+                    $translations_map = $tm->get_batch_translations($form_ids);
+
+                    foreach ($forms as $form) {
+                        $translations = $translations_map[$form->ID] ?? [];
+                        $status_per_lang = [];
+                        foreach ($enabled_languages as $lang) {
+                            if ($lang === $default_lang)
+                                continue;
+                            $status_per_lang[$lang] = isset($translations[$lang]);
+                        }
+                        $result['forms_translations'][] = [
+                            'id' => (int) $form->ID,
+                            'title' => $form->post_title,
+                            'translations' => $status_per_lang
+                        ];
+                    }
+                }
+            }
+        } else {
+            $result['total_forms'] = (int) $wpdb->get_var("
+                SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'cc_form' AND post_status IN ('publish', 'draft', 'pending', 'private')
+            ");
+        }
 
         $result['total_entries'] = (int) $wpdb->get_var("
             SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'cc_form_entry' AND post_status != 'trash'
@@ -539,7 +603,7 @@ class CacheService
         $status = 'healthy';
         $issues = [];
 
-        if ($health['missing_lang_meta_count'] > 0 || $health['orphan_groups_count'] > 0) {
+        if ($health['missing_lang_meta_count'] > 0) {
             $status = 'warning';
             $issues[] = sprintf(__('Found %d items with missing language meta.', 'content-core'), $health['missing_lang_meta_count']);
         }
@@ -571,7 +635,7 @@ class CacheService
 
         if (!empty($health['languages_missing_options'])) {
             $status = 'warning';
-            $issues[] = sprintf(__('Missing options for: %s', 'content-core'), implode(', ', $health['languages_missing_options']));
+            $issues[] = sprintf(__('Missing options for: %s. Some features may use defaults.', 'content-core'), implode(', ', $health['languages_missing_options']));
         }
 
         if (!$health['translation_group_id_present']) {
@@ -627,8 +691,31 @@ class CacheService
         // We check if it has already fired or rely on the fact that it will fire
         // during the normal request lifecycle if needed.
 
+        // Ensure we have fresh discovery data if possible
+        \ContentCore\Modules\RestApi\RestApiModule::perform_safe_discovery();
+
         $diag_count = \ContentCore\Modules\RestApi\RestApiModule::get_diagnostic_route_count();
         $diag_ns = \ContentCore\Modules\RestApi\RestApiModule::is_diagnostic_namespace_registered();
+        $last_error = \ContentCore\Modules\RestApi\RestApiModule::get_last_error();
+
+        $plugin = Plugin::get_instance();
+        $base_url = function_exists('rest_url') ? rest_url($plugin->get_rest_namespace()) : '';
+        $fallback_msg = __('Namespace not registered', 'content-core');
+
+        if ($last_error) {
+            return [
+                'status' => 'critical',
+                'short_label' => __('Error', 'content-core'),
+                'message' => sprintf(__('REST Discovery failed: %s', 'content-core'), $last_error),
+                'data' => [
+                    'namespace_registered' => false,
+                    'route_count' => 0,
+                    'reachable' => false,
+                    'http_code' => 500,
+                    'base_url' => $fallback_msg,
+                ]
+            ];
+        }
 
         if (!$diag_ns) {
             return [
@@ -641,6 +728,7 @@ class CacheService
                     'route_count' => 0,
                     'reachable' => false,
                     'http_code' => 404,
+                    'base_url' => $fallback_msg,
                 ]
             ];
         }
@@ -655,6 +743,7 @@ class CacheService
                     'route_count' => 0,
                     'reachable' => false,
                     'http_code' => 500,
+                    'base_url' => $base_url,
                 ]
             ];
         }
@@ -668,6 +757,7 @@ class CacheService
                 'route_count' => $diag_count,
                 'reachable' => true,
                 'http_code' => 200,
+                'base_url' => $base_url,
             ]
         ];
     }

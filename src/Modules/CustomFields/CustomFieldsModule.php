@@ -32,7 +32,7 @@ class CustomFieldsModule implements ModuleInterface
      */
     private function register_admin(): void
     {
-        if (is_admin()) {
+        if (is_admin() || (defined('REST_REQUEST') && REST_REQUEST)) {
             $admin_group = new \ContentCore\Modules\CustomFields\Admin\FieldGroupAdmin();
             $admin_group->register();
 

@@ -39,14 +39,15 @@ class PostEditAdmin
         $groups = FieldRegistry::get_field_groups($context);
 
         foreach ($groups as $group) {
+            $id = 'cc_group_' . $group->ID;
             add_meta_box(
-                'cc_group_' . $group->ID,
+                $id,
                 esc_html($group->post_title),
-            [$this, 'render_meta_box'],
+                [$this, 'render_meta_box'],
                 $post_type,
                 'normal',
                 'high',
-            ['group_id' => $group->ID]
+                ['group_id' => $group->ID]
             );
         }
     }
@@ -93,6 +94,9 @@ class PostEditAdmin
     public function render_meta_box(\WP_Post $post, array $args): void
     {
         $group_id = $args['args']['group_id'] ?? 0;
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[Content Core] Rendering meta box for group_id: ' . $group_id);
+        }
         if (!$group_id) {
             return;
         }
@@ -104,6 +108,9 @@ class PostEditAdmin
         }
 
         $fields = get_post_meta($group_id, '_cc_fields', true);
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('[Content Core] Fields for group ' . $group_id . ': ' . (is_array($fields) ? count($fields) : 'NOT AN ARRAY'));
+        }
         if (!is_array($fields) || empty($fields)) {
             echo '<p>' . esc_html__('No fields defined for this group.', 'content-core') . '</p>';
             return;
@@ -147,8 +154,7 @@ class PostEditAdmin
 
                 echo '</div></div>'; // Close section body and section wrapper
                 $section_index++;
-            }
-            else {
+            } else {
                 // Render root-level fields natively without artificial section wrappers
                 $this->render_field($post->ID, $field);
             }
@@ -314,8 +320,7 @@ class PostEditAdmin
         if ($value) {
             if ('image' === $type) {
                 echo wp_get_attachment_image($value, 'large');
-            }
-            else {
+            } else {
                 $url = wp_get_attachment_url($value);
                 echo '<div class="cc-media-filename">' . esc_html(basename($url)) . '</div>';
             }
@@ -361,7 +366,7 @@ class PostEditAdmin
         $first_val = '';
         foreach ($sub_fields as $sf) {
             if (isset($row_data[$sf['name']]) && !is_array($row_data[$sf['name']])) {
-                $first_val = (string)$row_data[$sf['name']];
+                $first_val = (string) $row_data[$sf['name']];
                 if ($first_val)
                     break;
             }
@@ -500,14 +505,14 @@ class PostEditAdmin
 
         $page_template = '';
         if ($post_id > 0) {
-            $page_template = (string)get_post_meta($post_id, '_wp_page_template', true);
+            $page_template = (string) get_post_meta($post_id, '_wp_page_template', true);
         }
 
         $context = [
             'post_id' => $post_id,
             'post_type' => $post_type,
             'page_template' => $page_template,
-            'taxonomy_terms' => $post_id > 0 ?FieldRegistry::get_context_taxonomy_terms($post_id) : [],
+            'taxonomy_terms' => $post_id > 0 ? FieldRegistry::get_context_taxonomy_terms($post_id) : [],
         ];
 
         return FieldRegistry::get_field_groups($context);
@@ -553,8 +558,7 @@ class PostEditAdmin
 
             if (null === $sanitized || '' === $sanitized || (is_array($sanitized) && empty($sanitized))) {
                 delete_post_meta($post_id, $name);
-            }
-            else {
+            } else {
                 // Store as JSON string if it's a structural field (repeater/group/gallery)
                 if (in_array($valid_fields[$name]['type'], ['repeater', 'group', 'gallery'])) {
                     $sanitized = wp_json_encode($sanitized);
@@ -577,7 +581,7 @@ class PostEditAdmin
             case 'textarea':
                 return sanitize_textarea_field($value);
             case 'number':
-                return is_numeric($value) ? (string)($value + 0) : '';
+                return is_numeric($value) ? (string) ($value + 0) : '';
             case 'email':
                 return sanitize_email($value);
             case 'url':
@@ -674,10 +678,10 @@ class PostEditAdmin
                 window.ContentCoreHealth.postEditMetaBoxCssLoaded = true;
                 window.ContentCoreHealth.screen = %s;",
                 wp_json_encode([
-                'id' => $screen->id,
-                'base' => $screen->base,
-                'post_type' => $screen->post_type
-            ])
+                    'id' => $screen->id,
+                    'base' => $screen->base,
+                    'post_type' => $screen->post_type
+                ])
             );
             // Attach to jquery as it's a reliable dependency
             wp_add_inline_script('jquery', $probe_script);
