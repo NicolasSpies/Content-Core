@@ -75,52 +75,9 @@ class TermsManagerAdmin
 
             <div id="cc-tm-notice" class="cc-tm-notice" style="display:none;"></div>
 
-            <!-- ── Toolbar ─────────────────────────────────────────────────── -->
-            <div class="cc-tm-toolbar">
-                <label for="cc-tm-taxonomy"><?php _e('Taxonomy', 'content-core'); ?></label>
-                <select id="cc-tm-taxonomy">
-                    <?php foreach ($taxonomies as $tax): ?>
-                        <?php if (!$tax->show_ui)
-                            continue; ?>
-                        <option value="<?php echo esc_attr($tax->name); ?>">
-                            <?php echo esc_html($tax->label ?: $tax->name); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-
-
-
-                <div class="cc-tm-create-wrap">
-                    <input type="text" id="cc-tm-new-name" placeholder="<?php esc_attr_e('New term name…', 'content-core'); ?>">
-                    <button id="cc-tm-create-btn" class="button button-primary">
-                        <?php _e('Create Term', 'content-core'); ?>
-                    </button>
-                </div>
-            </div>
-
-            <!-- ── Table ───────────────────────────────────────────────────── -->
-            <div id="cc-tm-table-wrap">
-                <table class="cc-tm-table widefat" id="cc-tm-table">
-                    <thead>
-                        <tr>
-                            <th class="cc-tm-drag-col"></th>
-                            <th><?php _e('Group', 'content-core'); ?></th>
-                            <?php foreach ($languages as $code => $label): ?>
-                                <th class="cc-tm-lang-col" data-lang="<?php echo esc_attr($code); ?>">
-                                    <?php echo esc_html(strtoupper($code)); ?>
-                                </th>
-                            <?php endforeach; ?>
-                            <th><?php _e('Actions', 'content-core'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody id="cc-tm-tbody">
-                        <tr class="cc-tm-loading">
-                            <td colspan="<?php echo 3 + count($languages); ?>">
-                                <?php _e('Loading…', 'content-core'); ?>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- ── Accordions Container ────────────────────────────────────── -->
+            <div id="cc-tm-accordions" class="cc-tm-accordions">
+                <p><?php _e('Loading taxonomies...', 'content-core'); ?></p>
             </div>
 
             <!-- ── Delete-group confirm modal ──────────────────────────────── -->

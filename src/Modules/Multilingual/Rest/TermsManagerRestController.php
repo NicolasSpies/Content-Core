@@ -34,13 +34,10 @@ class TermsManagerRestController
     {
         $base = '/terms-manager';
 
-        register_rest_route($this->ns, $base . '/groups', [
+        register_rest_route($this->ns, $base . '/all-taxonomy-groups', [
             'methods' => 'GET',
-            'callback' => [$this, 'get_groups'],
+            'callback' => [$this, 'get_all_taxonomy_groups'],
             'permission_callback' => [$this, 'check_permission'],
-            'args' => [
-                'taxonomy' => ['required' => true, 'sanitize_callback' => 'sanitize_key'],
-            ],
         ]);
 
         register_rest_route($this->ns, $base . '/create', [
@@ -114,75 +111,82 @@ class TermsManagerRestController
     }
 
     // -------------------------------------------------------------------------
-    // GET /groups
+    // GET /all-taxonomy-groups
     // -------------------------------------------------------------------------
 
-    public function get_groups(WP_REST_Request $request): WP_REST_Response
+    public function get_all_taxonomy_groups(\WP_REST_Request $request): \WP_REST_Response
     {
-        $taxonomy = $request->get_param('taxonomy');
+        // Get all public taxonomies that have a UI
+        $taxonomies = get_taxonomies(['public' => true], 'objects');
+        $response_data = [];
 
-        if (!taxonomy_exists($taxonomy)) {
-            return new WP_REST_Response(['error' => 'Invalid taxonomy.'], 400);
-        }
+        foreach ($taxonomies as $tax) {
+            if (!$tax->show_ui) {
+                continue;
+            }
 
-        $terms = get_terms([
-            'taxonomy' => $taxonomy,
-            'hide_empty' => false,
-            'number' => 0,
-        ]);
+            $terms = get_terms([
+                'taxonomy' => $tax->name,
+                'hide_empty' => false,
+                'number' => 0,
+            ]);
 
-        if (is_wp_error($terms)) {
-            return new WP_REST_Response(['error' => $terms->get_error_message()], 500);
-        }
+            if (is_wp_error($terms)) {
+                continue;
+            }
 
-        // Build a map: group_id => [ lang => term data ]
-        $groups = [];
-        $ungrouped = [];
+            $groups = [];
+            $ungrouped = [];
 
-        foreach ($terms as $term) {
-            $raw_lang = get_term_meta($term->term_id, '_cc_language', true) ?: ($this->module->get_settings()['default_lang'] ?? 'de');
-            $lang = strtolower(trim($raw_lang));
-            $group_id = get_term_meta($term->term_id, '_cc_translation_group', true);
-            $order = (int) (get_term_meta($term->term_id, 'cc_order', true) ?: 0);
+            foreach ($terms as $term) {
+                $raw_lang = get_term_meta($term->term_id, '_cc_language', true) ?: ($this->module->get_settings()['default_lang'] ?? 'de');
+                $lang = strtolower(trim($raw_lang));
+                $group_id = get_term_meta($term->term_id, '_cc_translation_group', true);
+                $order = (int) (get_term_meta($term->term_id, 'cc_order', true) ?: 0);
 
-            $td = [
-                'id' => $term->term_id,
-                'name' => $term->name,
-                'slug' => $term->slug,
-                'lang' => $lang,
-                'order' => $order,
-            ];
+                $td = [
+                    'id' => $term->term_id,
+                    'name' => $term->name,
+                    'slug' => $term->slug,
+                    'lang' => $lang,
+                    'order' => $order,
+                ];
 
-            if ($group_id) {
-                if (!isset($groups[$group_id])) {
-                    $groups[$group_id] = [
-                        'group_id' => $group_id,
+                if ($group_id) {
+                    if (!isset($groups[$group_id])) {
+                        $groups[$group_id] = [
+                            'group_id' => $group_id,
+                            'group_order' => $order,
+                            'translations' => [],
+                        ];
+                    }
+                    $groups[$group_id]['translations'][$lang] = $td;
+                    if ($order < $groups[$group_id]['group_order']) {
+                        $groups[$group_id]['group_order'] = $order;
+                    }
+                } else {
+                    $ungrouped[] = [
+                        'group_id' => null,
                         'group_order' => $order,
-                        'translations' => [],
+                        'translations' => [$lang => $td],
                     ];
                 }
-                $groups[$group_id]['translations'][$lang] = $td;
-                // Use lowest cc_order as group order for sorting
-                if ($order < $groups[$group_id]['group_order']) {
-                    $groups[$group_id]['group_order'] = $order;
-                }
-            } else {
-                $ungrouped[] = [
-                    'group_id' => null,
-                    'group_order' => $order,
-                    'translations' => [$lang => $td],
-                ];
             }
+
+            $all = array_values($groups);
+            foreach ($ungrouped as $u) {
+                $all[] = $u;
+            }
+            usort($all, fn($a, $b) => $a['group_order'] <=> $b['group_order']);
+
+            $response_data[] = [
+                'taxonomy' => $tax->name,
+                'label' => $tax->label ?: $tax->name,
+                'groups' => $all
+            ];
         }
 
-        // Sort groups by group_order
-        $all = array_values($groups);
-        foreach ($ungrouped as $u) {
-            $all[] = $u;
-        }
-        usort($all, fn($a, $b) => $a['group_order'] <=> $b['group_order']);
-
-        return new WP_REST_Response($all, 200);
+        return new \WP_REST_Response($response_data, 200);
     }
 
     // -------------------------------------------------------------------------
