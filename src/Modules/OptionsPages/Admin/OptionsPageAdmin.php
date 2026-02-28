@@ -32,14 +32,14 @@ class OptionsPageAdmin
             $menu_slug = 'cc-options-' . $slug;
 
             add_submenu_page(
-                'content-core-menu',
+                'cc-settings-hub',
                 esc_html($page->post_title),
                 esc_html($page->post_title),
                 'manage_options',
                 $menu_slug,
                 function () use ($page, $slug) {
-                $this->render_options_page($page, $slug);
-            }
+                    $this->render_options_page($page, $slug);
+                }
             );
         }
     }
@@ -99,11 +99,10 @@ class OptionsPageAdmin
                     if ($in_section) {
                         echo '</div></div>'; // Close content and section div
                     }
-                    $this->render_section_start($field, $slug, (int)$group->ID, $section_index);
+                    $this->render_section_start($field, $slug, (int) $group->ID, $section_index);
                     $in_section = true;
                     $section_index++;
-                }
-                else {
+                } else {
                     $this->render_field($field, $slug);
                 }
             }
@@ -276,8 +275,7 @@ class OptionsPageAdmin
         if ($value) {
             if ('image' === $type) {
                 echo wp_get_attachment_image($value, 'thumbnail');
-            }
-            else {
+            } else {
                 $url = wp_get_attachment_url($value);
                 echo '<div class="cc-media-filename">' . esc_html(basename($url)) . '</div>';
             }
@@ -322,7 +320,7 @@ class OptionsPageAdmin
         $first_val = '';
         foreach ($sub_fields as $sf) {
             if (isset($row_data[$sf['name']]) && !is_array($row_data[$sf['name']])) {
-                $first_val = (string)$row_data[$sf['name']];
+                $first_val = (string) $row_data[$sf['name']];
                 if ($first_val)
                     break;
             }
@@ -468,8 +466,7 @@ class OptionsPageAdmin
 
             if (null === $sanitized || '' === $sanitized || (is_array($sanitized) && empty($sanitized))) {
                 delete_option($option_key);
-            }
-            else {
+            } else {
                 // Store structural fields as JSON strings
                 if (in_array($fields[$name]['type'], ['repeater', 'group', 'gallery'])) {
                     $sanitized = wp_json_encode($sanitized);
@@ -495,7 +492,7 @@ class OptionsPageAdmin
             case 'textarea':
                 return sanitize_textarea_field($value);
             case 'number':
-                return is_numeric($value) ? (string)($value + 0) : '';
+                return is_numeric($value) ? (string) ($value + 0) : '';
             case 'email':
                 return sanitize_email($value);
             case 'url':
@@ -563,14 +560,14 @@ class OptionsPageAdmin
         wp_enqueue_style(
             'cc-admin-modern',
             plugins_url('assets/css/admin.css', dirname(__DIR__, 4)),
-        [],
+            [],
             '1.0.0'
         );
 
         wp_enqueue_script(
             'cc-admin-modern',
             plugins_url('assets/js/admin.js', dirname(__DIR__, 4)),
-        ['jquery', 'jquery-ui-sortable'],
+            ['jquery', 'jquery-ui-sortable'],
             '1.0.0',
             true
         );

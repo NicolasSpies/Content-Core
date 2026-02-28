@@ -30,7 +30,7 @@ class FormAdmin
             ],
             'public' => false,
             'show_ui' => true,
-            'show_in_menu' => true,
+            'show_in_menu' => 'cc-structure',
             'menu_icon' => 'dashicons-feedback',
             'supports' => ['title'],
             'capability_type' => 'post',
@@ -62,7 +62,7 @@ class FormAdmin
         add_meta_box(
             'cc_form_fields',
             __('Field Builder', 'content-core'),
-        [$this, 'render_field_builder'],
+            [$this, 'render_field_builder'],
             'cc_form',
             'normal',
             'high'
@@ -71,7 +71,7 @@ class FormAdmin
         add_meta_box(
             'cc_form_settings',
             __('Form Settings', 'content-core'),
-        [$this, 'render_form_settings'],
+            [$this, 'render_form_settings'],
             'cc_form',
             'side'
         );
@@ -83,36 +83,36 @@ class FormAdmin
         wp_nonce_field('cc_form_meta_save', 'cc_form_meta_nonce');
 
         // Field Adder UI
-?>
-<div class="cc-form-builder-toolbar"
-    style="margin-bottom: 20px; padding: 15px; background: #f6f7f7; border: 1px solid #ccd0d4; border-radius: 4px; display: flex; align-items: center; gap: 10px;">
-    <label for="cc-add-field-type"><strong>
-            <?php _e('Neues Feld:', 'content-core'); ?>
-        </strong></label>
-    <select id="cc-add-field-type" class="postbox">
-        <option value="text">Text</option>
-        <option value="email">Email</option>
-        <option value="tel">Tel (Telefon)</option>
-        <option value="number">Number (Zahl)</option>
-        <option value="textarea">Textarea</option>
-        <option value="date">Date (Datum)</option>
-        <option value="time">Time (Zeit)</option>
-        <option value="select">Select</option>
-        <option value="checkbox">Checkbox</option>
-        <option value="radio">Radio</option>
-        <option value="multiple">Multiple Choice</option>
-        <option value="file">File (Datei)</option>
-        <option value="consent">Consent (DSGVO)</option>
-    </select>
-    <button type="button" id="cc-add-field-btn" class="button button-primary">
-        <?php _e('Hinzufügen', 'content-core'); ?>
-    </button>
-</div>
+        ?>
+        <div class="cc-form-builder-toolbar"
+            style="margin-bottom: 20px; padding: 15px; background: #f6f7f7; border: 1px solid #ccd0d4; border-radius: 4px; display: flex; align-items: center; gap: 10px;">
+            <label for="cc-add-field-type"><strong>
+                    <?php _e('Neues Feld:', 'content-core'); ?>
+                </strong></label>
+            <select id="cc-add-field-type" class="postbox">
+                <option value="text">Text</option>
+                <option value="email">Email</option>
+                <option value="tel">Tel (Telefon)</option>
+                <option value="number">Number (Zahl)</option>
+                <option value="textarea">Textarea</option>
+                <option value="date">Date (Datum)</option>
+                <option value="time">Time (Zeit)</option>
+                <option value="select">Select</option>
+                <option value="checkbox">Checkbox</option>
+                <option value="radio">Radio</option>
+                <option value="multiple">Multiple Choice</option>
+                <option value="file">File (Datei)</option>
+                <option value="consent">Consent (DSGVO)</option>
+            </select>
+            <button type="button" id="cc-add-field-btn" class="button button-primary">
+                <?php _e('Hinzufügen', 'content-core'); ?>
+            </button>
+        </div>
 
-<div id="cc-form-field-builder"></div>
-<input type="hidden" name="cc_form_fields_json" id="cc_form_fields_json"
-    value="<?php echo esc_attr(json_encode($fields)); ?>">
-<?php
+        <div id="cc-form-field-builder"></div>
+        <input type="hidden" name="cc_form_fields_json" id="cc_form_fields_json"
+            value="<?php echo esc_attr(json_encode($fields)); ?>">
+        <?php
     }
 
     public function render_form_settings($post): void
@@ -127,57 +127,57 @@ class FormAdmin
             'enable_turnstile' => false
         ];
 
-?>
-<div class="cc-form-settings-wrap">
-    <p>
-        <label><strong>
-                <?php _e('Recipient Email', 'content-core'); ?>
-            </strong></label><br>
-        <input type="email" name="cc_form_settings[recipient_email]"
-            value="<?php echo esc_attr($settings['recipient_email']); ?>" class="widefat">
-    </p>
-    <p>
-        <label><strong>
-                <?php _e('Sender Email', 'content-core'); ?>
-            </strong></label><br>
-        <input type="email" name="cc_form_settings[sender_email]"
-            value="<?php echo esc_attr($settings['sender_email']); ?>" class="widefat">
-    </p>
-    <p>
-        <label><strong>
-                <?php _e('Subject Template', 'content-core'); ?>
-            </strong></label><br>
-        <input type="text" name="cc_form_settings[subject_template]"
-            value="<?php echo esc_attr($settings['subject_template']); ?>" class="widefat">
-    </p>
-    <p>
-        <label><strong>
-                <?php _e('Redirect URL', 'content-core'); ?>
-            </strong></label><br>
-        <input type="url" name="cc_form_settings[redirect_url]"
-            value="<?php echo esc_attr($settings['redirect_url']); ?>" class="widefat">
-    </p>
-    <hr>
-    <p>
-        <label><input type="checkbox" name="cc_form_settings[enable_honeypot]" value="1" <?php
-        checked($settings['enable_honeypot']); ?>>
-            <?php _e('Enable Honeypot', 'content-core'); ?>
-        </label>
-    </p>
-    <p>
-        <label><input type="checkbox" name="cc_form_settings[enable_rate_limit]" value="1" <?php
-        checked($settings['enable_rate_limit']); ?>>
-            <?php _e('Enable Rate Limiting', 'content-core'); ?>
-        </label>
-    </p>
-    <p>
-        <label><input type="checkbox" name="cc_form_settings[enable_turnstile]" value="1" <?php
-        checked($settings['enable_turnstile']); ?>>
-            <?php _e('Enable Turnstile', 'content-core'); ?>
-        </label>
-    </p>
-</div>
-<?php
+        ?>
+        <div class="cc-form-settings-wrap">
+            <p>
+                <label><strong>
+                        <?php _e('Recipient Email', 'content-core'); ?>
+                    </strong></label><br>
+                <input type="email" name="cc_form_settings[recipient_email]"
+                    value="<?php echo esc_attr($settings['recipient_email']); ?>" class="widefat">
+            </p>
+            <p>
+                <label><strong>
+                        <?php _e('Sender Email', 'content-core'); ?>
+                    </strong></label><br>
+                <input type="email" name="cc_form_settings[sender_email]"
+                    value="<?php echo esc_attr($settings['sender_email']); ?>" class="widefat">
+            </p>
+            <p>
+                <label><strong>
+                        <?php _e('Subject Template', 'content-core'); ?>
+                    </strong></label><br>
+                <input type="text" name="cc_form_settings[subject_template]"
+                    value="<?php echo esc_attr($settings['subject_template']); ?>" class="widefat">
+            </p>
+            <p>
+                <label><strong>
+                        <?php _e('Redirect URL', 'content-core'); ?>
+                    </strong></label><br>
+                <input type="url" name="cc_form_settings[redirect_url]"
+                    value="<?php echo esc_attr($settings['redirect_url']); ?>" class="widefat">
+            </p>
+            <hr>
+            <p>
+                <label><input type="checkbox" name="cc_form_settings[enable_honeypot]" value="1" <?php
+                checked($settings['enable_honeypot']); ?>>
+                    <?php _e('Enable Honeypot', 'content-core'); ?>
+                </label>
+            </p>
+            <p>
+                <label><input type="checkbox" name="cc_form_settings[enable_rate_limit]" value="1" <?php
+                checked($settings['enable_rate_limit']); ?>>
+                    <?php _e('Enable Rate Limiting', 'content-core'); ?>
+                </label>
+            </p>
+            <p>
+                <label><input type="checkbox" name="cc_form_settings[enable_turnstile]" value="1" <?php
+                checked($settings['enable_turnstile']); ?>>
+                    <?php _e('Enable Turnstile', 'content-core'); ?>
+                </label>
+            </p>
+        </div>
+        <?php
     }
 
     public function save_form_meta($post_id): void
@@ -211,15 +211,15 @@ class FormAdmin
                         'name' => sanitize_key($field['name'] ?? ''),
                         'label' => sanitize_text_field($field['label'] ?? ''),
                         'placeholder' => sanitize_text_field($field['placeholder'] ?? ''),
-                        'required' => (bool)($field['required'] ?? false)
+                        'required' => (bool) ($field['required'] ?? false)
                     ];
 
                     // Advanced Config Logic
                     switch ($type) {
                         case 'number':
-                            $clean_field['min'] = isset($field['min']) ? (float)$field['min'] : null;
-                            $clean_field['max'] = isset($field['max']) ? (float)$field['max'] : null;
-                            $clean_field['step'] = isset($field['step']) ? (float)$field['step'] : null;
+                            $clean_field['min'] = isset($field['min']) ? (float) $field['min'] : null;
+                            $clean_field['max'] = isset($field['max']) ? (float) $field['max'] : null;
+                            $clean_field['step'] = isset($field['step']) ? (float) $field['step'] : null;
                             break;
                         case 'select':
                         case 'radio':
@@ -227,8 +227,8 @@ class FormAdmin
                             $clean_field['options'] = $this->sanitize_options($field['options'] ?? []);
                             break;
                         case 'file':
-                            $clean_field['max_size_mb'] = (int)($field['max_size_mb'] ?? 5);
-                            $clean_field['multiple'] = (bool)($field['multiple'] ?? false);
+                            $clean_field['max_size_mb'] = (int) ($field['max_size_mb'] ?? 5);
+                            $clean_field['multiple'] = (bool) ($field['multiple'] ?? false);
                             $clean_field['allowed_types'] = is_array($field['allowed_types'] ?? null) ? array_map('sanitize_key', $field['allowed_types']) : ['pdf', 'jpg', 'png'];
                             break;
                         case 'consent':
@@ -282,7 +282,7 @@ class FormAdmin
         }
 
         // Enqueue Admin Assets
-        wp_enqueue_style('cc-form-admin-css', plugins_url('/assets/css/forms-admin.css', dirname(dirname(dirname(dirname(__FILE__))))));
-        wp_enqueue_script('cc-form-builder-js', plugins_url('/assets/js/forms-builder.js', dirname(dirname(dirname(dirname(__FILE__))))), ['jquery', 'wp-util'], '1.0.0', true);
+        wp_enqueue_style('cc-form-admin-css', CONTENT_CORE_PLUGIN_URL . 'assets/css/forms-admin.css', [], CONTENT_CORE_VERSION);
+        wp_enqueue_script('cc-form-builder-js', CONTENT_CORE_PLUGIN_URL . 'assets/js/forms-builder.js', ['jquery', 'wp-util'], CONTENT_CORE_VERSION, true);
     }
 }

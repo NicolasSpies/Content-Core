@@ -178,7 +178,6 @@
 
         return el('div', null,
             el('div', { className: 'cc-settings-card' },
-                el('h2', { className: 'cc-card-title' }, __('Search Engine Optimisation', 'content-core')),
                 el('p', { className: 'cc-card-desc' }, __('Default global SEO values. Individual pages can override these.', 'content-core')),
                 el('table', { className: 'form-table' },
                     el('tbody', null,
@@ -261,7 +260,6 @@
 
         return el('div', null,
             el('div', { className: 'cc-settings-card' },
-                el('h2', { className: 'cc-card-title' }, __('Site Images', 'content-core')),
                 el('p', { className: 'cc-card-desc' }, __('Manage site-wide images. IDs are stored; URLs are resolved on output.', 'content-core')),
 
                 el(ImagePicker, {
@@ -304,7 +302,6 @@
 
         return el('div', null,
             el('div', { className: 'cc-settings-card' },
-                el('h2', { className: 'cc-card-title' }, __('Cookie Banner', 'content-core')),
                 el('p', { className: 'cc-card-desc' }, __('Configure the consent banner shown to visitors.', 'content-core')),
                 el('table', { className: 'form-table' },
                     el('tbody', null,
@@ -447,7 +444,6 @@
     function SiteOptionsTab() {
         return el('div', null,
             el('div', { className: 'cc-settings-card' },
-                el('h2', { className: 'cc-card-title' }, __('Site Options', 'content-core')),
                 el('p', { className: 'cc-card-desc' },
                     __('Site Options contain structured content fields (address, phone, email, social links, etc.) that are managed per language. Use the dedicated Site Options page to edit these values.', 'content-core')
                 ),
@@ -467,7 +463,7 @@
         const [localSettings, setLocalSettings] = useState(null);
         const [saving, setSaving] = useState(false);
         const [toast, setToast] = useState(null);
-        const [activeTab, setActiveTab] = useState('seo');
+        const [activeTab, setActiveTab] = useState(config.activeTab || 'seo');
 
         // Sync local state when settings load
         useEffect(function () {

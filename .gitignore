@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Composer
+/vendor/
+composer.lock
+
+# Local dev scratch files
+test-*.php

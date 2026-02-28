@@ -26,7 +26,7 @@ class TermsManagerAdmin
 
     public function enqueue_assets(string $hook): void
     {
-        if ($hook !== 'content-core_page_cc-manage-terms') {
+        if (strpos($hook, 'cc-manage-terms') === false) {
             return;
         }
 

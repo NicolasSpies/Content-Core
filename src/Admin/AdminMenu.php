@@ -35,6 +35,29 @@ class AdminMenu
 
         add_filter('admin_footer_text', [$this, 'maybe_remove_footer_text'], 11);
         add_filter('update_footer', [$this, 'maybe_remove_footer_text'], 11);
+
+        add_action('admin_init', [$this, 'handle_menu_redirects']);
+    }
+
+    /**
+     * Redirect empty top-level menus to exactly their first real section
+     */
+    public function handle_menu_redirects(): void
+    {
+        global $pagenow;
+        if ($pagenow !== 'admin.php' || empty($_GET['page'])) {
+            return;
+        }
+
+        if ($_GET['page'] === 'cc-structure') {
+            wp_redirect(admin_url('edit.php?post_type=cc_post_type_def'));
+            exit;
+        }
+
+        if ($_GET['page'] === 'cc-settings-hub') {
+            wp_redirect(admin_url('admin.php?page=cc-site-options'));
+            exit;
+        }
     }
 
     /**
@@ -83,7 +106,7 @@ class AdminMenu
             exit;
         }
 
-        // Add the top-level "Parent" item
+        // Add the top-level "Parent" item (Content Core)
         add_menu_page(
             __('Content Core', 'content-core'),
             __('Content Core', 'content-core'),
@@ -94,52 +117,36 @@ class AdminMenu
             30
         );
 
+        // Add the top-level "Structure" item
+        add_menu_page(
+            __('Structure', 'content-core'),
+            __('Structure', 'content-core'),
+            'manage_options',
+            'cc-structure',
+            '', // No direct callback, will default to first submenu
+            'dashicons-networking',
+            31
+        );
+
+        // Add the top-level "Settings" item
+        add_menu_page(
+            __('CC Settings', 'content-core'),
+            __('CC Settings', 'content-core'),
+            'manage_options',
+            'cc-settings-hub',
+            '', // No direct callback, will default to first submenu
+            'dashicons-admin-settings',
+            32
+        );
+
         $plugin = \ContentCore\Plugin::get_instance();
 
-        // Submenu: Field Groups (Standard WP route for the CPT)
-        if ($plugin->is_module_active('custom_fields')) {
-            add_submenu_page(
-                'content-core',
-                __('Field Groups', 'content-core'),
-                __('Field Groups', 'content-core'),
-                'manage_options',
-                'edit.php?post_type=cc_field_group'
-            );
+        // 1) Dashboard (Content Core -> Dashboard)
+        if (isset($GLOBALS['submenu']['content-core'])) {
+            $GLOBALS['submenu']['content-core'][0][0] = __('Dashboard', 'content-core');
         }
 
-        // Submenu: Post Types (CPT Builder)
-        if ($plugin->is_module_active('content_types')) {
-            add_submenu_page(
-                'content-core',
-                __('Post Types', 'content-core'),
-                __('Post Types', 'content-core'),
-                'manage_options',
-                'edit.php?post_type=cc_post_type_def'
-            );
-
-            // Submenu: Taxonomies (Taxonomy Builder)
-            add_submenu_page(
-                'content-core',
-                __('Taxonomies', 'content-core'),
-                __('Taxonomies', 'content-core'),
-                'manage_options',
-                'edit.php?post_type=cc_taxonomy_def'
-            );
-        }
-
-        // Submenu: Manage Terms (Multilingual term grid)
-        if ($plugin->is_module_active('multilingual')) {
-            add_submenu_page(
-                'content-core',
-                __('Manage Terms', 'content-core'),
-                __('Manage Terms', 'content-core'),
-                'manage_options',
-                'cc-manage-terms',
-                [$this, 'render_manage_terms_page']
-            );
-        }
-
-        // Submenu: API (Information & Documentation)
+        // Submenu: REST API -> Content Core
         if ($plugin->is_module_active('rest_api')) {
             add_submenu_page(
                 'content-core',
@@ -151,6 +158,7 @@ class AdminMenu
             );
         }
 
+        // Submenu: Diagnostics -> Content Core
         add_submenu_page(
             'content-core',
             __('Diagnostics', 'content-core'),
@@ -160,10 +168,84 @@ class AdminMenu
             [$this, 'render_diagnostics_page']
         );
 
-        // Rename the first submenu item (which defaults to the same name as the top-level)
-        global $submenu;
-        if (isset($submenu['content-core'])) {
-            $submenu['content-core'][0][0] = __('Dashboard', 'content-core');
+        // 2) Post Types -> Structure
+        if ($plugin->is_module_active('content_types')) {
+            add_submenu_page(
+                'cc-structure',
+                __('Post Types', 'content-core'),
+                __('Post Types', 'content-core'),
+                'manage_options',
+                'edit.php?post_type=cc_post_type_def'
+            );
+        }
+
+        // Submenu: Field Groups -> Structure
+        if ($plugin->is_module_active('custom_fields')) {
+            add_submenu_page(
+                'cc-structure',
+                __('Field Groups', 'content-core'),
+                __('Field Groups', 'content-core'),
+                'manage_options',
+                'edit.php?post_type=cc_field_group'
+            );
+        }
+
+        if ($plugin->is_module_active('content_types')) {
+            // Submenu: Taxonomies -> Structure
+            add_submenu_page(
+                'cc-structure',
+                __('Taxonomies', 'content-core'),
+                __('Taxonomies', 'content-core'),
+                'manage_options',
+                'edit.php?post_type=cc_taxonomy_def'
+            );
+        }
+
+        // Submenu: Manage Terms -> Structure
+        if ($plugin->is_module_active('multilingual')) {
+            add_submenu_page(
+                'cc-structure',
+                __('Manage Terms', 'content-core'),
+                __('Manage Terms', 'content-core'),
+                'manage_options',
+                'cc-manage-terms',
+                [$this, 'render_manage_terms_page']
+            );
+        }
+
+        // Submenus: Settings Hub Links
+        $settings_module = $plugin->get_module('settings');
+        $site_options_module = $plugin->get_module('site_options');
+        $site_options_admin = ($site_options_module instanceof \ContentCore\Modules\SiteOptions\SiteOptionsModule) ? $site_options_module->get_admin() : null;
+
+        if ($site_options_admin) {
+            add_submenu_page('cc-settings-hub', __('Site Options', 'content-core'), __('Site Options', 'content-core'), 'manage_options', 'cc-site-options', [$site_options_admin, 'render_page']);
+        }
+
+        if ($settings_module) {
+            add_submenu_page('cc-settings-hub', __('Multilingual', 'content-core'), __('Multilingual', 'content-core'), 'manage_options', 'cc-multilingual', [$settings_module, 'render_site_settings_page']);
+            add_submenu_page('cc-settings-hub', __('Visibility', 'content-core'), __('Visibility', 'content-core'), 'manage_options', 'cc-visibility', [$settings_module, 'render_settings_page']);
+            add_submenu_page('cc-settings-hub', __('Media', 'content-core'), __('Media', 'content-core'), 'manage_options', 'cc-media', [$settings_module, 'render_settings_page']);
+            add_submenu_page('cc-settings-hub', __('Redirect', 'content-core'), __('Redirect', 'content-core'), 'manage_options', 'cc-redirect', [$settings_module, 'render_settings_page']);
+            add_submenu_page('cc-settings-hub', __('SEO', 'content-core'), __('SEO', 'content-core'), 'manage_options', 'cc-seo', [$settings_module, 'render_site_settings_page']);
+            add_submenu_page('cc-settings-hub', __('Site Images', 'content-core'), __('Site Images', 'content-core'), 'manage_options', 'cc-site-images', [$settings_module, 'render_site_settings_page']);
+            add_submenu_page('cc-settings-hub', __('Cookie Banner', 'content-core'), __('Cookie Banner', 'content-core'), 'manage_options', 'cc-cookie-banner', [$settings_module, 'render_site_settings_page']);
+        }
+
+        // Remove the default duplicate top-level submenus created by WordPress
+        remove_submenu_page('cc-structure', 'cc-structure');
+        remove_submenu_page('cc-settings-hub', 'cc-settings-hub');
+
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            global $submenu;
+            if (isset($submenu['cc-settings-hub'])) {
+                $slugs = array_column($submenu['cc-settings-hub'], 2);
+                $duplicates = array_diff_assoc($slugs, array_unique($slugs));
+                error_log('[CC Settings] Menu entries registered for cc-settings-hub: ' . print_r($submenu['cc-settings-hub'], true));
+                if (!empty($duplicates)) {
+                    error_log('[CC Settings] Duplicate slugs detected: ' . print_r($duplicates, true));
+                }
+            }
         }
     }
 

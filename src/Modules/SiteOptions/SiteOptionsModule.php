@@ -16,6 +16,11 @@ class SiteOptionsModule implements ModuleInterface
         }
     }
 
+    public function get_admin(): ?SiteOptionsAdmin
+    {
+        return $this->admin;
+    }
+
     public const SCHEMA_OPTION = 'cc_site_options_schema';
     public const GROUP_ID_OPTION = 'cc_site_options_translation_group';
 
@@ -251,7 +256,7 @@ class SiteOptionsModule implements ModuleInterface
             $group_id = wp_generate_uuid4();
             update_option(self::GROUP_ID_OPTION, $group_id);
         }
-        return (string)$group_id;
+        return (string) $group_id;
     }
 
     /**
