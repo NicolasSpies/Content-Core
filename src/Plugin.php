@@ -104,6 +104,8 @@ class Plugin
             'seo' => \ContentCore\Modules\Seo\SeoModule::class,
             'language_mapping' => \ContentCore\Modules\LanguageMapping\LanguageMappingModule::class,
             'forms' => \ContentCore\Modules\Forms\FormsModule::class,
+            'branding' => \ContentCore\Modules\Branding\BrandingModule::class,
+            'diagnostics' => \ContentCore\Modules\Diagnostics\DiagnosticsModule::class,
             'site_options' => \ContentCore\Modules\SiteOptions\SiteOptionsModule::class,
         ];
 

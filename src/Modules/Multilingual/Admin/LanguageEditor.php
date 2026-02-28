@@ -152,6 +152,14 @@ class LanguageEditor
             return;
         }
 
+        if (wp_is_post_revision($post_id) || wp_is_post_autosave($post_id)) {
+            return;
+        }
+
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+
         if (isset($_POST['cc_language'])) {
             update_post_meta($post_id, '_cc_language', sanitize_text_field($_POST['cc_language']));
         }

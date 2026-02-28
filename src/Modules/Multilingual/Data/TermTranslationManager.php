@@ -12,12 +12,14 @@ use ContentCore\Modules\Multilingual\MultilingualModule;
  */
 class TermTranslationManager
 {
-    private $module;
+    /** @var callable */
+    private $settings_getter;
+
     private array $group_cache = [];
 
-    public function __construct(MultilingualModule $module)
+    public function __construct(callable $settings_getter)
     {
-        $this->module = $module;
+        $this->settings_getter = $settings_getter;
     }
 
     // -------------------------------------------------------------------------
@@ -146,7 +148,7 @@ class TermTranslationManager
 
             // Also make sure source has a language
             if (!get_term_meta($source_term_id, '_cc_language', true)) {
-                $settings = $this->module->get_settings();
+                $settings = call_user_func($this->settings_getter);
                 $default_lang = $settings['default_lang'] ?? 'de';
                 update_term_meta($source_term_id, '_cc_language', $default_lang);
             }

@@ -10,20 +10,12 @@ class MediaTabRenderer
 {
     /**
      * Render the tab content.
+     *
+     * @param SettingsModule $settings_mod
      */
-    public static function render(): void
+    public static function render(SettingsModule $settings_mod): void
     {
-        $media_defaults = [
-            'enabled' => true,
-            'max_width_px' => 2000,
-            'output_format' => 'webp',
-            'quality' => 70,
-            'png_mode' => 'lossless',
-            'delete_original' => true,
-            'upload_limit_mb' => 25,
-        ];
-        $saved_media = get_option(SettingsModule::MEDIA_KEY, []);
-        $media_settings = array_merge($media_defaults, is_array($saved_media) ? $saved_media : []);
+        $media_settings = $settings_mod->get_registry()->get(SettingsModule::MEDIA_KEY);
         ?>
         <div id="cc-tab-media" class="cc-tab-content">
             <div class="cc-card" style="margin-bottom: 24px;">

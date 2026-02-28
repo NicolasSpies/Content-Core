@@ -26,59 +26,11 @@ class ErrorLogScreen
 
     public function init(): void
     {
-        add_action('admin_post_cc_clear_error_log', [$this, 'handle_clear']);
-        add_action('admin_post_cc_clear_old_error_log', [$this, 'handle_clear_old']);
-        add_action('admin_post_cc_export_error_log', [$this, 'handle_export']);
-    }
-
-    // -------------------------------------------------------------------------
-    // Action handlers
-    // -------------------------------------------------------------------------
-
-    public function handle_clear(): void
-    {
-        check_admin_referer('cc_error_log_action');
-        if (!current_user_can('manage_options')) {
-            wp_die(__('Permission denied.', 'content-core'));
-        }
-        $this->logger->clear();
-        wp_safe_redirect(add_query_arg(['page' => 'cc-diagnostics', 'tab' => 'error-log', 'cc_msg' => 'cleared'], admin_url('admin.php')));
-        exit;
-    }
-
-    /**
-     * Clear only entries older than 24 hours.
-     * Used from the dashboard "Clear resolved errors" button.
-     */
-    public function handle_clear_old(): void
-    {
-        check_admin_referer('cc_error_log_action');
-        if (!current_user_can('manage_options')) {
-            wp_die(__('Permission denied.', 'content-core'));
-        }
-
-        $cutoff = function_exists('current_time') ? (int) current_time('timestamp') - 86400 : time() - 86400;
-        $this->logger->clear_before($cutoff);
-
-        // Redirect back to the dashboard with a success notice
-        wp_safe_redirect(add_query_arg(
-            ['page' => 'content-core', 'cc_msg' => 'old_cleared'],
-            admin_url('admin.php')
-        ));
-        exit;
-    }
-
-    public function handle_export(): void
-    {
-        check_admin_referer('cc_error_log_action');
-        if (!current_user_can('manage_options')) {
-            wp_die(__('Permission denied.', 'content-core'));
-        }
-        $entries = $this->logger->get_entries();
-        header('Content-Type: application/json');
-        header('Content-Disposition: attachment; filename="cc-error-log-' . date('Y-m-d') . '.json"');
-        echo wp_json_encode($entries, JSON_PRETTY_PRINT);
-        exit;
+        add_action('rest_api_init', function () {
+            $ns = \ContentCore\Plugin::get_instance()->get_rest_namespace();
+            $controller = new \ContentCore\Admin\Rest\ErrorLogRestController($this->logger, $ns);
+            $controller->register_routes();
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -212,26 +164,37 @@ class ErrorLogScreen
 
                         <!-- Actions -->
                         <div style="display:flex; gap:10px;">
-                            <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
-                                <input type="hidden" name="action" value="cc_export_error_log">
-                                <?php wp_nonce_field('cc_error_log_action'); ?>
-                                <button type="submit" class="button button-secondary">
-                                    <span class="dashicons dashicons-download"
-                                        style="margin-top:4px; margin-right:4px; font-size:16px;"></span>
-                                    <?php _e('Export JSON', 'content-core'); ?>
-                                </button>
-                            </form>
+                            <button type="button" class="button button-secondary"
+                                onclick="fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/export')); ?>', { headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(res => res.blob()).then(blob => { const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'cc-error-log-' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); });">
+                                <span class="dashicons dashicons-download"
+                                    style="margin-top:4px; margin-right:4px; font-size:16px;"></span>
+                                <?php _e('Export JSON', 'content-core'); ?>
+                            </button>
 
-                            <form method="post" action="<?php echo admin_url('admin-post.php'); ?>"
-                                onsubmit="return confirm('<?php echo esc_js(__('Clear all log entries? This cannot be undone.', 'content-core')); ?>')">
-                                <input type="hidden" name="action" value="cc_clear_error_log">
-                                <?php wp_nonce_field('cc_error_log_action'); ?>
-                                <button type="submit" class="button" style="color:#d63638; border-color:#d63638;">
-                                    <span class="dashicons dashicons-trash"
-                                        style="margin-top:4px; margin-right:4px; font-size:16px;"></span>
-                                    <?php _e('Clear Log', 'content-core'); ?>
-                                </button>
-                            </form>
+                            <?php
+                            $cutoff = function_exists('current_time') ? (int) current_time('timestamp') - 86400 : time() - 86400;
+                            $has_active = false;
+                            $has_resolved = false;
+                            foreach ($all_entries as $entry) {
+                                if (($entry['timestamp'] ?? 0) >= $cutoff) {
+                                    $has_active = true;
+                                } else {
+                                    $has_resolved = true;
+                                }
+                            }
+                            ?>
+                            <?php if ($has_active): ?>
+                                <span style="font-size:12px; color:var(--cc-text-muted); align-self:center;">
+                                    <?php _e('Active errors cannot be cleared.', 'content-core'); ?>
+                                </span>
+                            <?php endif; ?>
+                            <button type="button" class="button" style="color:#d63638; border-color:#d63638;"
+                                onclick="if(confirm('<?php echo esc_js(__('Clear resolved log entries (older than 24h)?', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-old')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(async (res) => { const text = await res.text(); console.log('Clear response:', text); window.location.href = window.location.href.split('&cc_msg=')[0] + '&cc_msg=cleared'; }); }"
+                                <?php echo !$has_resolved ? 'disabled title="' . esc_attr__('No resolved entries to clear.', 'content-core') . '"' : ''; ?>>
+                                <span class="dashicons dashicons-trash"
+                                    style="margin-top:4px; margin-right:4px; font-size:16px;"></span>
+                                <?php _e('Clear Resolved Entries', 'content-core'); ?>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -278,11 +241,18 @@ class ErrorLogScreen
                                     $trace = $entry['trace'] ?? null;
                                     $uid = 'cc-trace-' . md5($entry['message'] . $entry['timestamp']);
                                     ?>
+                                    <?php
+                                    $is_active = isset($entry['timestamp']) && $entry['timestamp'] >= $cutoff;
+                                    ?>
                                     <tr>
                                         <td>
                                             <span
                                                 style="display:inline-block; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; background:<?php echo esc_attr($color); ?>22; color:<?php echo esc_attr($color); ?>; border:1px solid <?php echo esc_attr($color); ?>44;">
                                                 <?php echo esc_html(strtoupper($sev)); ?>
+                                            </span>
+                                            <span
+                                                style="display:inline-block; margin-top:4px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; padding:1px 4px; border-radius:3px; background:<?php echo $is_active ? '#d6363811' : '#00a32a11'; ?>; color:<?php echo $is_active ? '#d63638' : '#00a32a'; ?>">
+                                                <?php echo $is_active ? __('Active', 'content-core') : __('Resolved', 'content-core'); ?>
                                             </span>
                                         </td>
                                         <td style="font-size:12px; color:var(--cc-text-muted);">
@@ -473,26 +443,37 @@ class ErrorLogScreen
 
                     <!-- Actions -->
                     <div style="display:flex; gap:10px;">
-                        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
-                            <input type="hidden" name="action" value="cc_export_error_log">
-                            <?php wp_nonce_field('cc_error_log_action'); ?>
-                            <button type="submit" class="button button-secondary">
-                                <span class="dashicons dashicons-download"
-                                    style="margin-top:4px; margin-right:4px; font-size:16px;"></span>
-                                <?php _e('Export JSON', 'content-core'); ?>
-                            </button>
-                        </form>
+                        <button type="button" class="button button-secondary"
+                            onclick="fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/export')); ?>', { headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(res => res.blob()).then(blob => { const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'cc-error-log-' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); });">
+                            <span class="dashicons dashicons-download"
+                                style="margin-top:4px; margin-right:4px; font-size:16px;"></span>
+                            <?php _e('Export JSON', 'content-core'); ?>
+                        </button>
 
-                        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>"
-                            onsubmit="return confirm('<?php echo esc_js(__('Clear all log entries? This cannot be undone.', 'content-core')); ?>')">
-                            <input type="hidden" name="action" value="cc_clear_error_log">
-                            <?php wp_nonce_field('cc_error_log_action'); ?>
-                            <button type="submit" class="button" style="color:#d63638; border-color:#d63638;">
-                                <span class="dashicons dashicons-trash"
-                                    style="margin-top:4px; margin-right:4px; font-size:16px;"></span>
-                                <?php _e('Clear Log', 'content-core'); ?>
-                            </button>
-                        </form>
+                        <?php
+                        $cutoff = function_exists('current_time') ? (int) current_time('timestamp') - 86400 : time() - 86400;
+                        $has_active = false;
+                        $has_resolved = false;
+                        foreach ($all_entries as $entry) {
+                            if (($entry['timestamp'] ?? 0) >= $cutoff) {
+                                $has_active = true;
+                            } else {
+                                $has_resolved = true;
+                            }
+                        }
+                        ?>
+                        <?php if ($has_active): ?>
+                            <span style="font-size:12px; color:var(--cc-text-muted); align-self:center;">
+                                <?php _e('Active errors cannot be cleared.', 'content-core'); ?>
+                            </span>
+                        <?php endif; ?>
+                        <button type="button" class="button" style="color:#d63638; border-color:#d63638;"
+                            onclick="if(confirm('<?php echo esc_js(__('Clear resolved log entries (older than 24h)?', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-old')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(async (res) => { const text = await res.text(); console.log('Clear response:', text); window.location.href = window.location.href.split('&cc_msg=')[0] + '&cc_msg=cleared'; }); }"
+                            <?php echo !$has_resolved ? 'disabled title="' . esc_attr__('No resolved entries to clear.', 'content-core') . '"' : ''; ?>>
+                            <span class="dashicons dashicons-trash"
+                                style="margin-top:4px; margin-right:4px; font-size:16px;"></span>
+                            <?php _e('Clear Resolved Entries', 'content-core'); ?>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -529,11 +510,18 @@ class ErrorLogScreen
                                 $trace = $entry['trace'] ?? null;
                                 $uid = 'cc-trace-' . md5(($entry['message'] ?? '') . ($entry['timestamp'] ?? ''));
                                 ?>
+                                <?php
+                                $is_active = isset($entry['timestamp']) && $entry['timestamp'] >= $cutoff;
+                                ?>
                                 <tr>
                                     <td>
                                         <span
                                             style="display:inline-block; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; background:<?php echo esc_attr($color); ?>22; color:<?php echo esc_attr($color); ?>; border:1px solid <?php echo esc_attr($color); ?>44;">
                                             <?php echo esc_html(strtoupper($sev)); ?>
+                                        </span>
+                                        <span
+                                            style="display:inline-block; margin-top:4px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; padding:1px 4px; border-radius:3px; background:<?php echo $is_active ? '#d6363811' : '#00a32a11'; ?>; color:<?php echo $is_active ? '#d63638' : '#00a32a'; ?>">
+                                            <?php echo $is_active ? __('Active', 'content-core') : __('Resolved', 'content-core'); ?>
                                         </span>
                                     </td>
                                     <td style="font-size:12px; color:var(--cc-text-muted);"><?php echo esc_html($time); ?></td>

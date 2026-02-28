@@ -5,12 +5,13 @@ use ContentCore\Modules\Multilingual\MultilingualModule;
 
 class TranslationManager
 {
-    private $module;
+    /** @var callable */
+    private $settings_getter;
     private $group_cache = [];
 
-    public function __construct(MultilingualModule $module)
+    public function __construct(callable $settings_getter)
     {
-        $this->module = $module;
+        $this->settings_getter = $settings_getter;
     }
 
     /**

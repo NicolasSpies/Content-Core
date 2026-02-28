@@ -1,5 +1,5 @@
 jQuery(function ($) {
-    if ($('.cc-settings-tabs').length === 0) return;
+    if ($('.cc-settings-single-page').length === 0 && $('.cc-settings-tabs').length === 0) return;
 
     var $table = $('#cc-ml-languages-table tbody');
     var template = $('#cc-ml-row-template').html();
@@ -199,5 +199,178 @@ jQuery(function ($) {
             }
         });
         serializeVisibilityOrder();
+    }
+
+    // ── REST Saving Implementation ──
+    const $form = $('.cc-settings-tabs, .cc-settings-single-page form').last().closest('form');
+    if ($form.length && typeof CC_SETTINGS !== 'undefined' && CC_SETTINGS.restUrl) {
+        $form.on('submit', function (e) {
+            const $btn = $(document.activeElement);
+            const isReset = $btn.attr('name') === 'cc_reset_menu';
+
+            e.preventDefault();
+
+            const $submitBtn = isReset ? $btn : $form.find('button[type="submit"].button-primary');
+            const originalText = $submitBtn.text();
+            $submitBtn.prop('disabled', true).text(isReset ? 'Resetting...' : 'Saving...');
+
+            // Identify which module we are saving
+            const pageSlug = new URLSearchParams(window.location.search).get('page');
+            let moduleKey = '';
+            if (pageSlug === 'cc-visibility') moduleKey = 'visibility';
+            else if (pageSlug === 'cc-media') moduleKey = 'media';
+            else if (pageSlug === 'cc-redirect') moduleKey = 'redirect';
+            else if (pageSlug === 'cc-multilingual') moduleKey = 'multilingual';
+
+            if (!moduleKey) {
+                $form.off('submit').submit(); // Fallback
+                return;
+            }
+
+            const data = {};
+            const formData = $form.serializeArray();
+
+            // Mapping config for visibility
+            if (moduleKey === 'visibility') {
+                data.menu = { admin: {}, client: {} };
+                data.admin_bar = {};
+
+                formData.forEach(item => {
+                    let match;
+                    if ((match = item.name.match(/^cc_menu_admin\[(.+)\]$/))) {
+                        data.menu.admin[match[1]] = item.value === '1';
+                    } else if ((match = item.name.match(/^cc_menu_client\[(.+)\]$/))) {
+                        data.menu.client[match[1]] = item.value === '1';
+                    } else if ((match = item.name.match(/^cc_admin_bar\[(.+)\]$/))) {
+                        data.admin_bar[match[1]] = item.value === '1';
+                    } else if (item.name === 'content_core_admin_menu_order') {
+                        try { data.order = JSON.parse(item.value); } catch (e) { data.order = item.value; }
+                    }
+                });
+
+                // Handle unchecked checkboxes
+                $form.find('input[type="checkbox"]').each(function () {
+                    let match;
+                    if (!this.checked) {
+                        if ((match = this.name.match(/^cc_menu_admin\[(.+)\]$/))) {
+                            data.menu.admin[match[1]] = false;
+                        } else if ((match = this.name.match(/^cc_menu_client\[(.+)\]$/))) {
+                            data.menu.client[match[1]] = false;
+                        } else if ((match = this.name.match(/^cc_admin_bar\[(.+)\]$/))) {
+                            data.admin_bar[match[1]] = false;
+                        }
+                    } else {
+                        // Ensure checked values are also set (already done in serializeArray usually, but for consistency)
+                        if ((match = this.name.match(/^cc_menu_admin\[(.+)\]$/))) {
+                            data.menu.admin[match[1]] = true;
+                        } else if ((match = this.name.match(/^cc_menu_client\[(.+)\]$/))) {
+                            data.menu.client[match[1]] = true;
+                        } else if ((match = this.name.match(/^cc_admin_bar\[(.+)\]$/))) {
+                            data.admin_bar[match[1]] = true;
+                        }
+                    }
+                });
+            } else {
+                // Generic mapping for other modules (media, redirect, multilingual)
+                const prefixMap = {
+                    'media': 'cc_media_settings',
+                    'redirect': 'cc_redirect_settings',
+                    'multilingual': 'cc_languages'
+                };
+                const prefix = prefixMap[moduleKey];
+
+                if (moduleKey === 'multilingual') {
+                    data.languages = [];
+                    data.permalink_bases = {};
+                    data.taxonomy_bases = {};
+                }
+
+                formData.forEach(item => {
+                    if (moduleKey === 'redirect' && item.name.startsWith('cc_admin_bar_link[')) {
+                        const match = item.name.match(/^cc_admin_bar_link\[(.+)\]$/);
+                        if (match) {
+                            if (!data.admin_bar) data.admin_bar = {};
+                            data.admin_bar[match[1]] = item.value;
+                        }
+                        return;
+                    }
+
+                    const match = item.name.match(new RegExp('^' + prefix + '\\[(.+)\\]$'));
+                    if (match) {
+                        const fullKey = match[1];
+                        const parts = fullKey.split('][').map(p => p.replace(/\]$/, '').replace(/^\[/, ''));
+
+                        let target = data;
+                        for (let i = 0; i < parts.length; i++) {
+                            const part = parts[i];
+                            if (i === parts.length - 1) {
+                                if (part === '') {
+                                    if (!Array.isArray(target)) target = [];
+                                    target.push(item.value);
+                                } else {
+                                    target[part] = item.value;
+                                }
+                            } else {
+                                if (!target[part]) target[part] = (parts[i + 1] === '' ? [] : {});
+                                target = target[part];
+                            }
+                        }
+                    }
+                });
+
+                // Checkboxes for generic modules
+                $form.find('input[type="checkbox"]').each(function () {
+                    const name = this.name;
+
+                    if (moduleKey === 'redirect' && name.startsWith('cc_admin_bar_link[')) {
+                        const match = name.match(/^cc_admin_bar_link\[(.+)\]$/);
+                        if (match) {
+                            if (!data.admin_bar) data.admin_bar = {};
+                            data.admin_bar[match[1]] = this.checked;
+                        }
+                        return;
+                    }
+
+                    const match = name.match(new RegExp('^' + prefix + '\\[(.+)\\]$'));
+                    if (match) {
+                        const fullKey = match[1];
+                        const parts = fullKey.split('][').map(p => p.replace(/\]$/, '').replace(/^\[/, ''));
+                        let target = data;
+                        for (let i = 0; i < parts.length; i++) {
+                            const part = parts[i];
+                            if (i === parts.length - 1) {
+                                target[part] = this.checked;
+                            } else {
+                                if (!target[part]) target[part] = {};
+                                target = target[part];
+                            }
+                        }
+                    }
+                });
+            }
+
+            wp.apiFetch({
+                path: 'cc/v1/settings/' + moduleKey,
+                method: 'POST',
+                data: isReset ? { reset: true } : data,
+                headers: { 'X-WP-Nonce': CC_SETTINGS.nonce }
+            }).then(response => {
+                if (isReset) {
+                    const $notice = $('<div class="notice notice-success is-dismissible"><p>Settings reset to defaults. Reloading...</p></div>');
+                    $('.wrap h1').after($notice);
+                    setTimeout(() => window.location.reload(), 1500);
+                    return;
+                }
+                $submitBtn.prop('disabled', false).text(originalText);
+                // Notification
+                const $notice = $('<div class="notice notice-success is-dismissible"><p>Settings saved via REST.</p></div>');
+                $('.wrap h1').after($notice);
+                setTimeout(() => $notice.fadeOut(), 3000);
+            }).catch(err => {
+                console.error('Save error:', err);
+                $submitBtn.prop('disabled', false).text(originalText);
+                alert('Error saving settings: ' + (err.message || 'Unknown error'));
+            });
+        });
     }
 });

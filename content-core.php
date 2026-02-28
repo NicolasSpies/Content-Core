@@ -3,7 +3,7 @@
  * Plugin Name: Content Core
  * Plugin URI:  
  * Description: Content Core is a custom engineered WordPress framework built from scratch by Nicolas Spies. It provides structured content architecture, controlled admin environments, modular extensions, and scalable backend logic for modern agency projects..
- * Version:     1.3.2
+ * Version:     1.4.0
  * Author:      Nicolas Spies
  * Text Domain: content-core
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CONTENT_CORE_VERSION', '1.3.2');
+define('CONTENT_CORE_VERSION', '1.3.4');
 define('CONTENT_CORE_PLUGIN_FILE', __FILE__);
 define('CONTENT_CORE_PLUGIN_DIR', plugin_dir_path(CONTENT_CORE_PLUGIN_FILE));
 define('CONTENT_CORE_PLUGIN_URL', plugin_dir_url(CONTENT_CORE_PLUGIN_FILE));
@@ -158,36 +158,7 @@ function cc_content_core_sanitize_svg(string $svg): ?string
 
 // ── Custom WP Login Logo ─────────────────────────────────────────────────────
 
-add_action('login_head', function () {
-	$logoUrl = cc_site_options_logo_url();
-	if (!$logoUrl)
-		return;
-
-	echo '<style type="text/css">
-		body.login div#login h1 a {
-			background-image: url("' . esc_url($logoUrl) . '") !important;
-			background-size: contain !important;
-			background-repeat: no-repeat !important;
-			background-position: center bottom !important;
-			width: 100% !important;
-			max-width: 260px !important;
-			height: 90px !important;
-			display: block !important;
-			outline: none !important;
-			margin: 0 auto 25px auto !important;
-			background-color: transparent !important;
-			text-indent: -9999px !important;
-		}
-	</style>';
-});
-
-add_filter('login_headerurl', function () {
-	return home_url('/');
-});
-
-add_filter('login_headertext', function () {
-	return get_bloginfo('name');
-});
+// Logic is moved to BrandingModule to allow independent login screen branding.
 
 function cc_site_options_logo_url(): ?string
 {

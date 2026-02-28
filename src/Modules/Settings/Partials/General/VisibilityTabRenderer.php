@@ -13,13 +13,13 @@ class VisibilityTabRenderer {
      * @param SettingsModule $settings_mod
      */
     public static function render(SettingsModule $settings_mod): void {
-        $vis_settings = get_option(SettingsModule::OPTION_KEY, []);
+        $vis_settings = $settings_mod->get_registry()->get(SettingsModule::OPTION_KEY);
         $order_settings = get_option(SettingsModule::ORDER_KEY, []);
         $all_items = $settings_mod->get_all_menu_items();
 
         $admin_vis = $vis_settings['admin'] ?? [];
         $client_vis = $vis_settings['client'] ?? [];
-        $has_vis = !empty($vis_settings);
+        $has_vis = !empty($vis_settings['admin']) || !empty($vis_settings['client']);
 
         // Sort items by existing order if available
         $items_by_slug = $all_items;
@@ -142,13 +142,7 @@ class VisibilityTabRenderer {
                 </p>
 
                 <?php
-                $ab_defaults = [
-                    'hide_wp_logo' => false,
-                    'hide_comments' => false,
-                    'hide_new_content' => false,
-                ];
-                $saved_ab = get_option(SettingsModule::ADMIN_BAR_KEY, []);
-                $ab_settings = array_merge($ab_defaults, is_array($saved_ab) ? $saved_ab : []);
+                $ab_settings = $settings_mod->get_registry()->get(SettingsModule::ADMIN_BAR_KEY);
                 ?>
 
                 <table class="form-table" style="margin-top: 16px;">

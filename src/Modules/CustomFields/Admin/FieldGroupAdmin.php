@@ -79,94 +79,94 @@ class FieldGroupAdmin
 		]);
 		?>
 		<script type="text/html" id="tmpl-cc-rule-group">
-							<div class="cc-rule-group">
-								<div class="cc-rule-group-header">
-									<strong><?php esc_html_e('Rule Group', 'content-core'); ?></strong>
-									<button type="button" class="cc-remove-rule-group-btn cc-remove-btn-subtle" data-cc-action="remove-rule-group" title="<?php esc_attr_e('Remove Group', 'content-core'); ?>">&times;</button>
-								</div>
-								<div class="cc-rule-group-content">
-									<div class="cc-rules-container"></div>
-								</div>
-							</div>
-						</script>
+									<div class="cc-rule-group">
+										<div class="cc-rule-group-header">
+											<strong><?php esc_html_e('Rule Group', 'content-core'); ?></strong>
+											<button type="button" class="cc-remove-rule-group-btn cc-remove-btn-subtle" data-cc-action="remove-rule-group" title="<?php esc_attr_e('Remove Group', 'content-core'); ?>">&times;</button>
+										</div>
+										<div class="cc-rule-group-content">
+											<div class="cc-rules-container"></div>
+										</div>
+									</div>
+								</script>
 
 		<script type="text/html" id="tmpl-cc-rule-row">
-							<div class="cc-rule-row">
-								<select class="cc-rule-type">
-									<option value="post_type" <# if(data.type==='post_type') print('selected'); #>><?php esc_html_e('Post Type', 'content-core'); ?></option>
-									<option value="page" <# if(data.type==='page') print('selected'); #>><?php esc_html_e('Specific Page', 'content-core'); ?></option>
-									<option value="page_template" <# if(data.type==='page_template') print('selected'); #>><?php esc_html_e('Page Template', 'content-core'); ?></option>
-									<option value="taxonomy_term" <# if(data.type==='taxonomy_term') print('selected'); #>><?php esc_html_e('Taxonomy Term', 'content-core'); ?></option>
-								</select>
-								<div class="cc-rule-value-wrap" style="flex-grow:1;">
-									<!-- Value inputs will be swapped via JS based on type -->
-								</div>
-							</div>
-						</script>
+									<div class="cc-rule-row">
+										<select class="cc-rule-type">
+											<option value="post_type" <# if(data.type==='post_type') print('selected'); #>><?php esc_html_e('Post Type', 'content-core'); ?></option>
+											<option value="page" <# if(data.type==='page') print('selected'); #>><?php esc_html_e('Specific Page', 'content-core'); ?></option>
+											<option value="page_template" <# if(data.type==='page_template') print('selected'); #>><?php esc_html_e('Page Template', 'content-core'); ?></option>
+											<option value="taxonomy_term" <# if(data.type==='taxonomy_term') print('selected'); #>><?php esc_html_e('Taxonomy Term', 'content-core'); ?></option>
+										</select>
+										<div class="cc-rule-value-wrap" style="flex-grow:1;">
+											<!-- Value inputs will be swapped via JS based on type -->
+										</div>
+									</div>
+								</script>
 
 		<!-- Rule Value Templates -->
 		<script type="text/html" id="tmpl-cc-rule-value-post_type">
-									<select class="cc-rule-value" style="width:100%;">
-										<?php foreach ($post_types as $pt):
-											if ($pt->name === FieldGroupPostType::POST_TYPE)
-												continue; ?>
-														<option value="<?php echo esc_attr($pt->name); ?>" <# if(data.value==='<?php echo $pt->name; ?>') print('selected'); #>><?php echo esc_html($pt->label); ?></option>
-													<?php
-										endforeach; ?>
-										<?php if (!empty($options_pages)): ?>
-														<optgroup label="<?php esc_attr_e('Options Pages', 'content-core'); ?>">
-															<?php foreach ($options_pages as $op):
-																$key = 'cc_option_page_' . $op->post_name; ?>
-																			<option value="<?php echo esc_attr($key); ?>" <# if(data.value==='<?php echo $key; ?>') print('selected'); #>><?php echo esc_html($op->post_title); ?></option>
-																		<?php
-															endforeach; ?>
-														</optgroup>
-													<?php
-										endif; ?>
-									</select>
-								</script>
+											<select class="cc-rule-value" style="width:100%;">
+												<?php foreach ($post_types as $pt):
+													if ($pt->name === FieldGroupPostType::POST_TYPE)
+														continue; ?>
+																	<option value="<?php echo esc_attr($pt->name); ?>" <# if(data.value==='<?php echo $pt->name; ?>') print('selected'); #>><?php echo esc_html($pt->label); ?></option>
+																<?php
+												endforeach; ?>
+												<?php if (!empty($options_pages)): ?>
+																	<optgroup label="<?php esc_attr_e('Options Pages', 'content-core'); ?>">
+																		<?php foreach ($options_pages as $op):
+																			$key = 'cc_option_page_' . $op->post_name; ?>
+																							<option value="<?php echo esc_attr($key); ?>" <# if(data.value==='<?php echo $key; ?>') print('selected'); #>><?php echo esc_html($op->post_title); ?></option>
+																						<?php
+																		endforeach; ?>
+																	</optgroup>
+																<?php
+												endif; ?>
+											</select>
+										</script>
 
 		<script type="text/html" id="tmpl-cc-rule-value-page">
-									<select class="cc-rule-value" style="width:100%;">
-										<?php
-										$pages = get_pages(['sort_column' => 'post_title']);
-										foreach ($pages as $p):
-											?>
-														<option value="<?php echo esc_attr($p->ID); ?>" <# if(data.value==='<?php echo $p->ID; ?>') print('selected'); #>><?php echo esc_html($p->post_title); ?></option>
-													<?php
-										endforeach; ?>
-									</select>
-								</script>
+											<select class="cc-rule-value" style="width:100%;">
+												<?php
+												$pages = get_pages(['sort_column' => 'post_title']);
+												foreach ($pages as $p):
+													?>
+																	<option value="<?php echo esc_attr($p->ID); ?>" <# if(data.value==='<?php echo $p->ID; ?>') print('selected'); #>><?php echo esc_html($p->post_title); ?></option>
+																<?php
+												endforeach; ?>
+											</select>
+										</script>
 
 		<script type="text/html" id="tmpl-cc-rule-value-page_template">
-									<select class="cc-rule-value" style="width:100%;">
-										<option value="default"><?php esc_html_e('Default Template', 'content-core'); ?></option>
-										<?php foreach ($templates as $label => $file): ?>
-														<option value="<?php echo esc_attr($file); ?>" <# if(data.value==='<?php echo $file; ?>') print('selected'); #>><?php echo esc_html($label); ?></option>
-													<?php
-										endforeach; ?>
-									</select>
-								</script>
+											<select class="cc-rule-value" style="width:100%;">
+												<option value="default"><?php esc_html_e('Default Template', 'content-core'); ?></option>
+												<?php foreach ($templates as $label => $file): ?>
+																	<option value="<?php echo esc_attr($file); ?>" <# if(data.value==='<?php echo $file; ?>') print('selected'); #>><?php echo esc_html($label); ?></option>
+																<?php
+												endforeach; ?>
+											</select>
+										</script>
 
 		<script type="text/html" id="tmpl-cc-rule-value-taxonomy_term">
-									<div style="display:flex; gap:5px;">
-										<select class="cc-rule-taxonomy" style="width:50%;">
-											<?php foreach ($taxonomies as $tax): ?>
-															<option value="<?php echo esc_attr($tax->name); ?>" <# if(data.taxonomy==='<?php echo $tax->name; ?>') print('selected'); #>><?php echo esc_html($tax->label); ?></option>
-														<?php
-											endforeach; ?>
-										</select>
-										<select class="cc-rule-value" style="width:50%;">
-											<# 
-											var currentTax = data.taxonomy || '<?php echo current(array_keys($taxonomies)); ?>';
-											var terms = ccTaxTerms[currentTax] || [];
-											#>
-											<# terms.forEach(function(term) { #>
-												<option value="{{term.id}}" <# if(data.value == term.id) print('selected'); #>>{{term.name}}</option>
-											<# }); #>
-										</select>
-									</div>
-								</script>
+											<div style="display:flex; gap:5px;">
+												<select class="cc-rule-taxonomy" style="width:50%;">
+													<?php foreach ($taxonomies as $tax): ?>
+																		<option value="<?php echo esc_attr($tax->name); ?>" <# if(data.taxonomy==='<?php echo $tax->name; ?>') print('selected'); #>><?php echo esc_html($tax->label); ?></option>
+																	<?php
+													endforeach; ?>
+												</select>
+												<select class="cc-rule-value" style="width:50%;">
+													<# 
+													var currentTax = data.taxonomy || '<?php echo current(array_keys($taxonomies)); ?>';
+													var terms = ccTaxTerms[currentTax] || [];
+													#>
+													<# terms.forEach(function(term) { #>
+														<option value="{{term.id}}" <# if(data.value == term.id) print('selected'); #>>{{term.name}}</option>
+													<# }); #>
+												</select>
+											</div>
+										</script>
 		<?php
 	}
 
@@ -203,102 +203,102 @@ class FieldGroupAdmin
 	{
 		?>
 		<script type="text/html" id="tmpl-cc-field-row">
-							<div class="cc-field-definition cc-field-row cc-card" data-key="{{data.key}}" style="margin-bottom: 15px; border: 1px solid #ccd0d4; background: #fff; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
-								<div class="cc-field-definition-header cc-field-header" style="padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; background: #fafafa;">
-									<div style="display: flex; align-items: center; gap: 10px;">
-										<span class="dashicons dashicons-menu cc-drag-handle" style="color: #a0a5aa; cursor: grab;" title="<?php esc_attr_e('Drag to reorder', 'content-core'); ?>"></span>
-										<strong>
-											<span class="cc-field-label-display" style="font-size: 14px;">{{data.label || '<?php esc_html_e('New Field', 'content-core'); ?>'}}</span> 
-											<small class="cc-field-name-display" style="color: #646970; font-weight: normal; margin-left: 8px;">{{data.name ? '(' + data.name + ')' : ''}}</small>
-										</strong>
-									</div>
-									<div class="cc-field-actions" style="display: flex; align-items: center; gap: 10px;">
-										<span class="cc-field-type-display" style="color: #646970; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; background: #f0f0f1; padding: 3px 6px; border-radius: 3px;">{{data.type}}</span>
-										<button type="button" class="button button-small cc-remove-field-btn" data-cc-action="remove-field" style="color: #d63638; border-color: transparent; background: transparent;"><?php esc_html_e('Remove', 'content-core'); ?></button>
-									</div>
-								</div>
-								<div class="cc-field-definition-content cc-field-settings" style="padding: 15px;">
-									<table class="form-table" style="margin-top: 0;">
-												<tr class="cc-setting-label">
-													<th><label>Field Label</label></th>
-													<td><input type="text" class="regular-text cc-input-label" value="{{data.label}}"></td>
-												</tr>
-												<tr class="cc-setting-name">
-													<th><label>Field Name</label></th>
-													<td><input type="text" class="regular-text cc-input-name" value="{{data.name}}"><br><small>Single word, no spaces. Underscores and dashes allowed.</small></td>
-												</tr>
-												<tr class="cc-setting-description">
-													<th><label>Description</label></th>
-													<td><textarea class="large-text cc-input-description" rows="2">{{data.description}}</textarea><br><small>Optional. Displayed below the field or section title.</small></td>
-												</tr>
-												<tr class="cc-setting-type">
-													<td>
-														<select class="cc-input-type">
-															<optgroup label="Layout">
-																<option value="section" <# if(data.type==='section') print('selected'); #>>Section</option>
-															</optgroup>
-															<optgroup label="Basic">
-																<option value="text" <# if(data.type==='text') print('selected'); #>>Text</option>
-																<option value="textarea" <# if(data.type==='textarea') print('selected'); #>>Textarea</option>
-																<option value="number" <# if(data.type==='number') print('selected'); #>>Number</option>
-																<option value="email" <# if(data.type==='email') print('selected'); #>>Email</option>
-																<option value="url" <# if(data.type==='url') print('selected'); #>>URL</option>
-																<option value="boolean" <# if(data.type==='boolean') print('selected'); #>>Boolean (True/False)</option>
-															</optgroup>
-															<optgroup label="Content">
-																<option value="image" <# if(data.type==='image') print('selected'); #>>Image</option>
-																<option value="file" <# if(data.type==='file') print('selected'); #>>File</option>
-																<option value="gallery" <# if(data.type==='gallery') print('selected'); #>>Gallery</option>
-															</optgroup>
-															<optgroup label="Structure">
-																<option value="repeater" <# if(data.type==='repeater') print('selected'); #>>Repeater</option>
-																<option value="group" <# if(data.type==='group') print('selected'); #>>Group</option>
-															</optgroup>
-														</select>
-													</td>
-												</tr>
-												<tr class="cc-setting-default">
-													<th><label>Default Value</label></th>
-													<td><input type="text" class="regular-text cc-input-default" value="{{data.default_value}}"></td>
-												</tr>
-												<tr class="cc-setting-required">
-													<th><label>Required?</label></th>
-													<td><input type="checkbox" class="cc-input-required" value="1" <# if(data.required) print('checked'); #>> Yes</td>
-												</tr>
-												<tr class="cc-setting-section" style="display:none;">
-													<th><label>Collapsible?</label></th>
-													<td>
-														<label><input type="checkbox" class="cc-input-collapsible" value="1" <# if(data.collapsible) print('checked'); #>> Allow this section to be collapsed</label>
-													</td>
-												</tr>
-												<tr class="cc-setting-section-default-state" style="display:none;">
-													<th><label>Default State</label></th>
-													<td>
-														<select class="cc-input-default-state">
-															<option value="expanded" <# if(data.default_state==='expanded') print('selected'); #>>Expanded</option>
-															<option value="collapsed" <# if(data.default_state==='collapsed') print('selected'); #>>Collapsed</option>
-														</select>
-													</td>
-												</tr>
-											</table>
+									<div class="cc-field-definition cc-field-row cc-card" data-key="{{data.key}}" style="margin-bottom: 15px; border: 1px solid #ccd0d4; background: #fff; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+										<div class="cc-field-definition-header cc-field-header" style="padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; background: #fafafa;">
+											<div style="display: flex; align-items: center; gap: 10px;">
+												<span class="dashicons dashicons-menu cc-drag-handle" style="color: #a0a5aa; cursor: grab;" title="<?php esc_attr_e('Drag to reorder', 'content-core'); ?>"></span>
+												<strong>
+													<span class="cc-field-label-display" style="font-size: 14px;">{{data.label || '<?php esc_html_e('New Field', 'content-core'); ?>'}}</span> 
+													<small class="cc-field-name-display" style="color: #646970; font-weight: normal; margin-left: 8px;">{{data.name ? '(' + data.name + ')' : ''}}</small>
+												</strong>
+											</div>
+											<div class="cc-field-actions" style="display: flex; align-items: center; gap: 10px;">
+												<span class="cc-field-type-display" style="color: #646970; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; background: #f0f0f1; padding: 3px 6px; border-radius: 3px;">{{data.type}}</span>
+												<button type="button" class="button button-small cc-remove-field-btn" data-cc-action="remove-field" style="color: #d63638; border-color: transparent; background: transparent;"><?php esc_html_e('Remove', 'content-core'); ?></button>
+											</div>
+										</div>
+										<div class="cc-field-definition-content cc-field-settings" style="padding: 15px;">
+											<table class="form-table" style="margin-top: 0;">
+														<tr class="cc-setting-label">
+															<th><label>Field Label</label></th>
+															<td><input type="text" class="regular-text cc-input-label" value="{{data.label}}"></td>
+														</tr>
+														<tr class="cc-setting-name">
+															<th><label>Field Name</label></th>
+															<td><input type="text" class="regular-text cc-input-name" value="{{data.name}}"><br><small>Single word, no spaces. Underscores and dashes allowed.</small></td>
+														</tr>
+														<tr class="cc-setting-description">
+															<th><label>Description</label></th>
+															<td><textarea class="large-text cc-input-description" rows="2">{{data.description}}</textarea><br><small>Optional. Displayed below the field or section title.</small></td>
+														</tr>
+														<tr class="cc-setting-type">
+															<td>
+																<select class="cc-input-type">
+																	<optgroup label="Layout">
+																		<option value="section" <# if(data.type==='section') print('selected'); #>>Section</option>
+																	</optgroup>
+																	<optgroup label="Basic">
+																		<option value="text" <# if(data.type==='text') print('selected'); #>>Text</option>
+																		<option value="textarea" <# if(data.type==='textarea') print('selected'); #>>Textarea</option>
+																		<option value="number" <# if(data.type==='number') print('selected'); #>>Number</option>
+																		<option value="email" <# if(data.type==='email') print('selected'); #>>Email</option>
+																		<option value="url" <# if(data.type==='url') print('selected'); #>>URL</option>
+																		<option value="boolean" <# if(data.type==='boolean') print('selected'); #>>Boolean (True/False)</option>
+																	</optgroup>
+																	<optgroup label="Content">
+																		<option value="image" <# if(data.type==='image') print('selected'); #>>Image</option>
+																		<option value="file" <# if(data.type==='file') print('selected'); #>>File</option>
+																		<option value="gallery" <# if(data.type==='gallery') print('selected'); #>>Gallery</option>
+																	</optgroup>
+																	<optgroup label="Structure">
+																		<option value="repeater" <# if(data.type==='repeater') print('selected'); #>>Repeater</option>
+																		<option value="group" <# if(data.type==='group') print('selected'); #>>Group</option>
+																	</optgroup>
+																</select>
+															</td>
+														</tr>
+														<tr class="cc-setting-default">
+															<th><label>Default Value</label></th>
+															<td><input type="text" class="regular-text cc-input-default" value="{{data.default_value}}"></td>
+														</tr>
+														<tr class="cc-setting-required">
+															<th><label>Required?</label></th>
+															<td><input type="checkbox" class="cc-input-required" value="1" <# if(data.required) print('checked'); #>> Yes</td>
+														</tr>
+														<tr class="cc-setting-section" style="display:none;">
+															<th><label>Collapsible?</label></th>
+															<td>
+																<label><input type="checkbox" class="cc-input-collapsible" value="1" <# if(data.collapsible) print('checked'); #>> Allow this section to be collapsed</label>
+															</td>
+														</tr>
+														<tr class="cc-setting-section-default-state" style="display:none;">
+															<th><label>Default State</label></th>
+															<td>
+																<select class="cc-input-default-state">
+																	<option value="expanded" <# if(data.default_state==='expanded') print('selected'); #>>Expanded</option>
+																	<option value="collapsed" <# if(data.default_state==='collapsed') print('selected'); #>>Collapsed</option>
+																</select>
+															</td>
+														</tr>
+													</table>
 					
-											<!-- Sub-fields Builder -->
-											<div class="cc-sub-fields-wrap cc-card" style="<# if(data.type!=='section' && data.type!=='repeater' && data.type!=='group') print('display:none;'); #> margin-top: 20px; background: var(--cc-bg-soft);">
-												<h4 style="margin-top: 0; padding: 15px 15px 0 15px;"><?php esc_html_e('Child Fields', 'content-core'); ?></h4>
+													<!-- Sub-fields Builder -->
+													<div class="cc-sub-fields-wrap cc-card" style="<# if(data.type!=='section' && data.type!=='repeater' && data.type!=='group') print('display:none;'); #> margin-top: 20px; background: var(--cc-bg-soft);">
+														<h4 style="margin-top: 0; padding: 15px 15px 0 15px;"><?php esc_html_e('Child Fields', 'content-core'); ?></h4>
 						
-												<div class="cc-sub-fields-container inner-sortable-list" style="min-height: 60px; padding: 15px; border: 2px dashed #c3c4c7; background: #f6f7f7; margin: 15px;">
-													<!-- Children injected here by renderNode logic -->
-												</div>
+														<div class="cc-sub-fields-container inner-sortable-list" style="min-height: 60px; padding: 15px; border: 2px dashed #c3c4c7; background: #f6f7f7; margin: 15px;">
+															<!-- Children injected here by renderNode logic -->
+														</div>
 
-												<div style="padding: 0 15px 15px 15px;">
-													<button type="button" class="button cc-add-inner-field-btn" data-cc-action="add-inner-field">+ Add Field Here</button>
+														<div style="padding: 0 15px 15px 15px;">
+															<button type="button" class="button cc-add-inner-field-btn" data-cc-action="add-inner-field">+ Add Field Here</button>
+														</div>
+													</div>
+
+													<input type="hidden" class="cc-input-key" value="{{data.key}}">
 												</div>
 											</div>
-
-											<input type="hidden" class="cc-input-key" value="{{data.key}}">
-										</div>
-									</div>
-								</script>
+										</script>
 		<?php
 	}
 
@@ -385,9 +385,7 @@ class FieldGroupAdmin
 			return;
 		}
 
-		if (WP_DEBUG) {
-			error_log(sprintf('[Content Core] Enqueueing builder assets on hook: %s, screen: %s', $hook, get_current_screen()->id));
-		}
+		\ContentCore\Logger::debug(sprintf('Enqueueing builder assets on hook: %s, screen: %s', $hook, get_current_screen()->id));
 
 		wp_enqueue_script('jquery');
 		wp_enqueue_script('jquery-ui-sortable');

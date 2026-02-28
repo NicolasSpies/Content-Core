@@ -24,8 +24,7 @@ class LanguageMappingAdmin
      */
     private function log_error(string $message, array $context = []): void
     {
-        $context_str = !empty($context) ? ' | Context: ' . json_encode($context) : '';
-        error_log(sprintf('[CC LanguageMapping] %s%s', $message, $context_str));
+        \ContentCore\Logger::error('[LanguageMapping] ' . $message, $context);
     }
 
     public function handle_actions(): void

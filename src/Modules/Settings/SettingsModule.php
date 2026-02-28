@@ -19,6 +19,9 @@ class SettingsModule implements ModuleInterface
         'plugins.php',
         'tools.php',
         'options-general.php',
+        'content-core',
+        'cc-settings-hub',
+        'cc-structure',
     ];
 
     public const ADMIN_SAFETY_SLUGS = [
@@ -51,36 +54,89 @@ class SettingsModule implements ModuleInterface
         'options-general.php'
     ];
 
+    /** @var Data\SettingsRegistry */
+    private $registry;
+
+    /** @var Rest\SettingsRestController */
+    private $rest_controller;
+
+    /** @var SeoSettings */
+    private $seo_settings;
+
+    /** @var MediaSettings */
+    private $media_settings;
+
+    /** @var RedirectSettings */
+    private $redirect_settings;
+
+    /** @var VisibilitySettings */
+    private $visibility_settings;
+
+    /** @var MultilingualSettings */
+    private $multilingual_settings;
+
+    /** @var CookieSettings */
+    private $cookie_settings;
+
+    /** @var SiteOptionsSettings */
+    private $site_options_settings;
+
     public function init(): void
     {
+        $this->registry = new Data\SettingsRegistry();
+
+        // Initialize sub-modules
+        $this->seo_settings = new SeoSettings($this);
+        $this->media_settings = new MediaSettings($this);
+        $this->redirect_settings = new RedirectSettings($this);
+        $this->visibility_settings = new VisibilitySettings($this);
+        $this->multilingual_settings = new MultilingualSettings($this);
+        $this->cookie_settings = new CookieSettings($this);
+        $this->site_options_settings = new SiteOptionsSettings($this);
+
+        // Initialize REST controller
+        if (class_exists('ContentCore\\Modules\\Settings\\Rest\\SettingsRestController')) {
+            $this->rest_controller = new Rest\SettingsRestController($this);
+        }
+
+        // Register core settings in the registry
+        $this->register_core_settings();
+
+        // Register REST routes
+        if ($this->rest_controller) {
+            add_action('rest_api_init', [$this->rest_controller, 'register_routes']);
+        }
+
         // Intercept legacy Admin URL Hashes early enough to run but late enough to allow permissions
-        add_action('admin_page_access_denied', [$this, 'handle_legacy_admin_redirects'], 1);
+        add_action('admin_page_access_denied', [$this->redirect_settings, 'handle_legacy_admin_redirects'], 1);
 
         // Redirect logic runs on frontend init
-        add_action('init', [$this, 'handle_frontend_redirect']);
+        add_action('init', [$this->redirect_settings, 'handle_frontend_redirect']);
 
         // Upload size limit — runs everywhere (admin uploads go through here)
-        add_filter('upload_size_limit', [$this, 'apply_upload_size_limit']);
+        add_filter('upload_size_limit', [$this->media_settings, 'apply_upload_size_limit']);
 
         if (!is_admin()) {
             return;
         }
 
-        add_action('admin_menu', [$this, 'apply_menu_visibility'], 9999);
-        add_action('admin_head', [$this, 'apply_menu_visibility']);
-        add_action('admin_menu', [$this, 'apply_menu_order'], 999);
-        add_action('admin_init', [$this, 'handle_save']);
+        add_action('admin_menu', [$this->visibility_settings, 'apply_menu_visibility'], 9999);
+        add_action('admin_head', [$this->visibility_settings, 'apply_menu_visibility']);
+        add_action('admin_menu', [$this->visibility_settings, 'apply_menu_order'], 999);
         add_action('admin_notices', [$this, 'render_admin_notices']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_settings_assets']);
 
         // Admin bar: visibility + site-name link
-        add_action('wp_before_admin_bar_render', [$this, 'apply_admin_bar_visibility']);
-        add_action('admin_bar_menu', [$this, 'apply_admin_bar_site_link'], 999);
+        add_action('wp_before_admin_bar_render', [$this->visibility_settings, 'apply_admin_bar_visibility']);
+        add_action('admin_bar_menu', [$this->visibility_settings, 'apply_admin_bar_site_link'], 999);
     }
 
     public function enqueue_settings_assets(string $hook): void
     {
-        if (strpos($hook, 'cc-settings') !== false || strpos($hook, 'cc-site-settings') !== false || strpos($hook, 'cc-visibility') !== false || strpos($hook, 'cc-media') !== false || strpos($hook, 'cc-redirect') !== false || strpos($hook, 'cc-multilingual') !== false || strpos($hook, 'cc-seo') !== false || strpos($hook, 'cc-site-images') !== false || strpos($hook, 'cc-cookie-banner') !== false) {
+        $ml = \ContentCore\Plugin::get_instance()->get_module('multilingual');
+        $catalog = ($ml instanceof \ContentCore\Modules\Multilingual\MultilingualModule) ? $ml::get_language_catalog() : [];
+
+        if (strpos($hook, 'cc-settings') !== false || strpos($hook, 'cc-site-settings') !== false || strpos($hook, 'cc-visibility') !== false || strpos($hook, 'cc-media') !== false || strpos($hook, 'cc-redirect') !== false || strpos($hook, 'cc-multilingual') !== false || strpos($hook, 'cc-seo') !== false || strpos($hook, 'cc-site-images') !== false || strpos($hook, 'cc-cookie-banner') !== false || strpos($hook, 'cc-branding') !== false || strpos($hook, 'cc-diagnostics') !== false) {
             wp_enqueue_media();
             wp_enqueue_script('jquery-ui-sortable');
 
@@ -99,9 +155,6 @@ class SettingsModule implements ModuleInterface
                 true
             );
 
-            $ml = \ContentCore\Plugin::get_instance()->get_module('multilingual');
-            $catalog = ($ml instanceof \ContentCore\Modules\Multilingual\MultilingualModule) ? $ml::get_language_catalog() : [];
-
             wp_localize_script('cc-settings-js', 'CC_SETTINGS', [
                 'catalog' => $catalog,
                 'strings' => [
@@ -114,7 +167,7 @@ class SettingsModule implements ModuleInterface
             ]);
         }
 
-        if (strpos($hook, 'cc-site-settings') !== false || strpos($hook, 'cc-multilingual') !== false || strpos($hook, 'cc-seo') !== false || strpos($hook, 'cc-site-images') !== false || strpos($hook, 'cc-cookie-banner') !== false) {
+        if (strpos($hook, 'cc-site-settings') !== false || strpos($hook, 'cc-multilingual') !== false || strpos($hook, 'cc-seo') !== false || strpos($hook, 'cc-site-images') !== false || strpos($hook, 'cc-cookie-banner') !== false || strpos($hook, 'cc-branding') !== false || strpos($hook, 'cc-diagnostics') !== false) {
             // Enqueue wp-element (React), wp-api-fetch, wp-i18n — all bundled with WordPress
             wp_enqueue_script(
                 'cc-site-settings-app',
@@ -135,18 +188,34 @@ class SettingsModule implements ModuleInterface
                 $active_tab = 'multilingual';
             } elseif ($page_slug === 'cc-site-options') {
                 $active_tab = 'site-options';
+            } elseif ($page_slug === 'cc-branding') {
+                $active_tab = 'branding';
             }
 
-            $rest_base = rest_url('content-core/v1/settings/site');
+            $rest_base = rest_url('content-core/v1/settings');
 
             wp_localize_script('cc-site-settings-app', 'CC_SITE_SETTINGS', [
                 'nonce' => wp_create_nonce('wp_rest'),
-                'restBase' => $rest_base,
+                'restBase' => $rest_base . '/site',
+                'diagnosticsRestBase' => rest_url('content-core/v1/diagnostics'),
                 'siteUrl' => home_url('/'),
                 'defaultTitle' => get_bloginfo('name'),
                 'defaultDesc' => get_bloginfo('description'),
                 'siteOptionsUrl' => admin_url('admin.php?page=cc-site-options'),
                 'activeTab' => $active_tab,
+            ]);
+
+            wp_localize_script('cc-settings-js', 'CC_SETTINGS', [
+                'catalog' => $catalog,
+                'restUrl' => $rest_base,
+                'nonce' => wp_create_nonce('wp_rest'),
+                'strings' => [
+                    'langAdded' => __('Language already added.', 'content-core'),
+                    'confirmRemoveLang' => __('Remove this language?', 'content-core'),
+                    'selectFlag' => __('Select Flag Image', 'content-core'),
+                    'useImage' => __('Use this image', 'content-core'),
+                    'selectOGImage' => __('Select Default OG Image', 'content-core'),
+                ]
             ]);
 
             // Register and localize the Site Options Schema Editor JS
@@ -182,6 +251,16 @@ class SettingsModule implements ModuleInterface
     {
         // Pages are now natively registered via AdminMenu class
         // This function is kept intentionally empty to satisfy action hooks during migration
+    }
+
+    public function get_settings(): array
+    {
+        return $this->registry->get(self::OPTION_KEY);
+    }
+
+    public function get_registry(): Data\SettingsRegistry
+    {
+        return $this->registry;
     }
 
     public function handle_legacy_admin_redirects(): void
@@ -228,7 +307,9 @@ class SettingsModule implements ModuleInterface
 
     public function handle_frontend_redirect(): void
     {
-        $settings = get_option(self::REDIRECT_KEY, []);
+        $defaults = $this->registry->get_defaults(self::REDIRECT_KEY);
+        $settings = get_option(self::REDIRECT_KEY, $defaults);
+
         if (empty($settings['enabled'])) {
             return;
         }
@@ -284,23 +365,16 @@ class SettingsModule implements ModuleInterface
      */
     public function apply_upload_size_limit(int $size): int
     {
-        $media = get_option(self::MEDIA_KEY, []);
+        $defaults = $this->registry->get_defaults(self::MEDIA_KEY);
+        $media = get_option(self::MEDIA_KEY, $defaults);
 
-        // Use saved value, or fall back to 25 MB default so the limit is
-        // active immediately without requiring an explicit Settings save.
-        if (isset($media['upload_limit_mb']) && $media['upload_limit_mb'] !== '') {
-            $limit = $media['upload_limit_mb'];
-        } else {
-            $limit = 25; // default: 25 MB
-        }
+        $limit = $media['max_upload_size'] ?? 0;
 
-        if (!is_numeric($limit) || (int) $limit < 1) {
-            return $size; // invalid — leave WordPress limit unchanged
+        if ($limit < 1) {
+            return $size;
         }
 
         $limit_bytes = (int) $limit * 1048576;
-
-        // Safety: only reduce, never raise above what WordPress/PHP allows.
         return min($size, $limit_bytes);
     }
 
@@ -323,450 +397,19 @@ class SettingsModule implements ModuleInterface
         return $pagenow === 'admin.php' && in_array($page, $valid_pages, true);
     }
 
-    public function apply_menu_visibility(): void
-    {
-        if (!current_user_can('manage_options')) {
-            return;
-        }
-
-
-        $settings = get_option(self::OPTION_KEY, []);
-        $hidden = $this->get_hidden_slugs($settings, true);
-
-        foreach ($hidden as $slug) {
-            // Admin Safety Override: Always retain these regardless of toggle.
-            if (in_array($slug, self::ADMIN_SAFETY_SLUGS, true)) {
-                continue;
-            }
-
-            remove_menu_page($slug);
-        }
-    }
-
-    private function get_hidden_slugs(array $settings, bool $is_admin): array
-    {
-        if (empty($settings)) {
-            return [];
-        }
-
-        $items = $settings['admin'] ?? [];
-        $hidden = [];
-
-        foreach ($items as $slug => $visible) {
-            if (!$visible) {
-                $hidden[] = $slug;
-            }
-        }
-
-        return $hidden;
-    }
-
-    // ─── Ordering ──────────────────────────────────────────────────
-
-    public function apply_menu_order(): void
-    {
-        global $menu;
-
-        if (!is_array($menu) || empty($menu)) {
-            return;
-        }
-
-        $saved_order = get_option(self::ORDER_KEY, []);
-        if (empty($saved_order)) {
-            return;
-        }
-
-        $is_admin = current_user_can('manage_options');
-        $role_key = $is_admin ? 'admin' : 'client';
-        $order = $saved_order[$role_key] ?? [];
-
-        if (empty($order)) {
-            return;
-        }
-
-        // Build map: slug => menu item
-        $slug_map = [];
-        foreach ($menu as $key => $item) {
-            $slug = $item[2] ?? '';
-            if (!empty($slug)) {
-                $slug_map[$slug] = $item;
-            }
-        }
-
-        // Rebuild $menu: ordered items first, then unordered items, preserving separators
-        $new_menu = [];
-        $position = 1;
-
-        // Place ordered items first
-        foreach ($order as $slug) {
-            if (isset($slug_map[$slug])) {
-                $new_menu[$position] = $slug_map[$slug];
-                unset($slug_map[$slug]);
-                $position++;
-            }
-        }
-
-        // Append remaining items (preserves items added by other plugins)
-        foreach ($menu as $item) {
-            $slug = $item[2] ?? '';
-            if (isset($slug_map[$slug])) {
-                $new_menu[$position] = $item;
-                unset($slug_map[$slug]);
-                $position++;
-            }
-        }
-
-        $menu = $new_menu;
-    }
+    // Replaced by sub-modules
 
     // ─── Save Handler ──────────────────────────────────────────────
 
-    public function handle_save(): void
-    {
-        if (!isset($_POST['cc_menu_settings_nonce']) || !wp_verify_nonce($_POST['cc_menu_settings_nonce'], 'cc_save_menu_settings')) {
-            return;
-        }
-        if (!current_user_can('manage_options')) {
-            return;
-        }
+    // ─── Categorization ────────────────────────────────────────────
 
-        $settings_group = $_POST['settings_group'] ?? 'general';
-        $redirect_to = $_POST['_wp_http_referer'] ?? admin_url('admin.php?page=' . ($_GET['page'] ?? 'cc-settings'));
-
-        try {
-            if ($settings_group === 'general') {
-                if (isset($_POST['cc_reset_menu'])) {
-                    $this->handle_reset_general_settings();
-                } else {
-                    $this->save_visibility_settings();
-                    $this->save_ordering_settings();
-                    $this->save_media_settings();
-                    $this->save_redirect_settings();
-                    $this->save_admin_bar_settings();
-                }
-            }
-
-            if ($settings_group === 'site_settings' || $settings_group === 'site') {
-                $this->save_seo_settings();
-                $this->save_site_images_settings();
-                $this->save_multilingual_settings();
-                $this->save_cookie_settings();
-                $this->save_site_options_schema_settings();
-            }
-
-            set_transient('cc_settings_success', __('Settings saved successfully.', 'content-core'), 30);
-        } catch (\Throwable $e) {
-            set_transient('cc_settings_error', __('Failed to save settings: ', 'content-core') . $e->getMessage(), 30);
-        }
-
-        wp_safe_redirect($redirect_to);
-        exit;
-    }
-
-    private function handle_reset_general_settings(): void
-    {
-        delete_option(self::OPTION_KEY);
-        delete_option(self::ORDER_KEY);
-        set_transient('cc_settings_success', __('Menu visibility and ordering have been reset to defaults.', 'content-core'), 30);
-    }
-
-    private function save_visibility_settings(): void
-    {
-        if (isset($_POST['cc_menu_admin']) || isset($_POST['cc_menu_client'])) {
-            $visibility_payload = [];
-            if (isset($_POST['cc_menu_admin']) && is_array($_POST['cc_menu_admin'])) {
-                $visibility_payload['admin'] = array_map(function ($v) {
-                    return (bool) $v;
-                }, $_POST['cc_menu_admin']);
-                $visibility_payload['admin']['options-general.php'] = true;
-                $visibility_payload['admin']['plugins.php'] = true;
-                $visibility_payload['admin']['content-core'] = true;
-            }
-            if (isset($_POST['cc_menu_client']) && is_array($_POST['cc_menu_client'])) {
-                $visibility_payload['client'] = array_map(function ($v) {
-                    return (bool) $v;
-                }, $_POST['cc_menu_client']);
-                $visibility_payload['client']['content-core'] = true;
-            }
-            if (!empty($visibility_payload)) {
-                $this->update_merged_option(self::OPTION_KEY, $visibility_payload);
-            }
-        }
-    }
-
-    private function save_ordering_settings(): void
-    {
-        $admin_order_raw = $_POST['cc_core_order_admin'] ?? '';
-        $client_order_raw = $_POST['cc_core_order_client'] ?? '';
-        if (!empty($admin_order_raw) || !empty($client_order_raw)) {
-            $order_payload = [];
-            if (!empty($admin_order_raw)) {
-                $admin_order = $this->parse_order_input($admin_order_raw);
-                if (!empty($admin_order))
-                    $order_payload['admin'] = $admin_order;
-            }
-            if (!empty($client_order_raw)) {
-                $client_order = $this->parse_order_input($client_order_raw);
-                if (!empty($client_order))
-                    $order_payload['client'] = $client_order;
-            }
-            if (!empty($order_payload)) {
-                $this->update_merged_option(self::ORDER_KEY, $order_payload);
-            }
-        }
-    }
-
-    private function save_media_settings(): void
-    {
-        $media_raw = $_POST['cc_media'] ?? null;
-        if ($media_raw !== null) {
-            if (!is_array($media_raw)) {
-                $media_raw = [];
-            }
-
-            $upload_limit_raw = trim($media_raw['upload_limit_mb'] ?? '');
-            if ($upload_limit_raw !== '' && is_numeric($upload_limit_raw)) {
-                $upload_limit_mb = max(1, min(300, intval($upload_limit_raw)));
-            } else {
-                $upload_limit_mb = '';
-            }
-
-            $media_settings = [
-                'enabled' => !empty($media_raw['enabled']),
-                'max_width_px' => intval(($media_raw['max_width_px'] ?? 2000) ?: 2000),
-                'output_format' => 'webp',
-                'quality' => intval(($media_raw['quality'] ?? 70) ?: 70),
-                'png_mode' => sanitize_text_field($media_raw['png_mode'] ?? 'lossless'),
-                'delete_original' => !empty($media_raw['delete_original']),
-                'upload_limit_mb' => $upload_limit_mb,
-            ];
-            $this->update_merged_option(self::MEDIA_KEY, $media_settings);
-        }
-    }
-
-    private function save_redirect_settings(): void
-    {
-        $redirect_raw = $_POST['cc_redirect'] ?? null;
-        if ($redirect_raw !== null) {
-            if (!is_array($redirect_raw)) {
-                $redirect_raw = [];
-            }
-            $redirect_payload = [
-                'enabled' => !empty($redirect_raw['enabled']),
-                'from_path' => $this->sanitize_redirect_path($redirect_raw['from_path'] ?? '/'),
-                'target' => $this->sanitize_redirect_path($redirect_raw['target'] ?? '/wp-admin'),
-                'status_code' => in_array($redirect_raw['status_code'] ?? '302', ['301', '302']) ? $redirect_raw['status_code'] : '302',
-                'pass_query' => !empty($redirect_raw['pass_query']),
-                'exclusions' => [
-                    'admin' => !empty($redirect_raw['exclusions']['admin'] ?? false),
-                    'ajax' => !empty($redirect_raw['exclusions']['ajax'] ?? false),
-                    'rest' => !empty($redirect_raw['exclusions']['rest'] ?? false),
-                    'cron' => !empty($redirect_raw['exclusions']['cron'] ?? false),
-                    'cli' => !empty($redirect_raw['exclusions']['cli'] ?? false),
-                ]
-            ];
-            $this->update_merged_option(self::REDIRECT_KEY, $redirect_payload);
-        }
-    }
-
-    private function save_admin_bar_settings(): void
-    {
-        $ab_raw = $_POST['cc_admin_bar'] ?? null;
-        if ($ab_raw !== null) {
-            if (!is_array($ab_raw)) {
-                $ab_raw = [];
-            }
-            $ab_payload = [
-                'hide_wp_logo' => !empty($ab_raw['hide_wp_logo']),
-                'hide_comments' => !empty($ab_raw['hide_comments']),
-                'hide_new_content' => !empty($ab_raw['hide_new_content']),
-            ];
-            $this->update_merged_option(self::ADMIN_BAR_KEY, $ab_payload);
-        }
-
-        $ablink_raw = $_POST['cc_admin_bar_link'] ?? null;
-        if ($ablink_raw !== null) {
-            if (!is_array($ablink_raw)) {
-                $ablink_raw = [];
-            }
-            $ablink_payload = [
-                'enabled' => !empty($ablink_raw['enabled']),
-                'url' => sanitize_text_field(wp_unslash($ablink_raw['url'] ?? '')),
-                'new_tab' => !empty($ablink_raw['new_tab']),
-            ];
-            $this->update_merged_option(self::ADMIN_BAR_KEY, $ablink_payload);
-        }
-    }
-
-    private function save_seo_settings(): void
-    {
-        if (isset($_POST['cc_seo'])) {
-            $seo_post = (array) $_POST['cc_seo'];
-            $seo_payload = [
-                'site_title' => sanitize_text_field($seo_post['site_title'] ?? ''),
-                'default_description' => sanitize_textarea_field($seo_post['default_description'] ?? ''),
-            ];
-            $this->update_merged_option(self::SEO_KEY, $seo_payload);
-        }
-    }
-
-    private function save_site_images_settings(): void
-    {
-        if (isset($_POST['cc_site_images'])) {
-            $img_post = (array) $_POST['cc_site_images'];
-            $img_payload = [
-                'social_icon_id' => !empty($img_post['social_icon_id']) ? absint($img_post['social_icon_id']) : null,
-                'social_id' => !empty($img_post['social_id']) ? absint($img_post['social_id']) : null,
-            ];
-            update_option('cc_site_images', $img_payload);
-        }
-    }
-
-    private function save_multilingual_settings(): void
-    {
-        $ml_raw = $_POST['cc_languages'] ?? null;
-        if ($ml_raw !== null) {
-            if (!is_array($ml_raw)) {
-                $ml_raw = [];
-            }
-            $raw_langs = $ml_raw['languages'] ?? [];
-            $structured_langs = [];
-            $seen_codes = [];
-
-            if (is_array($raw_langs)) {
-                foreach ($raw_langs as $lang) {
-                    if (empty($lang['code']))
-                        continue;
-                    $code = strtolower(sanitize_text_field($lang['code']));
-                    if (in_array($code, $seen_codes))
-                        continue;
-                    $structured_langs[] = [
-                        'code' => $code,
-                        'label' => sanitize_text_field(($lang['label'] ?? '') ?: strtoupper($code)),
-                        'flag_id' => intval($lang['flag_id'] ?? 0),
-                    ];
-                    $seen_codes[] = $code;
-                }
-            }
-
-            $active_codes = array_column($structured_langs, 'code');
-            $submitted_default = sanitize_text_field($ml_raw['default_lang'] ?? 'de');
-            $submitted_fallback = sanitize_text_field($ml_raw['fallback_lang'] ?? 'de');
-
-            $current_settings = get_option('cc_languages_settings', []);
-            $old_default = $current_settings['default_lang'] ?? 'de';
-
-            if (empty($active_codes)) {
-                throw new \Exception(__('You must have at least one active language.', 'content-core'));
-            } elseif (!in_array($old_default, $active_codes, true)) {
-                throw new \Exception(sprintf(__('The default language (%s) cannot be deleted. Please change the default language first.', 'content-core'), strtoupper($old_default)));
-            } else {
-                if (!in_array($submitted_default, $active_codes, true)) {
-                    $submitted_default = $active_codes[0];
-                }
-
-                if (!empty($ml_raw['fallback_enabled']) && !in_array($submitted_fallback, $active_codes, true)) {
-                    $submitted_fallback = $submitted_default;
-                }
-
-                $ml_settings = [
-                    'enabled' => !empty($ml_raw['enabled']),
-                    'default_lang' => $submitted_default,
-                    'active_langs' => $active_codes,
-                    'languages' => $structured_langs,
-                    'fallback_enabled' => !empty($ml_raw['fallback_enabled']),
-                    'fallback_lang' => $submitted_fallback,
-                    'permalink_enabled' => !empty($ml_raw['permalink_enabled']),
-                    'permalink_bases' => $ml_raw['permalink_bases'] ?? [],
-                    'enable_rest_seo' => !empty($ml_raw['enable_rest_seo']),
-                    'enable_headless_fallback' => !empty($ml_raw['enable_headless_fallback']),
-                    'enable_localized_taxonomies' => !empty($ml_raw['enable_localized_taxonomies']),
-                    'enable_sitemap_endpoint' => !empty($ml_raw['enable_sitemap_endpoint']),
-                    'taxonomy_bases' => $ml_raw['taxonomy_bases'] ?? [],
-                ];
-                $this->update_merged_option('cc_languages_settings', $ml_settings);
-
-                if ($ml_settings['permalink_enabled']) {
-                    set_transient('cc_flush_rewrites', 1, 3600);
-                } else {
-                    flush_rewrite_rules();
-                }
-            }
-        }
-    }
-
-    private function save_cookie_settings(): void
-    {
-        $cookie_raw = $_POST['cc_cookie_settings'] ?? null;
-        if ($cookie_raw !== null) {
-            if (!is_array($cookie_raw)) {
-                $cookie_raw = [];
-            }
-            $cookie_raw = wp_unslash($cookie_raw);
-            $cookie_settings = [
-                'enabled' => !empty($cookie_raw['enabled']),
-                'bannerTitle' => sanitize_text_field($cookie_raw['bannerTitle'] ?? ''),
-                'bannerText' => sanitize_textarea_field($cookie_raw['bannerText'] ?? ''),
-                'policyUrl' => esc_url_raw($cookie_raw['policyUrl'] ?? ''),
-                'labels' => [
-                    'acceptAll' => sanitize_text_field($cookie_raw['labels']['acceptAll'] ?? __('Accept All', 'content-core')),
-                    'rejectAll' => sanitize_text_field($cookie_raw['labels']['rejectAll'] ?? __('Reject All', 'content-core')),
-                    'save' => sanitize_text_field($cookie_raw['labels']['save'] ?? __('Save Settings', 'content-core')),
-                    'settings' => sanitize_text_field($cookie_raw['labels']['settings'] ?? __('Preferences', 'content-core')),
-                ],
-                'categories' => [
-                    'analytics' => !empty($cookie_raw['categories']['analytics']),
-                    'marketing' => !empty($cookie_raw['categories']['marketing']),
-                    'preferences' => !empty($cookie_raw['categories']['preferences']),
-                ],
-                'integrations' => [
-                    'ga4MeasurementId' => sanitize_text_field($cookie_raw['integrations']['ga4MeasurementId'] ?? ''),
-                    'gtmContainerId' => sanitize_text_field($cookie_raw['integrations']['gtmContainerId'] ?? ''),
-                    'metaPixelId' => sanitize_text_field($cookie_raw['integrations']['metaPixelId'] ?? ''),
-                ],
-                'behavior' => [
-                    'regionMode' => in_array(($cookie_raw['regionMode'] ?? 'eu_only'), ['eu_only', 'global'], true) ? $cookie_raw['regionMode'] : 'eu_only',
-                    'storage' => in_array(($cookie_raw['storage'] ?? 'localStorage'), ['localStorage', 'cookie'], true) ? $cookie_raw['storage'] : 'localStorage',
-                    'ttlDays' => max(1, min(3650, absint($cookie_raw['ttlDays'] ?? 365))),
-                ]
-            ];
-            $this->update_merged_option(self::COOKIE_KEY, $cookie_settings);
-        }
-    }
-
-    private function save_site_options_schema_settings(): void
-    {
-        if (isset($_POST['cc_site_options_schema']) || isset($_POST['cc_reset_site_options_schema'])) {
-            $plugin = \ContentCore\Plugin::get_instance();
-            $site_mod = $plugin->get_module('site_options');
-
-            if ($site_mod instanceof \ContentCore\Modules\SiteOptions\SiteOptionsModule) {
-                if (isset($_POST['cc_reset_site_options_schema'])) {
-                    $site_mod->reset_schema();
-                } else {
-                    $schema_raw = $_POST['cc_site_options_schema'];
-                    if (is_array($schema_raw)) {
-                        $site_mod->update_schema($schema_raw);
-                    }
-                }
-            }
-        }
-    }
-
-    private function parse_order_input(string $raw): array
-    {
-        if (empty($raw)) {
-            return [];
-        }
-        $decoded = json_decode(stripslashes($raw), true);
-        return is_array($decoded) ? $decoded : [];
-    }
+    // Replaced by sub-modules
 
     // ─── Categorization ────────────────────────────────────────────
 
     public function get_all_menu_items(): array
     {
-        global $menu;
+        $menu = $this->visibility_settings->get_full_menu_cache();
         $items = [];
 
         if (!is_array($menu)) {
@@ -877,17 +520,8 @@ class SettingsModule implements ModuleInterface
 
             <?php settings_errors('cc_settings'); ?>
 
-            <?php if ($_GET['page'] === 'cc-multilingual' || (!isset($_GET['page']) && strpos($_SERVER['REQUEST_URI'], 'cc-multilingual') !== false)): ?>
-                <div id="cc-multilingual-wrapper">
-                    <?php
-                    // ── Multilingual section (PHP-rendered; unchanged from original) ──
-                    $this->maybe_render_multilingual_form_section();
-                    ?>
-                </div>
-            <?php else: ?>
-                <!-- ── React Shell (SEO, Site Images, Cookie Banner, Site Options tab nav) ── -->
-                <div id="cc-site-settings-react-root" style="margin-top: 24px;"></div>
-            <?php endif; ?>
+            <!-- ── React Shell (SEO, Site Images, Cookie Banner, Site Options tab nav) ── -->
+            <div id="cc-site-settings-react-root" style="margin-top: 24px;"></div>
 
             <!-- ── Site Options Schema — PHP form, shown/hidden by React tab ── -->
             <div id="cc-site-options-schema-section" style="display:none; margin-top: 0;">
@@ -901,23 +535,12 @@ class SettingsModule implements ModuleInterface
 
 
 
-    public function render_tab_multilingual(): void
-    {
-        \ContentCore\Modules\Settings\Partials\General\MultilingualTabRenderer::render();
-    }
-
     /**
      * Renders the Multilingual configuration form section for Site Settings.
      */
     private function maybe_render_multilingual_form_section(): void
     {
-        $plugin = \ContentCore\Plugin::get_instance();
-        $ml_mod = $plugin->get_module('multilingual');
-        if (!$ml_mod) {
-            return;
-        }
-
-        $this->render_tab_multilingual();
+        \ContentCore\Modules\Settings\Partials\General\MultilingualTabRenderer::render($this);
     }
 
     public function render_settings_page(): void
@@ -930,27 +553,37 @@ class SettingsModule implements ModuleInterface
         ?>
         <div class="wrap content-core-admin cc-settings-single-page">
             <div class="cc-header">
-                <h1><?php echo esc_html($title); ?></h1>
+                <h1>
+                    <?php echo esc_html($title); ?>
+                </h1>
             </div>
 
             <?php settings_errors('cc_settings'); ?>
 
             <form method="post" style="margin-top: 20px;">
                 <?php wp_nonce_field('cc_save_menu_settings', 'cc_menu_settings_nonce'); ?>
-                <input type="hidden" name="settings_group" value="general">
+                <?php
+                $submit_name = 'cc_save_general';
+                if ($page_slug === 'cc-multilingual') {
+                    $submit_name = 'cc_save_multilingual';
+                }
+                ?>
+                <input type="hidden" name="cc_submit_id" value="<?php echo esc_attr($submit_name); ?>">
 
                 <?php
                 if ($page_slug === 'cc-visibility') {
                     \ContentCore\Modules\Settings\Partials\General\VisibilityTabRenderer::render($this);
                 } elseif ($page_slug === 'cc-media') {
-                    \ContentCore\Modules\Settings\Partials\General\MediaTabRenderer::render();
+                    \ContentCore\Modules\Settings\Partials\General\MediaTabRenderer::render($this);
                 } elseif ($page_slug === 'cc-redirect') {
                     \ContentCore\Modules\Settings\Partials\General\RedirectTabRenderer::render($this);
+                } elseif ($page_slug === 'cc-multilingual') {
+                    \ContentCore\Modules\Settings\Partials\General\MultilingualTabRenderer::render($this);
                 }
                 ?>
 
                 <div style="display: flex; gap: 12px; align-items: center; margin-top: 24px;">
-                    <?php submit_button(__('Save Settings', 'content-core'), 'primary', 'submit', false); ?>
+                    <?php submit_button(__('Save Settings', 'content-core'), 'primary', $submit_name, false); ?>
                     <button type="submit" name="cc_reset_menu" class="button button-secondary"
                         onclick="return confirm('<?php esc_attr_e('Reset this setting module to defaults?', 'content-core'); ?>');">
                         <?php _e('Reset to Defaults', 'content-core'); ?>
@@ -1118,80 +751,7 @@ class SettingsModule implements ModuleInterface
 
     // ─── Admin Bar ──────────────────────────────────────────────────
 
-    /**
-     * Remove admin bar nodes based on settings.
-     * Runs on wp_before_admin_bar_render (global $wp_admin_bar available).
-     * Applies to everyone; admins are included — all three items are safe to hide
-     * because the Safety slugs concept only covers the sidebar menu, not the toolbar.
-     */
-    public function apply_admin_bar_visibility(): void
-    {
-        global $wp_admin_bar;
-        if (!($wp_admin_bar instanceof \WP_Admin_Bar)) {
-            return;
-        }
-
-        $settings = get_option(self::ADMIN_BAR_KEY, []);
-        if (empty($settings)) {
-            return;
-        }
-
-        if (!empty($settings['hide_wp_logo'])) {
-            $wp_admin_bar->remove_node('wp-logo');
-        }
-        if (!empty($settings['hide_comments'])) {
-            $wp_admin_bar->remove_node('comments');
-        }
-        if (!empty($settings['hide_new_content'])) {
-            $wp_admin_bar->remove_node('new-content');
-        }
-    }
-
-    /**
-     * Override the admin bar site-name node href (and optionally target).
-     * Priority 999 ensures we run after WordPress has added the node.
-     *
-     * @param \WP_Admin_Bar $wp_admin_bar
-     */
-    public function apply_admin_bar_site_link(\WP_Admin_Bar $wp_admin_bar): void
-    {
-        $settings = get_option(self::ADMIN_BAR_KEY, []);
-        if (empty($settings['enabled']) || empty($settings['url'])) {
-            return;
-        }
-
-        $node = $wp_admin_bar->get_node('site-name');
-        if (!$node) {
-            return;
-        }
-
-        $args = [
-            'id' => 'site-name',
-            'href' => $settings['url'],
-        ];
-
-        if (!empty($settings['new_tab'])) {
-            // WP_Admin_Bar does not expose a meta/target API, so we store extra
-            // attributes via the 'meta' key and apply them via inline JS / CSS
-            // instead. The most reliable approach for targeting is a small inline
-            // script and is safe since this only runs inside wp-admin.
-            add_action('admin_footer', function () use ($settings) {
-                ?>
-                    <script>
-                        (function () {
-                            var el = document.querySelector('#wp-admin-bar-site-name > a');
-                            if (el) {
-                                el.setAttribute('target', '_blank');
-                                el.setAttribute('rel', 'noopener');
-                            }
-                        })();
-                    </script>
-                    <?php
-            });
-        }
-
-        $wp_admin_bar->add_node($args);
-    }
+    // Replaced by sub-modules
 
     /**
      * Helper to render the draggable order list items.
@@ -1241,14 +801,9 @@ class SettingsModule implements ModuleInterface
     /**
      * Safely merge and update a project option.
      */
-    private function update_merged_option(string $key, array $new_data): void
+    public function update_merged_option(string $key, array $new_data): void
     {
-        $existing = get_option($key, []);
-        if (!is_array($existing)) {
-            $existing = [];
-        }
-        $merged = array_replace_recursive($existing, $new_data);
-        update_option($key, $merged, false);
+        $this->registry->save($key, $new_data);
     }
 
     /**
@@ -1294,5 +849,132 @@ class SettingsModule implements ModuleInterface
         }
 
         return sanitize_text_field($path);
+    }
+
+    /**
+     * Register all core settings in the registry.
+     */
+    private function register_core_settings(): void
+    {
+        // 1. Visibility Settings
+        $this->registry->register(self::OPTION_KEY, [
+            'default' => [
+                'admin' => [],
+                'client' => array_combine(self::DEFAULT_HIDDEN, array_fill(0, count(self::DEFAULT_HIDDEN), false))
+            ]
+        ]);
+
+        // 1.1 Admin Bar Settings
+        $this->registry->register(self::ADMIN_BAR_KEY, [
+            'default' => [
+                'hide_wp_logo' => false,
+                'hide_comments' => false,
+                'hide_new_content' => false,
+                'enabled' => false,
+                'url' => home_url(),
+                'new_tab' => false,
+            ]
+        ]);
+
+        // 2. Redirect Settings
+        if (class_exists('ContentCore\\Modules\\Settings\\RedirectSettings')) {
+            $this->registry->register(self::REDIRECT_KEY, [
+                'default' => RedirectSettings::get_defaults(),
+                'sanitize_callback' => function ($data) {
+                    if (isset($data['from_path'])) {
+                        $data['from_path'] = $this->sanitize_redirect_path($data['from_path']);
+                    }
+                    return $data;
+                }
+            ]);
+        }
+
+        // 3. Media Settings
+        $this->registry->register(self::MEDIA_KEY, [
+            'default' => [
+                'max_upload_size' => 25,
+                'disable_rest_api' => false
+            ]
+        ]);
+
+        // 4. Multilingual Settings
+        $ml = \ContentCore\Plugin::get_instance()->get_module('multilingual');
+        if ($ml instanceof \ContentCore\Modules\Multilingual\MultilingualModule) {
+            $this->registry->register($ml::SETTINGS_KEY, [
+                'default' => $ml->get_settings()
+            ]);
+        }
+
+        // 5. SEO Settings
+        $this->registry->register(self::SEO_KEY, [
+            'default' => [
+                'site_title' => '',
+                'default_description' => ''
+            ]
+        ]);
+
+        // 6. Site Images
+        $this->registry->register('cc_site_images', [
+            'default' => [
+                'social_icon_id' => '',
+                'social_icon_id_url' => '',
+                'og_default_id' => '',
+                'og_default_id_url' => ''
+            ],
+            'sanitize_callback' => function ($data) {
+                // 64x64px validation
+                if (!empty($data['social_icon_id'])) {
+                    $meta = wp_get_attachment_metadata((int) $data['social_icon_id']);
+                    if (!$meta || empty($meta['width']) || empty($meta['height']) || $meta['width'] !== 64 || $meta['height'] !== 64) {
+                        set_transient('cc_settings_error', __('Favicon must be exactly 64x64px. Image was rejected.', 'content-core'), 45);
+                        $data['social_icon_id'] = '';
+                        $data['social_icon_id_url'] = '';
+                    }
+                }
+
+                // 1200x630px validation  
+                if (!empty($data['og_default_id'])) {
+                    $meta = wp_get_attachment_metadata((int) $data['og_default_id']);
+                    if (!$meta || empty($meta['width']) || empty($meta['height']) || $meta['width'] !== 1200 || $meta['height'] !== 630) {
+                        set_transient('cc_settings_error', __('Social Preview must be exactly 1200x630px. Image was rejected.', 'content-core'), 45);
+                        $data['og_default_id'] = '';
+                        $data['og_default_id_url'] = '';
+                    }
+                }
+
+                return $data;
+            }
+        ]);
+
+        // 7. Cookie Banner
+        $this->registry->register(self::COOKIE_KEY, [
+            'default' => [
+                'enabled' => false,
+                'bannerTitle' => '',
+                'bannerText' => '',
+                'policyUrl' => '',
+                'labels' => [
+                    'acceptAll' => __('Accept All', 'content-core'),
+                    'rejectAll' => __('Reject All', 'content-core'),
+                    'save' => __('Save Settings', 'content-core'),
+                    'settings' => __('Preferences', 'content-core'),
+                ],
+                'categories' => [
+                    'analytics' => true,
+                    'marketing' => true,
+                    'preferences' => true,
+                ],
+                'integrations' => [
+                    'ga4MeasurementId' => '',
+                    'gtmContainerId' => '',
+                    'metaPixelId' => '',
+                ],
+                'behavior' => [
+                    'regionMode' => 'eu_only',
+                    'storage' => 'localStorage',
+                    'ttlDays' => 365,
+                ]
+            ]
+        ]);
     }
 }

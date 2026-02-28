@@ -171,6 +171,11 @@ class RestApiModule implements ModuleInterface
                 'permission_callback' => [$this, 'check_admin_permission'],
             ],
         ]);
+
+        if (class_exists('\\ContentCore\\Admin\\Rest\\ErrorLogRestController') && isset($GLOBALS['cc_error_logger'])) {
+            $error_rest = new \ContentCore\Admin\Rest\ErrorLogRestController($GLOBALS['cc_error_logger'], $namespace);
+            $error_rest->register_routes();
+        }
     }
 
 
@@ -435,6 +440,15 @@ class RestApiModule implements ModuleInterface
             if (!$post_type_obj || !current_user_can($post_type_obj->cap->read_post, $id)) {
                 return false;
             }
+        } else {
+            // For list/index routes, check if the post type exists and is public
+            $type = $request->get_param('type');
+            if ($type) {
+                $post_type_obj = get_post_type_object($type);
+                if (!$post_type_obj || (!$post_type_obj->public && !current_user_can($post_type_obj->cap->edit_posts))) {
+                    return false;
+                }
+            }
         }
         return true;
     }
@@ -477,13 +491,16 @@ class RestApiModule implements ModuleInterface
 
         $fields = FieldRegistry::get_fields_for_context($context);
 
+        $collected_ids = [];
+        $raw_values = [];
+
         foreach ($fields as $name => $schema) {
             $raw_value = get_post_meta($post_id, $name, true);
             $default = $schema['default_value'] ?? null;
 
             if ('' === $raw_value && !metadata_exists('post', $post_id, $name)) {
                 if (!$request->get_param('includeEmptyFields') && !is_a($request, '\WP_REST_Request')) {
-                    // Legacy check (if not a v1 request, we might want to be more inclusive or follow old rules)
+                    // Legacy check
                 }
                 $raw_value = ('' !== $default) ? $default : null;
             }
@@ -492,11 +509,93 @@ class RestApiModule implements ModuleInterface
                 continue;
             }
 
+            $raw_values[$name] = $raw_value;
+            $this->collect_media_ids($raw_value, $schema, $collected_ids);
+        }
+
+        $this->prime_media_caches($collected_ids);
+
+        foreach ($raw_values as $name => $raw_value) {
+            $schema = $fields[$name];
             $output[$name] = $this->format_value_for_v1($raw_value, $schema, $request);
         }
 
         return (object) $output;
     }
+
+    /**
+     * Recursively collect all media ID values based on schema.
+     */
+    private function collect_media_ids($value, array $schema, array &$ids): void
+    {
+        $type = $schema['type'] ?? 'text';
+        if (null === $value || '' === $value)
+            return;
+
+        switch ($type) {
+            case 'image':
+            case 'file':
+                if (is_numeric($value)) {
+                    $ids[] = absint($value);
+                }
+                break;
+            case 'gallery':
+                if (is_string($value))
+                    $value = json_decode($value, true);
+                if (is_array($value)) {
+                    foreach ($value as $id) {
+                        if (is_numeric($id))
+                            $ids[] = absint($id);
+                    }
+                }
+                break;
+            case 'repeater':
+                if (is_string($value))
+                    $value = json_decode($value, true);
+                if (is_array($value)) {
+                    $sub_fields = $schema['sub_fields'] ?? [];
+                    $sub_schemas = [];
+                    foreach ($sub_fields as $sub) {
+                        $sub_schemas[$sub['name']] = $sub;
+                    }
+                    foreach ($value as $row) {
+                        if (is_array($row)) {
+                            foreach ($sub_schemas as $sub_name => $sub_schema) {
+                                $this->collect_media_ids($row[$sub_name] ?? null, $sub_schema, $ids);
+                            }
+                        }
+                    }
+                }
+                break;
+            case 'group':
+                if (is_string($value))
+                    $value = json_decode($value, true);
+                if (is_array($value)) {
+                    $sub_fields = $schema['sub_fields'] ?? [];
+                    foreach ($sub_fields as $sub) {
+                        $sub_name = $sub['name'] ?? '';
+                        $this->collect_media_ids($value[$sub_name] ?? null, $sub, $ids);
+                    }
+                }
+                break;
+        }
+    }
+
+    /**
+     * Pre-fetch all media items into the WP Object Cache via native batch functions.
+     */
+    private function prime_media_caches(array $ids): void
+    {
+        $ids = array_unique(array_filter($ids));
+        if (empty($ids))
+            return;
+
+        _prime_post_caches($ids, false, true);
+        if (function_exists('update_meta_cache')) {
+            update_meta_cache('post', $ids);
+        }
+    }
+
 
     /**
      * Legacy callback to retrieve and format the custom fields for a specific post
@@ -758,6 +857,48 @@ class RestApiModule implements ModuleInterface
         $data['cookie']['categories']['preferences'] = (bool) $data['cookie']['categories']['preferences'];
         $data['cookie']['behavior']['ttlDays'] = (int) $data['cookie']['behavior']['ttlDays'];
 
+        // Add branding settings
+        $branding_defaults = [
+            'enabled' => false,
+            'exclude_admins' => true,
+            'login_logo' => '',
+            'login_bg_color' => '#f0f0f1',
+            'login_btn_color' => '#2271b1',
+            'login_logo_link_url' => '',
+            'admin_bar_logo' => '',
+            'admin_bar_logo_url' => '',
+            'admin_bar_logo_link_url' => '',
+            'use_site_icon_for_admin_bar' => false,
+            'custom_primary_color' => '',
+            'custom_accent_color' => '',
+            'remove_wp_mentions' => false,
+            'custom_footer_text' => '',
+        ];
+        $branding_saved = get_option('cc_branding_settings', []);
+        if (!is_array($branding_saved))
+            $branding_saved = [];
+        $data['branding'] = array_merge($branding_defaults, $branding_saved);
+
+        // Resolve branding image URLs
+        $branding_img_keys = ['login_logo', 'admin_bar_logo'];
+        foreach ($branding_img_keys as $key) {
+            $val = $data['branding'][$key] ?? '';
+            if (is_numeric($val) && (int) $val > 0) {
+                // Resolved URL for frontend picker preview
+                $url = wp_get_attachment_image_url($val, 'medium') ?: wp_get_attachment_url($val);
+                $data['branding'][$key . '_url'] = $url ?: '';
+            } elseif ($val && is_string($val)) {
+                // Legacy support for pure URL strings
+                $data['branding'][$key . '_url'] = $val;
+            } else {
+                $data['branding'][$key . '_url'] = '';
+            }
+        }
+
+        // Add site icon (favicon) URL for reference
+        $site_icon_id = get_option('site_icon');
+        $data['branding']['site_icon_url'] = $site_icon_id ? wp_get_attachment_image_url($site_icon_id, 'full') : '';
+
         return new \WP_REST_Response($data, 200);
     }
 
@@ -838,6 +979,59 @@ class RestApiModule implements ModuleInterface
             ]);
         }
 
+        // ── Branding ──
+        if (isset($body['branding']) && is_array($body['branding'])) {
+            $branding = $body['branding'];
+            $existing_branding = get_option('cc_branding_settings', []);
+            if (!is_array($existing_branding))
+                $existing_branding = [];
+
+            // Intelligent media sanitization: allow IDs or URLs
+            $sanitize_media = function ($val) {
+                if (is_numeric($val) && (int) $val > 0)
+                    return absint($val);
+                if (is_string($val) && !empty($val))
+                    return esc_url_raw($val);
+                return 0;
+            };
+
+            // Mapping of fields to their sanitization functions
+            $fields = [
+                'enabled' => function ($v) {
+                    return !empty($v); },
+                'exclude_admins' => function ($v) {
+                    return !empty($v); },
+                'login_logo' => $sanitize_media,
+                'login_bg_color' => 'sanitize_hex_color',
+                'login_btn_color' => 'sanitize_hex_color',
+                'login_logo_url' => 'esc_url_raw',
+                'login_logo_link_url' => 'esc_url_raw',
+                'admin_bar_logo' => $sanitize_media,
+                'admin_bar_logo_url' => 'esc_url_raw',
+                'admin_bar_logo_link_url' => 'esc_url_raw',
+                'use_site_icon_for_admin_bar' => function ($v) {
+                    return !empty($v); },
+                'custom_primary_color' => 'sanitize_hex_color',
+                'custom_accent_color' => 'sanitize_hex_color',
+                'remove_wp_mentions' => function ($v) {
+                    return !empty($v); },
+                'custom_footer_text' => 'wp_kses_post',
+            ];
+
+            foreach ($fields as $field => $sanitizer) {
+                if (array_key_exists($field, $branding)) {
+                    $val = $branding[$field];
+                    if (is_callable($sanitizer)) {
+                        $existing_branding[$field] = $sanitizer($val);
+                    } elseif (function_exists($sanitizer)) {
+                        $existing_branding[$field] = $sanitizer($val);
+                    }
+                }
+            }
+
+            update_option('cc_branding_settings', $existing_branding);
+        }
+
         update_option('cc_site_settings', $existing);
 
         // Return the freshly saved state (including resolved URLs)
@@ -899,6 +1093,18 @@ class RestApiModule implements ModuleInterface
         // Filter options and format schema based on client_visible
         $filtered_options = [];
         $filtered_schema = [];
+        $collected_ids = [];
+
+        // Pre-fetch all media in one pass
+        foreach ($schema as $section_id => $section) {
+            foreach ($section['fields'] as $field_id => $field) {
+                if (!isset($field['client_visible']) || $field['client_visible']) {
+                    $val = $options[$field_id] ?? null;
+                    $this->collect_media_ids($val, $field, $collected_ids);
+                }
+            }
+        }
+        $this->prime_media_caches($collected_ids);
 
         foreach ($schema as $section_id => $section) {
             $visible_fields = [];

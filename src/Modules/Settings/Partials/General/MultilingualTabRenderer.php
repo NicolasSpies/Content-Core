@@ -10,10 +10,15 @@ class MultilingualTabRenderer {
     /**
      * Render the tab content.
      */
-    public static function render(): void {
-        $ml_instance = new MultilingualModule();
-        $ml_settings = $ml_instance->get_settings();
-        $catalog = MultilingualModule::get_language_catalog();
+    public static function render(\ContentCore\Modules\Settings\SettingsModule $module): void {
+        $ml_settings = $module->get_registry()->get('cc_languages_settings');
+        $catalog = \ContentCore\Modules\Multilingual\MultilingualModule::get_language_catalog();
+        
+        // Ensure $ml_instance is available for methods like get_flag_html
+        $ml_instance = \ContentCore\Plugin::get_instance()->get_module('multilingual');
+        if (!$ml_instance) {
+             $ml_instance = new \ContentCore\Modules\Multilingual\MultilingualModule();
+        }
         ?>
         <div id="cc-tab-multilingual" class="cc-tab-content">
 

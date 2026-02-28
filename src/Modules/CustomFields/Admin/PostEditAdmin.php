@@ -94,9 +94,7 @@ class PostEditAdmin
     public function render_meta_box(\WP_Post $post, array $args): void
     {
         $group_id = $args['args']['group_id'] ?? 0;
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[Content Core] Rendering meta box for group_id: ' . $group_id);
-        }
+        \ContentCore\Logger::debug('Rendering meta box for group_id: ' . $group_id);
         if (!$group_id) {
             return;
         }
@@ -108,9 +106,7 @@ class PostEditAdmin
         }
 
         $fields = get_post_meta($group_id, '_cc_fields', true);
-        if (defined('WP_DEBUG') && WP_DEBUG) {
-            error_log('[Content Core] Fields for group ' . $group_id . ': ' . (is_array($fields) ? count($fields) : 'NOT AN ARRAY'));
-        }
+        \ContentCore\Logger::debug('Fields for group ' . $group_id . ': ' . (is_array($fields) ? count($fields) : 'NOT AN ARRAY'));
         if (!is_array($fields) || empty($fields)) {
             echo '<p>' . esc_html__('No fields defined for this group.', 'content-core') . '</p>';
             return;

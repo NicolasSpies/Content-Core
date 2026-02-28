@@ -223,12 +223,13 @@ class AdminMenu
         }
 
         if ($settings_module) {
-            add_submenu_page('cc-settings-hub', __('Multilingual', 'content-core'), __('Multilingual', 'content-core'), 'manage_options', 'cc-multilingual', [$settings_module, 'render_site_settings_page']);
+            add_submenu_page('cc-settings-hub', __('Multilingual', 'content-core'), __('Multilingual', 'content-core'), 'manage_options', 'cc-multilingual', [$settings_module, 'render_settings_page']);
             add_submenu_page('cc-settings-hub', __('Visibility', 'content-core'), __('Visibility', 'content-core'), 'manage_options', 'cc-visibility', [$settings_module, 'render_settings_page']);
             add_submenu_page('cc-settings-hub', __('Media', 'content-core'), __('Media', 'content-core'), 'manage_options', 'cc-media', [$settings_module, 'render_settings_page']);
             add_submenu_page('cc-settings-hub', __('Redirect', 'content-core'), __('Redirect', 'content-core'), 'manage_options', 'cc-redirect', [$settings_module, 'render_settings_page']);
             add_submenu_page('cc-settings-hub', __('SEO', 'content-core'), __('SEO', 'content-core'), 'manage_options', 'cc-seo', [$settings_module, 'render_site_settings_page']);
             add_submenu_page('cc-settings-hub', __('Site Images', 'content-core'), __('Site Images', 'content-core'), 'manage_options', 'cc-site-images', [$settings_module, 'render_site_settings_page']);
+            add_submenu_page('cc-settings-hub', __('Branding', 'content-core'), __('Branding', 'content-core'), 'manage_options', 'cc-branding', [$settings_module, 'render_site_settings_page']);
             add_submenu_page('cc-settings-hub', __('Cookie Banner', 'content-core'), __('Cookie Banner', 'content-core'), 'manage_options', 'cc-cookie-banner', [$settings_module, 'render_site_settings_page']);
         }
 
@@ -241,9 +242,9 @@ class AdminMenu
             if (isset($submenu['cc-settings-hub'])) {
                 $slugs = array_column($submenu['cc-settings-hub'], 2);
                 $duplicates = array_diff_assoc($slugs, array_unique($slugs));
-                error_log('[CC Settings] Menu entries registered for cc-settings-hub: ' . print_r($submenu['cc-settings-hub'], true));
+                \ContentCore\Logger::debug('[CC Settings] Menu entries registered for cc-settings-hub: ' . print_r($submenu['cc-settings-hub'], true));
                 if (!empty($duplicates)) {
-                    error_log('[CC Settings] Duplicate slugs detected: ' . print_r($duplicates, true));
+                    \ContentCore\Logger::debug('[CC Settings] Duplicate slugs detected: ' . print_r($duplicates, true));
                 }
             }
         }
@@ -1043,17 +1044,12 @@ class AdminMenu
                         <?php _e('Open Diagnostics', 'content-core'); ?>
                     </a>
                     <?php if (!$err_ok): ?>
-                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:inline;">
-                            <?php wp_nonce_field('cc_error_log_action'); ?>
-                            <input type="hidden" name="action" value="cc_clear_old_error_log">
-                            <button type="submit" class="button"
-                                onclick="return confirm('<?php echo esc_js(__('Clear all log entries older than 24 hours? Recent entries will be kept.', 'content-core')); ?>')"
-                                style="color:#d63638; border-color:#d63638;">
-                                <span class="dashicons dashicons-trash"
-                                    style="margin-top:3px; margin-right:4px; font-size:16px;"></span>
-                                <?php _e('Clear resolved entries', 'content-core'); ?>
-                            </button>
-                        </form>
+                        <button type="button" class="button"
+                            onclick="if(confirm('<?php echo esc_js(__('Clear all log entries older than 24 hours? Recent entries will be kept.', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-old')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(() => window.location.reload()); }"
+                            style="color:#d63638; border-color:#d63638;">
+                            <span class="dashicons dashicons-trash" style="margin-top:3px; margin-right:4px; font-size:16px;"></span>
+                            <?php _e('Clear resolved entries', 'content-core'); ?>
+                        </button>
                     <?php endif; ?>
                 </div>
             </div>
@@ -1476,9 +1472,17 @@ class AdminMenu
                     }
                     ?>
                 </a>
+                <a href="<?php echo esc_url(add_query_arg('tab', 'system-health', $tab_base)); ?>"
+                    class="nav-tab<?php echo $active_tab === 'system-health' ? ' nav-tab-active' : ''; ?>">
+                    <span class="dashicons dashicons-shield"
+                        style="font-size:16px; vertical-align:middle; margin-right:5px;"></span>
+                    <?php _e('System Health', 'content-core'); ?>
+                </a>
             </nav>
 
-            <?php if ($active_tab === 'error-log'): ?>
+            <?php if ($active_tab === 'system-health'): ?>
+                <div id="cc-diagnostics-react-root"></div>
+            <?php elseif ($active_tab === 'error-log'): ?>
 
                 <?php
                 $cc_logger_diag = $GLOBALS['cc_error_logger'] ?? null;

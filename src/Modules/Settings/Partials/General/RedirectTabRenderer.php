@@ -15,22 +15,7 @@ class RedirectTabRenderer
      */
     public static function render(SettingsModule $settings_mod): void
     {
-        $red_defaults = [
-            'enabled' => false,
-            'from_path' => '/',
-            'target' => '/wp-admin',
-            'status_code' => '302',
-            'pass_query' => false,
-            'exclusions' => [
-                'admin' => true,
-                'ajax' => true,
-                'rest' => true,
-                'cron' => true,
-                'cli' => true,
-            ]
-        ];
-        $saved_red = get_option(SettingsModule::REDIRECT_KEY, []);
-        $red_settings = array_merge($red_defaults, is_array($saved_red) ? $saved_red : []);
+        $red_settings = $settings_mod->get_registry()->get(SettingsModule::REDIRECT_KEY);
         ?>
         <div id="cc-tab-redirect" class="cc-tab-content">
             <div class="cc-card">
@@ -121,6 +106,55 @@ class RedirectTabRenderer
                             <p class="description">
                                 <?php _e('Requests matching these criteria will NEVER be redirected, even if the From Path matches.', 'content-core'); ?>
                             </p>
+                        </td>
+                    </tr>
+                </table>
+                <!-- ═══ Admin Bar Site Link (Restored) ═══ -->
+                <h2 style="margin-top: 30px;">
+                    <?php _e('Admin Bar Link', 'content-core'); ?>
+                </h2>
+                <p style="color: #646970;">
+                    <?php _e('Configure the direct link on the site name in the WordPress admin bar.', 'content-core'); ?>
+                </p>
+
+                <?php
+                // Reuse existing ADMIN_BAR_KEY but specifically for these fields
+                $ab_link_settings = $settings_mod->get_registry()->get(SettingsModule::ADMIN_BAR_KEY);
+                ?>
+
+                <table class="form-table" style="margin-top: 20px;">
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Override Link', 'content-core'); ?>
+                        </th>
+                        <td>
+                            <label class="cc-toggle">
+                                <input type="hidden" name="cc_admin_bar_link[enabled]" value="0">
+                                <input type="checkbox" name="cc_admin_bar_link[enabled]" value="1" <?php checked($ab_link_settings['enabled']); ?>>
+                                <span class="cc-toggle-slider"></span>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Target URL', 'content-core'); ?>
+                        </th>
+                        <td>
+                            <input type="text" name="cc_admin_bar_link[url]"
+                                value="<?php echo esc_attr($ab_link_settings['url']); ?>" class="regular-text"
+                                placeholder="<?php echo esc_attr(home_url()); ?>">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <?php _e('Open in New Tab', 'content-core'); ?>
+                        </th>
+                        <td>
+                            <label class="cc-toggle">
+                                <input type="hidden" name="cc_admin_bar_link[new_tab]" value="0">
+                                <input type="checkbox" name="cc_admin_bar_link[new_tab]" value="1" <?php checked($ab_link_settings['new_tab']); ?>>
+                                <span class="cc-toggle-slider"></span>
+                            </label>
                         </td>
                     </tr>
                 </table>

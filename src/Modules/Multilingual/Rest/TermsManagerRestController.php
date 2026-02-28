@@ -2,6 +2,7 @@
 namespace ContentCore\Modules\Multilingual\Rest;
 
 use ContentCore\Modules\Multilingual\MultilingualModule;
+use ContentCore\Modules\RestApi\BaseRestController;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
@@ -19,7 +20,7 @@ use WP_Error;
  *   POST /terms-manager/delete-group  — delete all terms in a group
  *   POST /terms-manager/reorder       — update cc_order for terms
  */
-class TermsManagerRestController
+class TermsManagerRestController extends BaseRestController
 {
     private MultilingualModule $module;
     private string $ns;
@@ -37,13 +38,13 @@ class TermsManagerRestController
         register_rest_route($this->ns, $base . '/all-taxonomy-groups', [
             'methods' => 'GET',
             'callback' => [$this, 'get_all_taxonomy_groups'],
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin_permissions'],
         ]);
 
         register_rest_route($this->ns, $base . '/create', [
             'methods' => 'POST',
             'callback' => [$this, 'create_term'],
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin_permissions'],
             'args' => [
                 'taxonomy' => ['required' => true, 'sanitize_callback' => 'sanitize_key'],
                 'name' => ['required' => true, 'sanitize_callback' => 'sanitize_text_field'],
@@ -54,7 +55,7 @@ class TermsManagerRestController
         register_rest_route($this->ns, $base . '/translate', [
             'methods' => 'POST',
             'callback' => [$this, 'create_translation'],
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin_permissions'],
             'args' => [
                 'taxonomy' => ['required' => true, 'sanitize_callback' => 'sanitize_key'],
                 'name' => ['required' => true, 'sanitize_callback' => 'sanitize_text_field'],
@@ -66,7 +67,7 @@ class TermsManagerRestController
         register_rest_route($this->ns, $base . '/rename', [
             'methods' => 'POST',
             'callback' => [$this, 'rename_term'],
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin_permissions'],
             'args' => [
                 'term_id' => ['required' => true, 'sanitize_callback' => 'absint'],
                 'taxonomy' => ['required' => true, 'sanitize_callback' => 'sanitize_key'],
@@ -77,7 +78,7 @@ class TermsManagerRestController
         register_rest_route($this->ns, $base . '/remove', [
             'methods' => 'POST',
             'callback' => [$this, 'remove_term'],
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin_permissions'],
             'args' => [
                 'term_id' => ['required' => true, 'sanitize_callback' => 'absint'],
                 'taxonomy' => ['required' => true, 'sanitize_callback' => 'sanitize_key'],
@@ -87,7 +88,7 @@ class TermsManagerRestController
         register_rest_route($this->ns, $base . '/delete-group', [
             'methods' => 'POST',
             'callback' => [$this, 'delete_group'],
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin_permissions'],
             'args' => [
                 'taxonomy' => ['required' => true, 'sanitize_callback' => 'sanitize_key'],
                 'group_id' => ['required' => true, 'sanitize_callback' => 'sanitize_text_field'],
@@ -97,7 +98,7 @@ class TermsManagerRestController
         register_rest_route($this->ns, $base . '/reorder', [
             'methods' => 'POST',
             'callback' => [$this, 'reorder_terms'],
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin_permissions'],
             'args' => [
                 'taxonomy' => ['required' => true, 'sanitize_callback' => 'sanitize_key'],
                 'order' => ['required' => true],
@@ -105,9 +106,9 @@ class TermsManagerRestController
         ]);
     }
 
-    public function check_permission(): bool
+    public function check_admin_permissions(\WP_REST_Request $request = null): bool
     {
-        return current_user_can('manage_options') || current_user_can('manage_categories');
+        return parent::check_admin_permissions($request) || current_user_can('manage_categories');
     }
 
     // -------------------------------------------------------------------------
