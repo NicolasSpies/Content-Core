@@ -45,6 +45,9 @@ class SettingsModule implements ModuleInterface
         // Redirect logic runs on frontend init
         add_action('init', [$this, 'handle_frontend_redirect']);
 
+        // Upload size limit — runs everywhere (admin uploads go through here)
+        add_filter('upload_size_limit', [$this, 'apply_upload_size_limit']);
+
         if (!is_admin()) {
             return;
         }
@@ -64,11 +67,34 @@ class SettingsModule implements ModuleInterface
 
     public function enqueue_settings_assets(string $hook): void
     {
-        if (strpos($hook, 'cc-settings') !== false) {
+        if (strpos($hook, 'cc-settings') !== false || strpos($hook, 'cc-site-settings') !== false) {
             wp_enqueue_media();
             wp_enqueue_script('jquery-ui-sortable');
         }
+
+        if ($hook === 'content-core_page_cc-site-settings') {
+            // Enqueue wp-element (React), wp-api-fetch, wp-i18n — all bundled with WordPress
+            wp_enqueue_script(
+                'cc-site-settings-app',
+                plugins_url('assets/js/site-settings-app.js', \CONTENT_CORE_PLUGIN_FILE),
+                ['wp-element', 'wp-api-fetch', 'wp-i18n'],
+                \CONTENT_CORE_VERSION,
+                true
+            );
+
+            $rest_base = rest_url('content-core/v1/settings/site');
+
+            wp_localize_script('cc-site-settings-app', 'CC_SITE_SETTINGS', [
+                'nonce' => wp_create_nonce('wp_rest'),
+                'restBase' => $rest_base,
+                'siteUrl' => home_url('/'),
+                'defaultTitle' => get_bloginfo('name'),
+                'defaultDesc' => get_bloginfo('description'),
+                'siteOptionsUrl' => admin_url('admin.php?page=cc-site-options'),
+            ]);
+        }
     }
+
 
     public function register_settings_page(): void
     {
@@ -137,6 +163,38 @@ class SettingsModule implements ModuleInterface
 
         wp_safe_redirect($target, $status);
         exit;
+    }
+
+    /**
+     * Filter: upload_size_limit
+     *
+     * Returns the lower of the current WordPress upload limit and the
+     * Content Core configured limit (in MB, stored as 'upload_limit_mb').
+     * Can only reduce the limit — never raise it above server PHP limits.
+     *
+     * @param  int $size  Current max upload size in bytes (WordPress-calculated).
+     * @return int
+     */
+    public function apply_upload_size_limit(int $size): int
+    {
+        $media = get_option(self::MEDIA_KEY, []);
+
+        // Use saved value, or fall back to 25 MB default so the limit is
+        // active immediately without requiring an explicit Settings save.
+        if (isset($media['upload_limit_mb']) && $media['upload_limit_mb'] !== '') {
+            $limit = $media['upload_limit_mb'];
+        } else {
+            $limit = 25; // default: 25 MB
+        }
+
+        if (!is_numeric($limit) || (int) $limit < 1) {
+            return $size; // invalid — leave WordPress limit unchanged
+        }
+
+        $limit_bytes = (int) $limit * MB_IN_BYTES;
+
+        // Safety: only reduce, never raise above what WordPress/PHP allows.
+        return min($size, $limit_bytes);
     }
 
     private function is_cc_settings_screen(): bool
@@ -320,6 +378,15 @@ class SettingsModule implements ModuleInterface
                     if (!is_array($media_raw)) {
                         $media_raw = [];
                     }
+
+                    // Upload limit: 1–300 MB, empty = no limit applied
+                    $upload_limit_raw = trim($media_raw['upload_limit_mb'] ?? '');
+                    if ($upload_limit_raw !== '' && is_numeric($upload_limit_raw)) {
+                        $upload_limit_mb = max(1, min(300, intval($upload_limit_raw)));
+                    } else {
+                        $upload_limit_mb = ''; // empty = disabled
+                    }
+
                     $media_settings = [
                         'enabled' => !empty($media_raw['enabled']),
                         'max_width_px' => intval(($media_raw['max_width_px'] ?? 2000) ?: 2000),
@@ -327,6 +394,7 @@ class SettingsModule implements ModuleInterface
                         'quality' => intval(($media_raw['quality'] ?? 70) ?: 70),
                         'png_mode' => sanitize_text_field($media_raw['png_mode'] ?? 'lossless'),
                         'delete_original' => !empty($media_raw['delete_original']),
+                        'upload_limit_mb' => $upload_limit_mb,
                     ];
                     $this->update_merged_option(self::MEDIA_KEY, $media_settings);
                 }
@@ -390,9 +458,18 @@ class SettingsModule implements ModuleInterface
                     $seo_payload = [
                         'site_title' => sanitize_text_field($seo_post['site_title'] ?? ''),
                         'default_description' => sanitize_textarea_field($seo_post['default_description'] ?? ''),
-                        'default_og_image_id' => !empty($seo_post['default_og_image_id']) ? intval($seo_post['default_og_image_id']) : null,
                     ];
                     $this->update_merged_option(self::SEO_KEY, $seo_payload);
+                }
+
+                // ── Site Images ──
+                if (isset($_POST['cc_site_images'])) {
+                    $img_post = (array) $_POST['cc_site_images'];
+                    $img_payload = [
+                        'social_icon_id' => !empty($img_post['social_icon_id']) ? absint($img_post['social_icon_id']) : null,
+                        'social_id' => !empty($img_post['social_id']) ? absint($img_post['social_id']) : null,
+                    ];
+                    update_option('cc_site_images', $img_payload);
                 }
 
                 // ── Multilingual Settings ──
@@ -643,11 +720,231 @@ class SettingsModule implements ModuleInterface
 
     // ─── Render ─────────────────────────────────────────────────────
 
+    /**
+     * Site Settings page — PHP outputs header + multilingual PHP form,
+     * then the React root div that hosts SEO, Images, Cookie tabs.
+     */
+    public function render_site_settings_page(): void
+    {
+        ?>
+        <div class="wrap content-core-admin">
+            <div class="cc-header">
+                <h1><?php _e('Site Settings', 'content-core'); ?></h1>
+                <p style="color: #646970; margin-top: 4px;">
+                    <?php _e('Manage SEO defaults, site images, cookie consent, and site options schema.', 'content-core'); ?>
+                </p>
+            </div>
+
+            <?php settings_errors('cc_settings'); ?>
+
+            <?php
+            // ── Multilingual section (PHP-rendered; unchanged from original) ──
+            $this->maybe_render_multilingual_form_section();
+            ?>
+
+            <!-- ── React Shell (SEO, Site Images, Cookie Banner, Site Options tab nav) ── -->
+            <div id="cc-site-settings-react-root" style="margin-top: 24px;"></div>
+
+            <!-- ── Site Options Schema — PHP form, shown/hidden by React tab ── -->
+            <div id="cc-site-options-schema-section" style="display:none; margin-top: 0;">
+                <?php $this->render_site_options_schema_section(); ?>
+            </div>
+
+        </div>
+        <script>
+            // Wire the React "Site Options" tab to show/hide the PHP schema section
+            // and hide/show the React save button row.
+            (function () {
+                var timer = setInterval(function () {
+                    var root = document.getElementById('cc-site-settings-react-root');
+                    if (!root || !root.querySelector('.cc-react-tabs')) return;
+                    clearInterval(timer);
+
+                    var schemaSection = document.getElementById('cc-site-options-schema-section');
+                    var tabs = root.querySelectorAll('.cc-react-tabs .nav-tab');
+                    var saveRow = root.querySelector('.cc-react-save-row');
+
+                    tabs.forEach(function (tab) {
+                        tab.addEventListener('click', function () {
+                            var isSiteOptions = tab.textContent.trim() === 'Site Options';
+                            if (schemaSection) schemaSection.style.display = isSiteOptions ? 'block' : 'none';
+                            if (saveRow) saveRow.style.display = isSiteOptions ? 'none' : '';
+                        });
+                    });
+                }, 100);
+            })();
+        </script>
+        <?php
+    }
+
+    /**
+     * Renders the Site Options schema editor as a self-contained PHP form.
+     */
+    private function render_site_options_schema_section(): void
+    {
+        $plugin = \ContentCore\Plugin::get_instance();
+        $site_mod = $plugin->get_module('site_options');
+        if (!$site_mod) {
+            echo '<div class="notice notice-warning inline"><p>' . esc_html__('Site Options module not active.', 'content-core') . '</p></div>';
+            return;
+        }
+        $schema = $site_mod->get_schema();
+        $ml = $plugin->get_module('multilingual');
+        $languages = ($ml instanceof \ContentCore\Modules\Multilingual\MultilingualModule) ? $ml->get_settings()['languages'] : [];
+        ?>
+        <form method="post">
+            <?php wp_nonce_field('cc_save_menu_settings', 'cc_menu_settings_nonce'); ?>
+            <input type="hidden" name="settings_group" value="site_settings">
+
+            <div class="cc-card">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="margin-top: 0;"><?php _e('Site Options Schema', 'content-core'); ?></h2>
+                        <p style="color: #646970;">
+                            <?php _e('Define groups and fields for global business information. These fields will appear on the Site Options page.', 'content-core'); ?>
+                        </p>
+                    </div>
+                    <button type="submit" name="cc_reset_site_options_schema" class="button button-secondary"
+                        onclick="return confirm('<?php echo esc_attr__('Reset Site Options schema to defaults? Your values will be preserved.', 'content-core'); ?>');">
+                        <?php _e('Reset to Default Template', 'content-core'); ?>
+                    </button>
+                </div>
+
+                <div id="cc-schema-editor" style="margin-top: 24px;">
+                    <?php foreach ($schema as $section_id => $section): ?>
+                        <div class="cc-schema-section cc-card"
+                            style="background: #f8f9fa; margin-bottom: 20px; border: 1px solid #dcdcde;"
+                            data-id="<?php echo esc_attr($section_id); ?>">
+                            <div
+                                style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #dcdcde; padding-bottom: 15px;">
+                                <span class="dashicons dashicons-menu" style="color: #a0a5aa; cursor: grab;"></span>
+                                <div style="flex-grow: 1;">
+                                    <input type="text" name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][title]"
+                                        value="<?php echo esc_attr($section['title'] ?? ''); ?>" class="large-text"
+                                        style="font-weight: 600;" placeholder="<?php esc_attr_e('Group title', 'content-core'); ?>">
+                                </div>
+                                <button type="button" class="button button-link-delete cc-remove-section">
+                                    <span class="dashicons dashicons-trash"></span>
+                                </button>
+                            </div>
+
+                            <div class="cc-schema-fields" style="padding-left: 20px;">
+                                <?php foreach ($section['fields'] ?? [] as $field_id => $field): ?>
+                                    <div class="cc-schema-field" data-id="<?php echo esc_attr($field_id); ?>"
+                                        style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 15px; padding: 12px; background: #fff; border: 1px solid #dcdcde; border-radius: 4px;">
+                                        <span class="dashicons dashicons-menu"
+                                            style="color: #a0a5aa; cursor: grab; margin-top: 8px;"></span>
+                                        <div style="flex-grow: 1;">
+                                            <div
+                                                style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                                <div>
+                                                    <label
+                                                        style="display: block; font-size: 11px; margin-bottom: 3px;"><?php _e('Stable Key', 'content-core'); ?></label>
+                                                    <input type="text" value="<?php echo esc_attr($field_id); ?>" class="regular-text"
+                                                        style="width: 100%; font-family: monospace;" readonly disabled>
+                                                </div>
+                                                <div>
+                                                    <label
+                                                        style="display: block; font-size: 11px; margin-bottom: 3px;"><?php _e('Type', 'content-core'); ?></label>
+                                                    <select
+                                                        name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][type]"
+                                                        style="width: 100%;">
+                                                        <option value="text" <?php selected($field['type'], 'text'); ?>>Text</option>
+                                                        <option value="email" <?php selected($field['type'], 'email'); ?>>Email</option>
+                                                        <option value="url" <?php selected($field['type'], 'url'); ?>>URL</option>
+                                                        <option value="textarea" <?php selected($field['type'], 'textarea'); ?>>Textarea
+                                                        </option>
+                                                        <option value="image" <?php selected($field['type'], 'image'); ?>>Image/Logo
+                                                        </option>
+                                                    </select>
+                                                </div>
+                                                <div style="display: flex; gap: 15px; align-items: center; padding-top: 20px;">
+                                                    <label><input type="checkbox"
+                                                            name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][client_visible]"
+                                                            value="1" <?php checked(!empty($field['client_visible'])); ?>>
+                                                        <?php _e('Visible', 'content-core'); ?>
+                                                    </label>
+                                                    <label><input type="checkbox"
+                                                            name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][client_editable]"
+                                                            value="1" <?php checked(!empty($field['client_editable'])); ?>>
+                                                        <?php _e('Editable', 'content-core'); ?>
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <div
+                                                style="display: grid; grid-template-columns: repeat(<?php echo count($languages) ?: 1; ?>, 1fr); gap: 10px;">
+                                                <?php foreach ($languages as $lang):
+                                                    $label_val = is_array($field['label']) ? ($field['label'][$lang['code']] ?? '') : ($lang['code'] === 'de' ? $field['label'] : '');
+                                                    ?>
+                                                    <div>
+                                                        <label style="display: block; font-size: 11px; margin-bottom: 3px;">
+                                                            <?php echo esc_html($lang['label']); ?>                     <?php _e('Label', 'content-core'); ?>
+                                                        </label>
+                                                        <input type="text"
+                                                            name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][label][<?php echo esc_attr($lang['code']); ?>]"
+                                                            value="<?php echo esc_attr($label_val); ?>" style="width: 100%;">
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="button button-link-delete cc-remove-field"
+                                            style="margin-top: 5px;">
+                                            <span class="dashicons dashicons-no-alt"></span>
+                                        </button>
+                                    </div>
+                                <?php endforeach; ?>
+                                <button type="button" class="button button-secondary cc-add-field"
+                                    data-section="<?php echo esc_attr($section_id); ?>">
+                                    <?php _e('+ Add Field', 'content-core'); ?>
+                                </button>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                    <button type="button" class="button button-secondary cc-add-section">
+                        <?php _e('+ Add Group', 'content-core'); ?>
+                    </button>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #dcdcde;">
+                <?php submit_button(__('Save Site Options Schema', 'content-core'), 'primary', 'submit', false); ?>
+            </div>
+        </form>
+        <?php
+    }
+
+
+    /**
+     * Renders the Multilingual configuration form section for Site Settings.
+     * Kept as a standalone PHP form so it stays unchanged from the original.
+     */
+    private function maybe_render_multilingual_form_section(): void
+    {
+        // Load the multilingual module if available
+        $plugin = \ContentCore\Plugin::get_instance();
+        $ml_mod = method_exists($plugin, 'get_module') ? $plugin->get_module('multilingual') : null;
+        if (!$ml_mod)
+            return;
+
+        // Delegate to the existing multilingual settings render helper if it exists
+        if (method_exists($this, 'render_tab_multilingual')) {
+            $this->render_tab_multilingual();
+        }
+    }
+
     public function render_settings_page(): void
     {
         $page_slug = $_GET['page'] ?? '';
         $is_site_settings = ($page_slug === 'cc-site-settings');
 
+        // ── Site Settings — React-driven UI ──────────────────────────────────
+        if ($is_site_settings) {
+            $this->render_site_settings_page();
+            return;
+        }
+
+        // ── General Settings — PHP-rendered form (unchanged) ─────────────────
         $vis_settings = get_option(self::OPTION_KEY, []);
         $order_settings = get_option(self::ORDER_KEY, []);
         $all_items = $this->get_all_menu_items();
@@ -679,51 +976,29 @@ class SettingsModule implements ModuleInterface
         ?>
         <div class="wrap content-core-admin">
             <div class="cc-header">
-                <h1>
-                    <?php echo $is_site_settings ? __('Site Settings', 'content-core') : __('Settings', 'content-core'); ?>
-                </h1>
+                <h1><?php _e('Settings', 'content-core'); ?></h1>
                 <p style="color: #646970; margin-top: 4px;">
-                    <?php echo $is_site_settings
-                        ? __('Manage high-level project configurations like languages and SEO.', 'content-core')
-                        : __('Configure sidebar visibility, media optimization, and redirects.', 'content-core'); ?>
+                    <?php _e('Configure sidebar visibility, media optimization, and redirects.', 'content-core'); ?>
                 </p>
             </div>
 
             <?php settings_errors('cc_settings'); ?>
 
             <h2 class="nav-tab-wrapper cc-settings-tabs" style="margin-bottom: 20px; display: none;">
-                <?php if ($is_site_settings): ?>
-                    <a href="#multilingual" class="nav-tab nav-tab-active" data-tab="multilingual">
-                        <?php _e('Multilingual', 'content-core'); ?>
-                    </a>
-                    <a href="#seo" class="nav-tab" data-tab="seo">
-                        <?php _e('SEO', 'content-core'); ?>
-                    </a>
-                    <a href="#cookie" class="nav-tab" data-tab="cookie">
-                        <?php _e('Cookie Banner', 'content-core'); ?>
-                    </a>
-                    <a href="#site-options" class="nav-tab" data-tab="site-options">
-                        <?php _e('Site Options', 'content-core'); ?>
-                    </a>
-                    <?php
-                else: ?>
-                    <a href="#menu" class="nav-tab nav-tab-active" data-tab="menu">
-                        <?php _e('Visibility', 'content-core'); ?>
-                    </a>
-                    <a href="#media" class="nav-tab" data-tab="media">
-                        <?php _e('Media', 'content-core'); ?>
-                    </a>
-                    <a href="#redirect" class="nav-tab" data-tab="redirect">
-                        <?php _e('Redirect', 'content-core'); ?>
-                    </a>
-                    <?php
-                endif; ?>
+                <a href="#menu" class="nav-tab nav-tab-active" data-tab="menu">
+                    <?php _e('Visibility', 'content-core'); ?>
+                </a>
+                <a href="#media" class="nav-tab" data-tab="media">
+                    <?php _e('Media', 'content-core'); ?>
+                </a>
+                <a href="#redirect" class="nav-tab" data-tab="redirect">
+                    <?php _e('Redirect', 'content-core'); ?>
+                </a>
             </h2>
 
             <form method="post">
                 <?php wp_nonce_field('cc_save_menu_settings', 'cc_menu_settings_nonce'); ?>
-                <input type="hidden" name="settings_group"
-                    value="<?php echo $is_site_settings ? 'site_settings' : 'general'; ?>">
+                <input type="hidden" name="settings_group" value="general">
 
                 <div id="cc-tab-menu" class="cc-tab-content active">
 
@@ -889,6 +1164,7 @@ class SettingsModule implements ModuleInterface
                         'quality' => 70,
                         'png_mode' => 'lossless',
                         'delete_original' => true,
+                        'upload_limit_mb' => 25,
                     ];
                     $saved_media = get_option(self::MEDIA_KEY, []);
                     $media_settings = array_merge($media_defaults, is_array($saved_media) ? $saved_media : []);
@@ -982,6 +1258,36 @@ class SettingsModule implements ModuleInterface
                                     </label>
                                     <p class="description">
                                         <?php _e('If enabled, the original source file (jpg/png/gif) is deleted after successful conversion to WebP.', 'content-core'); ?>
+                                    </p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <?php _e('Upload Limit (MB)', 'content-core'); ?>
+                                </th>
+                                <td>
+                                    <input type="number" id="cc_media_upload_limit_mb" name="cc_media[upload_limit_mb]"
+                                        value="<?php echo esc_attr($media_settings['upload_limit_mb']); ?>" class="small-text"
+                                        min="1" max="300" step="1" placeholder="25">
+                                    <p class="description">
+                                        <?php
+                                        $cc_wp_max_mb = round(wp_max_upload_size() / MB_IN_BYTES, 1);
+                                        $cc_limit_val = $media_settings['upload_limit_mb'];
+                                        if ($cc_limit_val !== '' && is_numeric($cc_limit_val) && intval($cc_limit_val) >= 1) {
+                                            $cc_effective_mb = min((float) $cc_limit_val, $cc_wp_max_mb);
+                                            printf(
+                                                /* translators: 1: configured MB, 2: effective MB after server cap */
+                                                esc_html__('1–300 MB. Leave blank to keep WordPress default. Configured: %1$s MB — Effective after server limits: %2$s MB.', 'content-core'),
+                                                '<strong>' . esc_html($cc_limit_val) . '</strong>',
+                                                '<strong>' . esc_html($cc_effective_mb) . '</strong>'
+                                            );
+                                        } else {
+                                            printf(
+                                                esc_html__('1–300 MB. Leave blank to keep WordPress default. Current WordPress max: %s MB.', 'content-core'),
+                                                '<strong>' . esc_html($cc_wp_max_mb) . '</strong>'
+                                            );
+                                        }
+                                        ?>
                                     </p>
                                 </td>
                             </tr>
@@ -1364,28 +1670,28 @@ class SettingsModule implements ModuleInterface
                         </div>
 
                         <script type="text/template" id="cc-ml-row-template">
-                                <tr data-index="{index}" data-code="{code}">
-                                    <td class="flag-col" style="vertical-align: middle;">{flag}</td>
-                                    <td>
-                                        <code class="language-code-display">{code}</code>
-                                        <input type="hidden" name="cc_languages[languages][{index}][code]" value="{code}" class="language-code">
-                                    </td>
-                                    <td>
-                                        <span style="font-weight: 500; font-size: 13px;">{label}</span>
-                                        <input type="hidden" name="cc_languages[languages][{index}][label]" value="{label}" class="language-label">
-                                    </td>
-                                    <td>
-                                        <div style="display: flex; gap: 4px; align-items: center;">
-                                            <input type="hidden" name="cc_languages[languages][{index}][flag_id]" value="0" class="flag-id-input">
-                                            <button type="button" class="button button-small select-custom-flag"><?php _e('Select', 'content-core'); ?></button>
-                                            <button type="button" class="button button-small remove-custom-flag" style="display:none;"><span class="dashicons dashicons-no-alt" style="margin-top: 2px;"></span></button>
-                                        </div>
-                                    </td>
-                                    <td style="text-align: right;">
-                                        <button type="button" class="button button-link-delete remove-row"><span class="dashicons dashicons-no-alt" style="margin-top: 4px;"></span></button>
-                                    </td>
-                                </tr>
-                            </script>
+                                                                                                                                        <tr data-index="{index}" data-code="{code}">
+                                                                                                                                            <td class="flag-col" style="vertical-align: middle;">{flag}</td>
+                                                                                                                                            <td>
+                                                                                                                                                <code class="language-code-display">{code}</code>
+                                                                                                                                                <input type="hidden" name="cc_languages[languages][{index}][code]" value="{code}" class="language-code">
+                                                                                                                                            </td>
+                                                                                                                                            <td>
+                                                                                                                                                <span style="font-weight: 500; font-size: 13px;">{label}</span>
+                                                                                                                                                <input type="hidden" name="cc_languages[languages][{index}][label]" value="{label}" class="language-label">
+                                                                                                                                            </td>
+                                                                                                                                            <td>
+                                                                                                                                                <div style="display: flex; gap: 4px; align-items: center;">
+                                                                                                                                                    <input type="hidden" name="cc_languages[languages][{index}][flag_id]" value="0" class="flag-id-input">
+                                                                                                                                                    <button type="button" class="button button-small select-custom-flag"><?php _e('Select', 'content-core'); ?></button>
+                                                                                                                                                    <button type="button" class="button button-small remove-custom-flag" style="display:none;"><span class="dashicons dashicons-no-alt" style="margin-top: 2px;"></span></button>
+                                                                                                                                                </div>
+                                                                                                                                            </td>
+                                                                                                                                            <td style="text-align: right;">
+                                                                                                                                                <button type="button" class="button button-link-delete remove-row"><span class="dashicons dashicons-no-alt" style="margin-top: 4px;"></span></button>
+                                                                                                                                            </td>
+                                                                                                                                        </tr>
+                                                                                                                                    </script>
                     </div>
                 </div> <!-- End #cc-tab-multilingual -->
 
@@ -1600,7 +1906,7 @@ class SettingsModule implements ModuleInterface
                                     <?php _e('Site Title', 'content-core'); ?>
                                 </th>
                                 <td>
-                                    <input type="text" name="cc_seo[site_title]"
+                                    <input type="text" id="cc_seo_title" name="cc_seo[site_title]"
                                         value="<?php echo esc_attr($seo_settings['site_title']); ?>" class="regular-text">
                                     <p class="description">
                                         <?php _e('The default title for your site.', 'content-core'); ?>
@@ -1612,42 +1918,82 @@ class SettingsModule implements ModuleInterface
                                     <?php _e('Default Meta Description', 'content-core'); ?>
                                 </th>
                                 <td>
-                                    <textarea name="cc_seo[default_description]" rows="4"
+                                    <textarea id="cc_meta_description" name="cc_seo[default_description]" rows="4"
                                         class="large-text"><?php echo esc_textarea($seo_settings['default_description']); ?></textarea>
                                     <p class="description">
                                         <?php _e('The default meta description if a specific page does not have one.', 'content-core'); ?>
                                     </p>
                                 </td>
                             </tr>
-                            <tr>
-                                <th scope="row">
-                                    <?php _e('Default OG Image', 'content-core'); ?>
-                                </th>
-                                <td>
-                                    <input type="hidden" name="cc_seo[default_og_image_id]" id="cc-seo-image-id"
-                                        value="<?php echo esc_attr($seo_settings['default_og_image_id']); ?>">
-
-                                    <div id="cc-seo-image-preview"
-                                        style="margin-bottom: 10px; <?php echo empty($seo_settings['default_og_image_id']) ? 'display: none;' : ''; ?>">
-                                        <?php
-                                        if (!empty($seo_settings['default_og_image_id'])) {
-                                            echo wp_get_attachment_image($seo_settings['default_og_image_id'], 'thumbnail', false, ['style' => 'max-width: 150px; height: auto; border: 1px solid #ddd; padding: 3px; border-radius: 4px;']);
-                                        }
-                                        ?>
-                                    </div>
-
-                                    <button type="button" class="button" id="cc-seo-image-button">
-                                        <?php _e('Select Image', 'content-core'); ?>
-                                    </button>
-                                    <button type="button" class="button button-link-delete" id="cc-seo-image-remove"
-                                        style="<?php echo empty($seo_settings['default_og_image_id']) ? 'display: none;' : ''; ?>">
-                                        <?php _e('Remove Image', 'content-core'); ?>
-                                    </button>
-                                </td>
-                            </tr>
                         </table>
+                        <?php if (function_exists('cc_render_seo_preview_box')) {
+                            cc_render_seo_preview_box();
+                        } ?>
                     </div>
                 </div> <!-- End #cc-tab-seo -->
+
+                <div id="cc-tab-site_images" class="cc-tab-content">
+                    <div class="cc-card">
+                        <h2 style="margin-top: 0;">
+                            <?php _e('Site Images', 'content-core'); ?>
+                        </h2>
+                        <p style="color: #646970; margin-bottom: 24px;">
+                            <?php _e('Manage favicons, app icons, and default social preview images globally.', 'content-core'); ?>
+                        </p>
+
+                        <?php
+                        $site_imgs = get_option('cc_site_images', []);
+
+                        $image_fields = [
+                            'social_icon_id' => [
+                                'label' => __('Social Icon', 'content-core'),
+                                'hint' => '64x64',
+                            ],
+                            'social_id' => [
+                                'label' => __('Social Preview (OG:Image)', 'content-core'),
+                                'hint' => '1200x630 (Fallback when no post image is explicit)',
+                            ],
+                        ];
+                        ?>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                            <?php foreach ($image_fields as $key => $config):
+                                $attachment_id = !empty($site_imgs[$key]) ? absint($site_imgs[$key]) : 0;
+                                ?>
+                                <div class="cc-site-image-card" data-key="<?php echo esc_attr($key); ?>"
+                                    style="border: 1px solid #dcdcde; padding: 16px; border-radius: 6px; background: #fafafa;">
+                                    <h3 style="margin: 0 0 4px 0; font-size: 14px;"><?php echo esc_html($config['label']); ?></h3>
+                                    <p style="margin: 0 0 16px 0; font-size: 12px; color: #646970;">
+                                        <?php echo esc_html($config['hint']); ?>
+                                    </p>
+
+                                    <div class="cc-site-image-preview"
+                                        style="min-height: 80px; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px dashed #c3c4c7; margin-bottom: 12px;">
+                                        <?php if ($attachment_id): ?>
+                                            <?php echo wp_get_attachment_image($attachment_id, 'thumbnail', false, ['style' => 'max-width: 100%; max-height: 120px; width: auto; height: auto; display: block;']); ?>
+                                        <?php else: ?>
+                                            <span
+                                                style="color: #a7aaad; font-size: 12px;"><?php _e('No image selected', 'content-core'); ?></span>
+                                        <?php endif; ?>
+                                    </div>
+
+                                    <input type="hidden" name="cc_site_images[<?php echo esc_attr($key); ?>]"
+                                        class="cc-site-image-input" value="<?php echo esc_attr($attachment_id); ?>">
+
+                                    <div style="display: flex; gap: 8px;">
+                                        <button type="button" class="button cc-site-image-upload">
+                                            <?php echo $attachment_id ? __('Replace', 'content-core') : __('Upload', 'content-core'); ?>
+                                        </button>
+                                        <button type="button" class="button button-link-delete cc-site-image-remove"
+                                            style="<?php echo $attachment_id ? '' : 'display: none;'; ?>">
+                                            <?php _e('Remove', 'content-core'); ?>
+                                        </button>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div> <!-- End #cc-tab-site_images -->
                 <div id="cc-tab-cookie" class="cc-tab-content">
                     <?php
                     $cookie_defaults = [

@@ -1,0 +1,23 @@
+{
+    "name": "nicolasspies/content-core",
+    "description": "Content Core — custom WordPress framework by Nicolas Spies.",
+    "type": "wordpress-plugin",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.0"
+    },
+    "require-dev": {
+        "php-stubs/wordpress-stubs": "^6.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "ContentCore\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    }
+}
