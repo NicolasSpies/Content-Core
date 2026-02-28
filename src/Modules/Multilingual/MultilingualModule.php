@@ -74,9 +74,13 @@ class MultilingualModule implements ModuleInterface
         // Global term ordering filter
         add_filter('get_terms_args', [$this, 'apply_cc_term_order'], 30, 2);
 
+        // Filter terms by post language in post edit screens
+        add_filter('get_terms_args', [$this, 'filter_terms_for_post_lang'], 20, 2);
+
         $this->rest = new MultilingualRestHandler($this);
         $this->rest->init();
 
+        add_action('wp_insert_post', [$this, 'force_default_language_on_insert'], 10, 3);
         add_action('save_post', [$this, 'handle_post_save'], 10, 2);
         add_action('init', [$this, 'cc_add_rewrite_rules'], 10);
         add_action('init', [$this, 'maybe_flush_rewrites'], 11);
@@ -138,8 +142,47 @@ class MultilingualModule implements ModuleInterface
         return !empty($settings['enabled']) && !empty($settings['languages']);
     }
 
+    public function force_default_language_on_insert(int $post_id, \WP_Post $post, bool $update): void
+    {
+        static $inserting = false;
+        if ($inserting) {
+            return;
+        }
+
+        if (!post_type_supports($post->post_type, 'cc-multilingual')) {
+            return;
+        }
+
+        if (!$this->is_active()) {
+            return;
+        }
+
+        if ($post->post_status === 'auto-draft' || $post->post_status === 'draft') {
+            $existing_lang = get_post_meta($post_id, '_cc_language', true);
+            if (empty($existing_lang)) {
+                $settings = $this->get_settings();
+                $default_lang = $settings['default_lang'] ?? 'de';
+
+                $inserting = true;
+                update_post_meta($post_id, '_cc_language', $default_lang);
+
+                // Also ensure translation group is set immediately so it isn't orphaned
+                if (!get_post_meta($post_id, '_cc_translation_group', true)) {
+                    update_post_meta($post_id, '_cc_translation_group', wp_generate_uuid4());
+                }
+                $inserting = false;
+            }
+        }
+    }
+
     public function handle_post_save(int $post_id, \WP_Post $post): void
     {
+        // Prevent infinite loops during cross-language term sync
+        static $syncing = false;
+        if ($syncing) {
+            return;
+        }
+
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)
             return;
         if ($post->post_status === 'auto-draft' || $post->post_type === 'revision')
@@ -185,6 +228,97 @@ class MultilingualModule implements ModuleInterface
                 clean_post_cache($post_id);
             }
         }
+
+        // Synchronize taxonomy terms across translated posts
+        $syncing = true;
+        try {
+            $post_group_id = get_post_meta($post_id, '_cc_translation_group', true);
+            if ($post_group_id) {
+                $translations = $this->translation_manager->get_translations($post_group_id);
+                if (!empty($translations) && count($translations) > 1) {
+                    $groupsByTax = $this->cc_get_selected_term_groups($post_id);
+                    foreach ($translations as $lang => $translated_post_id) {
+                        if ($translated_post_id === $post_id) {
+                            continue;
+                        }
+                        $this->cc_set_terms_for_post_from_groups($translated_post_id, $lang, $groupsByTax);
+                    }
+                }
+            }
+        } finally {
+            $syncing = false;
+        }
+    }
+
+    public function cc_get_selected_term_groups(int $post_id): array
+    {
+        $taxonomies = get_taxonomies(['public' => true], 'objects');
+        $managed_taxonomies = [];
+        foreach ($taxonomies as $tax) {
+            if ($tax->show_ui) {
+                $managed_taxonomies[] = $tax->name;
+            }
+        }
+
+        $assigned_groups = [];
+        foreach ($managed_taxonomies as $tax_name) {
+            $terms = get_the_terms($post_id, $tax_name);
+            $assigned_groups[$tax_name] = [];
+
+            if (!empty($terms) && !is_wp_error($terms)) {
+                foreach ($terms as $term) {
+                    $term_group = get_term_meta($term->term_id, '_cc_translation_group', true);
+                    if ($term_group) {
+                        $assigned_groups[$tax_name][] = $term_group;
+                    }
+                }
+                $assigned_groups[$tax_name] = array_unique($assigned_groups[$tax_name]);
+            }
+        }
+
+        return $assigned_groups;
+    }
+
+    public function cc_terms_for_language_from_groups(string $taxonomy, string $lang, array $groupIds): array
+    {
+        if (empty($groupIds)) {
+            return [];
+        }
+
+        $target_term_ids = [];
+        $tax_terms = get_terms([
+            'taxonomy' => $taxonomy,
+            'hide_empty' => false,
+            'meta_query' => [
+                'relation' => 'AND',
+                [
+                    'key' => '_cc_translation_group',
+                    'value' => $groupIds,
+                    'compare' => 'IN'
+                ],
+                [
+                    'key' => '_cc_language',
+                    'value' => $lang,
+                    'compare' => '='
+                ]
+            ]
+        ]);
+
+        if (!is_wp_error($tax_terms) && !empty($tax_terms)) {
+            foreach ($tax_terms as $tt) {
+                $target_term_ids[] = (int) $tt->term_id;
+            }
+        }
+
+        return $target_term_ids;
+    }
+
+    public function cc_set_terms_for_post_from_groups(int $post_id, string $lang, array $groupsByTax): void
+    {
+        foreach ($groupsByTax as $tax_name => $groups) {
+            $target_term_ids = $this->cc_terms_for_language_from_groups($tax_name, $lang, $groups);
+            wp_set_object_terms($post_id, $target_term_ids, $tax_name, false);
+        }
     }
 
 
@@ -204,6 +338,10 @@ class MultilingualModule implements ModuleInterface
         if (is_wp_error($new_id)) {
             wp_die($new_id->get_error_message());
         }
+
+        // Sync term groups immediately on translation creation
+        $groupsByTax = $this->cc_get_selected_term_groups($source_id);
+        $this->cc_set_terms_for_post_from_groups($new_id, $target_lang, $groupsByTax);
 
         // If a redirect_to was provided (e.g. pointing back to the list table), use it;
         // otherwise fall back to the edit screen for the new translation.

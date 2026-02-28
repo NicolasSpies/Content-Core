@@ -223,6 +223,11 @@ class LanguageListColumns
                 [
                     'key' => '_cc_language',
                     'compare' => 'NOT EXISTS'
+                ],
+                [
+                    'key' => '_cc_language',
+                    'value' => '',
+                    'compare' => '='
                 ]
             ];
         } else {
