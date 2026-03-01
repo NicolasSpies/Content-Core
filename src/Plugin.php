@@ -203,7 +203,7 @@ class Plugin
      */
     public function get_version(): string
     {
-        return '1.0.7';
+        return '1.6.0';
     }
 
     /**

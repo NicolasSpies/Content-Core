@@ -11,18 +11,18 @@
     const __ = (wp.i18n && wp.i18n.__) ? wp.i18n.__ : function (s) { return s; };
 
     const config = window.CC_SITE_SETTINGS;
-    if (!config || !config.restBase) {
+    if (!config || !config.restBase || !config.nonce) {
         document.addEventListener('DOMContentLoaded', function () {
-            const root = document.getElementById('cc-site-settings-root');
+            const root = document.getElementById('cc-site-settings-react-root');
             if (root) {
-                root.innerHTML = '<div class="notice notice-error"><p><strong>Content Core Error:</strong> JS Configuration object (CC_SITE_SETTINGS) is missing or incomplete. The React application cannot mount. Please check if your theme properly calls wp_head() and wp_footer(), or if a caching/optimization plugin is blocking script localization.</p></div>';
+                root.innerHTML = '<div class="notice notice-error" style="margin: 20px 0;"><p><strong>Content Core config missing.</strong> Assets not localized. Please check admin enqueue + caching plugins.</p></div>';
             }
         });
         return;
     }
 
     const nonce = config.nonce || '';
-    const restBase = config.restBase;
+    const restBase = config.restBase; // Full URL from wp_localize_script (e.g., .../settings/site)
     const siteUrl = config.siteUrl || '';
     const siteOptionsUrl = config.siteOptionsUrl || '';
 
@@ -54,7 +54,7 @@
                     setError(err.message || __('Failed to load settings.', 'content-core'));
                     setLoading(false);
                 });
-        }, []);
+        }, [nonce]);
 
         useEffect(load, [load]);
 
@@ -697,12 +697,6 @@
         );
     }
 
-    function SiteOptionsTab() {
-        return el('div', { className: 'cc-settings-card' },
-            el('p', null, __('Site Options management will be here.', 'content-core'))
-        );
-    }
-
     // ─── Main App ───────────────────────────────────────────────────────────
 
     function SiteSettingsApp() {
@@ -734,32 +728,35 @@
                 branding: localSettings.branding || {},
             };
 
-            // Strip preview-only _url fields from images & branding before saving
+            // Strip preview-only _url fields from images before saving (backend resolves them)
             const cleanImages = {};
             Object.keys(payload.images).forEach(function (k) {
                 if (!k.endsWith('_url')) cleanImages[k] = payload.images[k];
             });
             payload.images = cleanImages;
 
-            payload.images = cleanImages;
-
-            // We keep branding URLs in the payload as they are handled safely by the backend
-            // and act as useful fallbacks/hints for SVGs and legacy data.
-            payload.branding = localSettings.branding || {};
-
             saveSettings(payload)
-                .then(function () {
+                .then(function (newData) {
                     setSaving(false);
+                    if (newData) {
+                        setSettings(newData);
+                        setLocalSettings(newData);
+                    }
                     setToast({ message: __('Settings saved.', 'content-core'), type: 'success' });
                     setTimeout(function () { setToast(null); }, 4000);
                 })
                 .catch(function (err) {
                     setSaving(false);
+                    let errMsg = __('Save failed.', 'content-core');
+                    if (err && err.message) {
+                        errMsg = err.message;
+                        if (err.code) errMsg += ' (' + err.code + ')';
+                    }
                     setToast({
-                        message: (err && err.message) ? err.message : __('Save failed.', 'content-core'),
+                        message: errMsg,
                         type: 'error'
                     });
-                    setTimeout(function () { setToast(null); }, 6000);
+                    setTimeout(function () { setToast(null); }, 8000);
                 });
         }
 
@@ -799,255 +796,36 @@
                 tabs.map(function (tab) {
                     return el('button', {
                         key: tab.id,
-                        type: 'button',
-                        className: 'nav-tab' + (activeTab === tab.id ? ' nav-tab-active' : ''),
-                        onClick: function () { setActiveTab(tab.id); },
+                        className: 'cc-tab-btn' + (activeTab === tab.id ? ' is-active' : ''),
+                        onClick: function () { setActiveTab(tab.id); }
                     }, tab.label);
                 })
             ),
 
-            // Tab content
-            activeTab === 'seo' && el(SeoTab, {
-                settings: localSettings,
-                onChange: handleChange,
-            }),
-            activeTab === 'images' && el(SiteImagesTab, {
-                settings: localSettings,
-                onChange: handleChange,
-            }),
-            activeTab === 'cookie' && el(CookieTab, {
-                settings: localSettings,
-                onChange: handleChange,
-            }),
-            activeTab === 'branding' && el(BrandingTab, {
-                settings: localSettings,
-                onChange: handleChange,
-            }),
+            // Content
+            activeTab === 'seo' && el(SeoTab, { settings: localSettings, onChange: handleChange }),
+            activeTab === 'images' && el(SiteImagesTab, { settings: localSettings, onChange: handleChange }),
+            activeTab === 'cookie' && el(CookieTab, { settings: localSettings, onChange: handleChange }),
+            activeTab === 'branding' && el(BrandingTab, { settings: localSettings, onChange: handleChange }),
             activeTab === 'site-options' && el(SiteOptionsTab),
 
-            // Save button
-            el('div', { className: 'cc-react-save-row' },
+            // Footer / Actions
+            activeTab !== 'site-options' && el('div', { className: 'cc-settings-footer' },
                 el('button', {
-                    type: 'button',
-                    className: 'button button-primary button-large',
+                    className: 'button button-primary',
                     disabled: saving,
                     onClick: handleSave,
-                },
-                    saving
-                        ? el(Fragment, null, el('span', { className: 'spinner is-active', style: { float: 'none', marginRight: '6px', verticalAlign: 'middle' } }), __('Saving…', 'content-core'))
-                        : __('Save Settings', 'content-core')
-                )
+                }, saving ? __('Saving...', 'content-core') : __('Save Settings', 'content-core')),
+                saving && el('span', { className: 'spinner is-active', style: { float: 'none', marginLeft: '10px' } })
             )
         );
     }
 
-    // ─── Diagnostics App ──────────────────────────────────────────────────────
-
-    function DiagnosticsApp() {
-        const [log, setLog] = useState(null);
-        const [loading, setLoading] = useState(true);
-        const [error, setError] = useState(null);
-        const [runningFix, setRunningFix] = useState(null);
-        const diagnosticsRestBase = config.diagnosticsRestBase;
-
-        const runChecks = useCallback(function () {
-            setLoading(true);
-            setError(null);
-            apiFetch({
-                url: diagnosticsRestBase + '/run',
-                method: 'POST',
-                headers: { 'X-WP-Nonce': nonce },
-            }).then(function (res) {
-                setLog(res.log || []);
-                setLoading(false);
-            }).catch(function (err) {
-                setError(err.message || __('Failed to run diagnostics.', 'content-core'));
-                setLoading(false);
-            });
-        }, [diagnosticsRestBase]);
-
-        useEffect(function () {
-            runChecks();
-        }, [runChecks]);
-
-        const applyFix = function (issue) {
-            if (!confirm(__('Are you sure you want to attempt this fix? It is recommended to have a backup.', 'content-core'))) return;
-            setRunningFix(issue.issue_id);
-            apiFetch({
-                url: diagnosticsRestBase + '/fix',
-                method: 'POST',
-                headers: { 'X-WP-Nonce': nonce },
-                data: {
-                    check_id: issue.check_id,
-                    issue_id: issue.issue_id,
-                    context: issue.context
-                }
-            }).then(function (res) {
-                setLog(res.log || []);
-                setRunningFix(null);
-                alert(__('Fix applied successfully.', 'content-core'));
-            }).catch(function (err) {
-                setRunningFix(null);
-                alert((err && err.message) ? err.message : __('Fix failed.', 'content-core'));
-            });
-        };
-
-        const clearResolved = function () {
-            if (!confirm(__('Clear resolved entries from the log?', 'content-core'))) return;
-            apiFetch({
-                url: diagnosticsRestBase + '/clear-resolved',
-                method: 'POST',
-                headers: { 'X-WP-Nonce': nonce },
-            }).then(function (res) {
-                setLog(res.log || []);
-            }).catch(function (err) {
-                alert((err && err.message) ? err.message : __('Failed to clear.', 'content-core'));
-            });
-        };
-
-        const clearAll = function () {
-            if (!confirm(__('Are you sure you want to delete ALL log entries?', 'content-core'))) return;
-            apiFetch({
-                url: diagnosticsRestBase + '/clear-all',
-                method: 'POST',
-                headers: { 'X-WP-Nonce': nonce },
-            }).then(function (res) {
-                setLog(res.log || []);
-            }).catch(function (err) {
-                alert((err && err.message) ? err.message : __('Failed to clear all.', 'content-core'));
-            });
-        };
-
-        if (error) {
-            return el('div', { className: 'notice notice-error cc-settings-card', style: { padding: '24px' } },
-                el('p', null, error),
-                el('button', { className: 'button', onClick: runChecks }, __('Retry', 'content-core'))
-            );
+    document.addEventListener('DOMContentLoaded', function () {
+        const root = document.getElementById('cc-site-settings-react-root');
+        if (root) {
+            wp.element.render(el(SiteSettingsApp), root);
         }
-
-        if (loading && !log) {
-            return el('div', { style: { padding: '40px', textAlign: 'center', color: '#646970' } },
-                el('span', { className: 'spinner is-active', style: { float: 'none', margin: '0 8px 0 0' } }),
-                __('Running Integrity Checks…', 'content-core')
-            );
-        }
-
-        const activeIssues = (log || []).filter(function (i) { return i.status === 'active'; });
-        const resolvedIssues = (log || []).filter(function (i) { return i.status === 'resolved'; });
-
-        return el('div', { className: 'cc-diagnostics-container' },
-            el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' } },
-                el('h2', { style: { margin: '0 0 10px', fontSize: '18px', fontWeight: 600 } }, __('Health Self-Test', 'content-core')),
-                el('div', { style: { display: 'flex', gap: '8px' } },
-                    el('button', { className: 'button', style: { color: '#d63638', borderColor: '#d63638' }, onClick: clearAll, disabled: (!log || log.length === 0) }, __('Clear All', 'content-core')),
-                    el('button', { className: 'button', onClick: clearResolved, disabled: resolvedIssues.length === 0 }, __('Clear Resolved', 'content-core')),
-                    el('button', { className: 'button button-primary', onClick: runChecks, disabled: loading },
-                        loading ? __('Running…', 'content-core') : __('Run Checks Again', 'content-core')
-                    )
-                )
-            ),
-
-            activeIssues.length === 0
-                ? el('div', { className: 'notice notice-success inline', style: { margin: '0 0 20px', padding: '12px', display: 'flex', alignItems: 'center', gap: '8px', borderLeftColor: '#00a32a', background: '#fff' } },
-                    el('span', { className: 'dashicons dashicons-yes-alt', style: { color: '#00a32a' } }),
-                    el('span', { style: { fontWeight: 600 } }, __('No active issues detected. System integrity is solid.', 'content-core'))
-                )
-                : el('div', { className: 'notice notice-warning inline', style: { margin: '0 0 20px', padding: '12px', display: 'flex', alignItems: 'center', gap: '8px', borderLeftColor: '#dba617', background: '#fff' } },
-                    el('span', { className: 'dashicons dashicons-warning', style: { color: '#dba617' } }),
-                    el('span', { style: { fontWeight: 600 } }, activeIssues.length + ' ' + __('active issue(s) detected.', 'content-core'))
-                ),
-
-            activeIssues.length > 0 && el('div', { className: 'cc-settings-card', style: { marginBottom: '20px' } },
-                el('h3', { className: 'cc-card-title', style: { borderBottom: '1px solid #dcdcde', paddingBottom: '10px', marginBottom: '16px' } }, __('Active Issues', 'content-core')),
-                activeIssues.map(function (issue) {
-                    return el('div', { key: issue.issue_id, style: { background: '#f6f7f7', border: '1px solid #c3c4c7', borderRadius: '6px', padding: '16px', marginBottom: '12px' } },
-                        el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' } },
-                            el('div', null,
-                                el('div', { style: { fontWeight: 600, fontSize: '14px', marginBottom: '6px' } }, issue.message),
-                                el('div', { style: { fontSize: '12px', color: '#646970', fontFamily: 'monospace' } },
-                                    'Check: ', issue.check_id
-                                )
-                            ),
-                            issue.can_fix && el('button', {
-                                className: 'button button-secondary',
-                                disabled: runningFix === issue.issue_id,
-                                onClick: function () { applyFix(issue); }
-                            }, runningFix === issue.issue_id ? __('Fixing…', 'content-core') : __('Fix', 'content-core'))
-                        )
-                    );
-                })
-            ),
-
-            resolvedIssues.length > 0 && el('div', { className: 'cc-settings-card' },
-                el('h3', { className: 'cc-card-title', style: { borderBottom: '1px solid #dcdcde', paddingBottom: '10px', marginBottom: '16px' } }, __('Recently Resolved', 'content-core')),
-                resolvedIssues.map(function (issue) {
-                    return el('div', { key: issue.issue_id, style: { padding: '8px 0', borderBottom: '1px solid #f0f0f1', fontSize: '13px', color: '#646970', display: 'flex', alignItems: 'center' } },
-                        el('span', { className: 'dashicons dashicons-yes', style: { color: '#00a32a', fontSize: '16px', width: '16px', height: '16px', marginRight: '6px' } }),
-                        el('span', null, issue.message)
-                    );
-                })
-            )
-        );
-    }
-
-    // ─── Mount ──────────────────────────────────────────────────────────────
-
-    function mount() {
-        const settingsRoot = document.getElementById('cc-site-settings-react-root');
-        const diagnosticsRoot = document.getElementById('cc-diagnostics-react-root');
-        if (!settingsRoot && !diagnosticsRoot) return;
-
-        // Inject CSS
-        const style = document.createElement('style');
-        style.textContent = `
-            #cc-site-settings-react-root {
-                max-width: 900px;
-            }
-            .cc-settings-card {
-                background: #fff;
-                border: 1px solid #eef0f2;
-                border-radius: 12px;
-                padding: 24px;
-                margin-bottom: 20px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-            }
-            .cc-settings-card .form-table th {
-                width: 240px;
-                font-weight: 500;
-                color: #1e293b;
-            }
-            .cc-settings-card input[type=text], 
-            .cc-settings-card input[type=url], 
-            .cc-settings-card textarea {
-                border-color: #cbd5e1;
-                border-radius: 6px;
-                box-shadow: none;
-            }
-            .cc-settings-card input:focus, 
-            .cc-settings-card textarea:focus {
-                border-color: #2271b1;
-                box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.1);
-                outline: none;
-            }
-            #cc-site-settings-react-root .nav-tab-active {
-                border-bottom: 2px solid #2271b1 !important;
-                background: none !important;
-            }
-        `;
-        document.head.appendChild(style);
-
-        if (settingsRoot) {
-            wp.element.render(el(SiteSettingsApp), settingsRoot);
-        }
-        if (diagnosticsRoot) {
-            wp.element.render(el(DiagnosticsApp), diagnosticsRoot);
-        }
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', mount);
-    } else {
-        mount();
-    }
+    });
 
 })();

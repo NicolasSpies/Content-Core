@@ -133,42 +133,80 @@ class SettingsModule implements ModuleInterface
 
     public function enqueue_settings_assets(string $hook): void
     {
-        $ml = \ContentCore\Plugin::get_instance()->get_module('multilingual');
+        $plugin = \ContentCore\Plugin::get_instance();
+        $ml = $plugin->get_module('multilingual');
         $catalog = ($ml instanceof \ContentCore\Modules\Multilingual\MultilingualModule) ? $ml::get_language_catalog() : [];
 
-        if (strpos($hook, 'cc-settings') !== false || strpos($hook, 'cc-site-settings') !== false || strpos($hook, 'cc-visibility') !== false || strpos($hook, 'cc-media') !== false || strpos($hook, 'cc-redirect') !== false || strpos($hook, 'cc-multilingual') !== false || strpos($hook, 'cc-seo') !== false || strpos($hook, 'cc-site-images') !== false || strpos($hook, 'cc-cookie-banner') !== false || strpos($hook, 'cc-branding') !== false || strpos($hook, 'cc-diagnostics') !== false) {
-            wp_enqueue_media();
-            wp_enqueue_script('jquery-ui-sortable');
+        $screen = get_current_screen();
+        if (!$screen)
+            return;
 
-            wp_enqueue_style(
-                'cc-settings-css',
-                CONTENT_CORE_PLUGIN_URL . 'assets/css/settings.css',
-                [],
-                \CONTENT_CORE_VERSION
-            );
+        // More robust check: use screen ID instead of hook name which can vary
+        $is_cc_settings = (strpos($screen->id, 'cc-') !== false || strpos($screen->id, 'content-core') !== false);
 
-            wp_enqueue_script(
-                'cc-settings-js',
-                CONTENT_CORE_PLUGIN_URL . 'assets/js/settings.js',
-                ['jquery', 'jquery-ui-sortable'],
-                \CONTENT_CORE_VERSION,
-                true
-            );
-
-            wp_localize_script('cc-settings-js', 'CC_SETTINGS', [
-                'catalog' => $catalog,
-                'strings' => [
-                    'langAdded' => __('Language already added.', 'content-core'),
-                    'confirmRemoveLang' => __('Remove this language?', 'content-core'),
-                    'selectFlag' => __('Select Flag Image', 'content-core'),
-                    'useImage' => __('Use this image', 'content-core'),
-                    'selectOGImage' => __('Select Default OG Image', 'content-core'),
-                ]
-            ]);
+        if (!$is_cc_settings) {
+            return;
         }
 
-        if (strpos($hook, 'cc-site-settings') !== false || strpos($hook, 'cc-multilingual') !== false || strpos($hook, 'cc-seo') !== false || strpos($hook, 'cc-site-images') !== false || strpos($hook, 'cc-cookie-banner') !== false || strpos($hook, 'cc-branding') !== false || strpos($hook, 'cc-diagnostics') !== false) {
-            // Enqueue wp-element (React), wp-api-fetch, wp-i18n — all bundled with WordPress
+        // Generic settings UI assets (shared)
+        wp_enqueue_media();
+        wp_enqueue_script('jquery-ui-sortable');
+
+        wp_enqueue_style(
+            'cc-settings-css',
+            CONTENT_CORE_PLUGIN_URL . 'assets/css/settings.css',
+            [],
+            \CONTENT_CORE_VERSION
+        );
+
+        wp_enqueue_script(
+            'cc-settings-js',
+            CONTENT_CORE_PLUGIN_URL . 'assets/js/settings.js',
+            ['jquery', 'jquery-ui-sortable'],
+            \CONTENT_CORE_VERSION,
+            true
+        );
+
+        $rest_base = rest_url('content-core/v1/settings');
+        wp_localize_script('cc-settings-js', 'CC_SETTINGS', [
+            'restUrl' => $rest_base,
+            'nonce' => wp_create_nonce('wp_rest'),
+            'catalog' => $catalog,
+            'strings' => [
+                'langAdded' => __('Language already added.', 'content-core'),
+                'confirmRemoveLang' => __('Remove this language?', 'content-core'),
+                'selectFlag' => __('Select Flag Image', 'content-core'),
+                'useImage' => __('Use this image', 'content-core'),
+                'selectOGImage' => __('Select Default OG Image', 'content-core'),
+            ]
+        ]);
+
+        // Enqueue the React Application for Site Settings, Multilingual, SEO, etc.
+        // We ensure it is loaded on any page where the React Root is present.
+        $react_pages = [
+            'cc-site-settings',
+            'cc-multilingual',
+            'cc-seo',
+            'cc-site-images',
+            'cc-cookie-banner',
+            'cc-branding',
+            'cc-diagnostics',
+            'cc-site-options',
+            'cc-visibility',
+            'cc-media',
+            'cc-redirect',
+            'cc-manage-terms'
+        ];
+
+        $should_load_react = false;
+        foreach ($react_pages as $page) {
+            if (strpos($hook, $page) !== false) {
+                $should_load_react = true;
+                break;
+            }
+        }
+
+        if ($should_load_react) {
             wp_enqueue_script(
                 'cc-site-settings-app',
                 plugins_url('assets/js/site-settings-app.js', \CONTENT_CORE_PLUGIN_FILE),
@@ -192,30 +230,15 @@ class SettingsModule implements ModuleInterface
                 $active_tab = 'branding';
             }
 
-            $rest_base = rest_url('content-core/v1/settings');
-
             wp_localize_script('cc-site-settings-app', 'CC_SITE_SETTINGS', [
                 'nonce' => wp_create_nonce('wp_rest'),
                 'restBase' => $rest_base . '/site',
                 'diagnosticsRestBase' => rest_url('content-core/v1/diagnostics'),
-                'siteUrl' => home_url('/'),
+                'siteUrl' => untrailingslashit(home_url()),
                 'defaultTitle' => get_bloginfo('name'),
                 'defaultDesc' => get_bloginfo('description'),
                 'siteOptionsUrl' => admin_url('admin.php?page=cc-site-options'),
                 'activeTab' => $active_tab,
-            ]);
-
-            wp_localize_script('cc-settings-js', 'CC_SETTINGS', [
-                'catalog' => $catalog,
-                'restUrl' => $rest_base,
-                'nonce' => wp_create_nonce('wp_rest'),
-                'strings' => [
-                    'langAdded' => __('Language already added.', 'content-core'),
-                    'confirmRemoveLang' => __('Remove this language?', 'content-core'),
-                    'selectFlag' => __('Select Flag Image', 'content-core'),
-                    'useImage' => __('Use this image', 'content-core'),
-                    'selectOGImage' => __('Select Default OG Image', 'content-core'),
-                ]
             ]);
 
             // Register and localize the Site Options Schema Editor JS
@@ -305,53 +328,7 @@ class SettingsModule implements ModuleInterface
         exit;
     }
 
-    public function handle_frontend_redirect(): void
-    {
-        $defaults = $this->registry->get_defaults(self::REDIRECT_KEY);
-        $settings = get_option(self::REDIRECT_KEY, $defaults);
 
-        if (empty($settings['enabled'])) {
-            return;
-        }
-
-        // ── Exclusions ──
-        $excl = $settings['exclusions'] ?? [];
-        if (!empty($excl['admin']) && is_admin())
-            return;
-        if (!empty($excl['ajax']) && wp_doing_ajax())
-            return;
-        if (!empty($excl['cron']) && wp_doing_cron())
-            return;
-        if (!empty($excl['rest']) && defined('REST_REQUEST') && REST_REQUEST)
-            return;
-        if (!empty($excl['cli']) && defined('WP_CLI') && WP_CLI)
-            return;
-
-        // ── Path Matching ──
-        $from_path = $settings['from_path'] ?? '/';
-        $current_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-
-        if ($current_path !== $from_path) {
-            return;
-        }
-
-        $target = $settings['target'] ?? '/wp-admin';
-        $status = intval($settings['status_code'] ?? 302);
-
-        // Prevent redirect loop
-        if ($target === $from_path) {
-            return;
-        }
-
-        // ── Query String Pass Through ──
-        if (!empty($settings['pass_query']) && !empty($_SERVER['QUERY_STRING'])) {
-            $separator = (strpos($target, '?') !== false) ? '&' : '?';
-            $target .= $separator . $_SERVER['QUERY_STRING'];
-        }
-
-        wp_safe_redirect($target, $status);
-        exit;
-    }
 
     /**
      * Filter: upload_size_limit
@@ -392,7 +369,11 @@ class SettingsModule implements ModuleInterface
             'cc-redirect',
             'cc-seo',
             'cc-site-images',
-            'cc-cookie-banner'
+            'cc-cookie-banner',
+            'cc-branding',
+            'cc-diagnostics',
+            'cc-site-options',
+            'cc-manage-terms'
         ];
         return $pagenow === 'admin.php' && in_array($page, $valid_pages, true);
     }

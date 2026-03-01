@@ -203,7 +203,11 @@ jQuery(function ($) {
 
     // ── REST Saving Implementation ──
     const $form = $('.cc-settings-tabs, .cc-settings-single-page form').last().closest('form');
-    if ($form.length && typeof CC_SETTINGS !== 'undefined' && CC_SETTINGS.restUrl) {
+    if ($form.length && typeof CC_SETTINGS !== 'undefined') {
+        if (!CC_SETTINGS.restUrl || !CC_SETTINGS.nonce) {
+            $form.before('<div class="notice notice-error" style="margin: 20px 0;"><p><strong>Content Core config missing.</strong> Assets not localized. Please check admin enqueue + caching plugins.</p></div>');
+            return;
+        }
         $form.on('submit', function (e) {
             const $btn = $(document.activeElement);
             const isReset = $btn.attr('name') === 'cc_reset_menu';
@@ -350,7 +354,7 @@ jQuery(function ($) {
             }
 
             wp.apiFetch({
-                path: 'cc/v1/settings/' + moduleKey,
+                path: 'content-core/v1/settings/' + moduleKey,
                 method: 'POST',
                 data: isReset ? { reset: true } : data,
                 headers: { 'X-WP-Nonce': CC_SETTINGS.nonce }

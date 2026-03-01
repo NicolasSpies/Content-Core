@@ -39,6 +39,14 @@ class RestApiModule implements ModuleInterface
     {
         $namespace = \ContentCore\Plugin::REST_NAMESPACE . '/' . \ContentCore\Plugin::REST_VERSION;
 
+        // Base namespace index route - helps discovery and adds explicit permission check
+        register_rest_route($namespace, '/', [
+            'methods' => \WP_REST_Server::READABLE,
+            'callback' => function () {
+                return ['contentCore' => 'v1', 'status' => 'connected']; },
+            'permission_callback' => [$this, 'check_read_permission'],
+        ]);
+
         // Single post endpoint
         register_rest_route($namespace, '/post/(?P<type>[a-zA-Z0-9_-]+)/(?P<id>\d+)', [
             'methods' => \WP_REST_Server::READABLE,
@@ -66,7 +74,7 @@ class RestApiModule implements ModuleInterface
 
         // Global SEO endpoint
         register_rest_route($namespace, '/seo', [
-            'methods' => \WP_REST_Server::READABLE,
+            'methods' => ['GET', 'POST', 'PUT'],
             'callback' => [$this, 'get_v1_seo'],
             'permission_callback' => '__return_true', // Open to everyone
         ]);
@@ -127,7 +135,7 @@ class RestApiModule implements ModuleInterface
 
         // Cookie banner endpoint
         register_rest_route($namespace, '/cookies', [
-            'methods' => \WP_REST_Server::READABLE,
+            'methods' => ['GET', 'POST', 'PUT'],
             'callback' => [$this, 'get_v1_cookies'],
             'permission_callback' => '__return_true', // Open to everyone
             'args' => [
@@ -141,7 +149,7 @@ class RestApiModule implements ModuleInterface
 
         // Site options endpoint (legacy – business options by language)
         register_rest_route($namespace, '/options/site', [
-            'methods' => \WP_REST_Server::READABLE,
+            'methods' => ['GET', 'POST', 'PUT'],
             'callback' => [$this, 'get_v1_site_options'],
             'permission_callback' => '__return_true', // Open to everyone
             'args' => [
@@ -158,19 +166,7 @@ class RestApiModule implements ModuleInterface
             ],
         ]);
 
-        // ── Admin Site Settings — unified GET / POST ─────────────────────────
-        register_rest_route($namespace, '/settings/site', [
-            [
-                'methods' => \WP_REST_Server::READABLE,
-                'callback' => [$this, 'get_admin_site_settings'],
-                'permission_callback' => [$this, 'check_admin_permission'],
-            ],
-            [
-                'methods' => \WP_REST_Server::CREATABLE,
-                'callback' => [$this, 'update_admin_site_settings'],
-                'permission_callback' => [$this, 'check_admin_permission'],
-            ],
-        ]);
+        // Note: admin /settings/* routes are registered in SettingsRestController.php
 
         if (class_exists('\\ContentCore\\Admin\\Rest\\ErrorLogRestController') && isset($GLOBALS['cc_error_logger'])) {
             $error_rest = new \ContentCore\Admin\Rest\ErrorLogRestController($GLOBALS['cc_error_logger'], $namespace);
@@ -780,263 +776,7 @@ class RestApiModule implements ModuleInterface
 
     // ─── Admin Site Settings — unified key: cc_site_settings ──────────────
 
-    /**
-     * Permission check: only administrators.
-     */
-    public function check_admin_permission(\WP_REST_Request $request): bool
-    {
-        return current_user_can('manage_options');
-    }
 
-    /**
-     * GET /content-core/v1/settings/site
-     * Returns the full cc_site_settings option, enriching image IDs with resolved URLs.
-     */
-    public function get_admin_site_settings(\WP_REST_Request $request): \WP_REST_Response
-    {
-        $defaults = [
-            'seo' => [
-                'title' => '',
-                'description' => '',
-            ],
-            'images' => [
-                'social_icon_id' => 0,
-                'og_default_id' => 0,
-            ],
-            'cookie' => [
-                'enabled' => false,
-                'bannerTitle' => '',
-                'bannerText' => '',
-                'policyUrl' => '',
-                'labels' => [
-                    'acceptAll' => 'Accept All',
-                    'rejectAll' => 'Reject All',
-                    'save' => 'Save Settings',
-                    'settings' => 'Preferences',
-                ],
-                'categories' => [
-                    'analytics' => false,
-                    'marketing' => false,
-                    'preferences' => false,
-                ],
-                'integrations' => [
-                    'ga4MeasurementId' => '',
-                    'gtmContainerId' => '',
-                    'metaPixelId' => '',
-                ],
-                'behavior' => [
-                    'regionMode' => 'eu_only',
-                    'storage' => 'localStorage',
-                    'ttlDays' => 365,
-                ],
-            ],
-        ];
-
-        $saved = get_option('cc_site_settings', []);
-        if (!is_array($saved))
-            $saved = [];
-
-        $data = array_replace_recursive($defaults, $saved);
-
-        // Resolve image IDs → preview URLs (for React display only — not persisted)
-        $image_keys = ['social_icon_id', 'og_default_id'];
-        foreach ($image_keys as $key) {
-            $id = absint($data['images'][$key] ?? 0);
-            if ($id > 0) {
-                $url = wp_get_attachment_image_url($id, 'medium') ?: wp_get_attachment_url($id);
-                $data['images'][$key . '_url'] = $url ?: '';
-            } else {
-                $data['images'][$key . '_url'] = '';
-            }
-        }
-
-        // Cast booleans
-        $data['cookie']['enabled'] = (bool) $data['cookie']['enabled'];
-        $data['cookie']['categories']['analytics'] = (bool) $data['cookie']['categories']['analytics'];
-        $data['cookie']['categories']['marketing'] = (bool) $data['cookie']['categories']['marketing'];
-        $data['cookie']['categories']['preferences'] = (bool) $data['cookie']['categories']['preferences'];
-        $data['cookie']['behavior']['ttlDays'] = (int) $data['cookie']['behavior']['ttlDays'];
-
-        // Add branding settings
-        $branding_defaults = [
-            'enabled' => false,
-            'exclude_admins' => true,
-            'login_logo' => '',
-            'login_bg_color' => '#f0f0f1',
-            'login_btn_color' => '#2271b1',
-            'login_logo_link_url' => '',
-            'admin_bar_logo' => '',
-            'admin_bar_logo_url' => '',
-            'admin_bar_logo_link_url' => '',
-            'use_site_icon_for_admin_bar' => false,
-            'custom_primary_color' => '',
-            'custom_accent_color' => '',
-            'remove_wp_mentions' => false,
-            'custom_footer_text' => '',
-        ];
-        $branding_saved = get_option('cc_branding_settings', []);
-        if (!is_array($branding_saved))
-            $branding_saved = [];
-        $data['branding'] = array_merge($branding_defaults, $branding_saved);
-
-        // Resolve branding image URLs
-        $branding_img_keys = ['login_logo', 'admin_bar_logo'];
-        foreach ($branding_img_keys as $key) {
-            $val = $data['branding'][$key] ?? '';
-            if (is_numeric($val) && (int) $val > 0) {
-                // Resolved URL for frontend picker preview
-                $url = wp_get_attachment_image_url($val, 'medium') ?: wp_get_attachment_url($val);
-                $data['branding'][$key . '_url'] = $url ?: '';
-            } elseif ($val && is_string($val)) {
-                // Legacy support for pure URL strings
-                $data['branding'][$key . '_url'] = $val;
-            } else {
-                $data['branding'][$key . '_url'] = '';
-            }
-        }
-
-        // Add site icon (favicon) URL for reference
-        $site_icon_id = get_option('site_icon');
-        $data['branding']['site_icon_url'] = $site_icon_id ? wp_get_attachment_image_url($site_icon_id, 'full') : '';
-
-        return new \WP_REST_Response($data, 200);
-    }
-
-    /**
-     * POST /content-core/v1/settings/site
-     * Accepts partial or full cc_site_settings and persists to DB.
-     */
-    public function update_admin_site_settings(\WP_REST_Request $request): \WP_REST_Response
-    {
-        $body = $request->get_json_params();
-        if (!is_array($body)) {
-            return new \WP_REST_Response(['message' => 'Invalid JSON body.'], 400);
-        }
-
-        // Load existing saved options
-        $existing = get_option('cc_site_settings', []);
-        if (!is_array($existing))
-            $existing = [];
-
-        // ── SEO ──
-        if (isset($body['seo']) && is_array($body['seo'])) {
-            $seo = $body['seo'];
-            $existing['seo'] = [
-                'title' => sanitize_text_field($seo['title'] ?? ''),
-                'description' => sanitize_textarea_field($seo['description'] ?? ''),
-            ];
-        }
-
-        // ── Images ── store IDs only, validate as attachment IDs
-        if (isset($body['images']) && is_array($body['images'])) {
-            $imgs = $body['images'];
-            $image_keys = ['social_icon_id', 'og_default_id'];
-            $saved_imgs = $existing['images'] ?? [];
-            foreach ($image_keys as $key) {
-                if (array_key_exists($key, $imgs)) {
-                    $id = absint($imgs[$key]);
-                    // Accept 0 (remove) or a valid attachment
-                    if ($id === 0 || get_post_type($id) === 'attachment') {
-                        $saved_imgs[$key] = $id;
-                    }
-                }
-            }
-            $existing['images'] = $saved_imgs;
-        }
-
-        // ── Cookie ──
-        if (isset($body['cookie']) && is_array($body['cookie'])) {
-            $cookie = $body['cookie'];
-            $prev_cookie = $existing['cookie'] ?? [];
-            $existing['cookie'] = array_replace_recursive($prev_cookie, [
-                'enabled' => !empty($cookie['enabled']),
-                'bannerTitle' => sanitize_text_field($cookie['bannerTitle'] ?? ''),
-                'bannerText' => sanitize_textarea_field($cookie['bannerText'] ?? ''),
-                'policyUrl' => esc_url_raw($cookie['policyUrl'] ?? ''),
-                'labels' => [
-                    'acceptAll' => sanitize_text_field($cookie['labels']['acceptAll'] ?? ''),
-                    'rejectAll' => sanitize_text_field($cookie['labels']['rejectAll'] ?? ''),
-                    'save' => sanitize_text_field($cookie['labels']['save'] ?? ''),
-                    'settings' => sanitize_text_field($cookie['labels']['settings'] ?? ''),
-                ],
-                'categories' => [
-                    'analytics' => !empty($cookie['categories']['analytics']),
-                    'marketing' => !empty($cookie['categories']['marketing']),
-                    'preferences' => !empty($cookie['categories']['preferences']),
-                ],
-                'integrations' => [
-                    'ga4MeasurementId' => sanitize_text_field($cookie['integrations']['ga4MeasurementId'] ?? ''),
-                    'gtmContainerId' => sanitize_text_field($cookie['integrations']['gtmContainerId'] ?? ''),
-                    'metaPixelId' => sanitize_text_field($cookie['integrations']['metaPixelId'] ?? ''),
-                ],
-                'behavior' => [
-                    'regionMode' => in_array($cookie['behavior']['regionMode'] ?? 'eu_only', ['eu_only', 'global'], true)
-                        ? $cookie['behavior']['regionMode'] : 'eu_only',
-                    'storage' => in_array($cookie['behavior']['storage'] ?? 'localStorage', ['localStorage', 'cookie'], true)
-                        ? $cookie['behavior']['storage'] : 'localStorage',
-                    'ttlDays' => max(1, min(3650, absint($cookie['behavior']['ttlDays'] ?? 365))),
-                ],
-            ]);
-        }
-
-        // ── Branding ──
-        if (isset($body['branding']) && is_array($body['branding'])) {
-            $branding = $body['branding'];
-            $existing_branding = get_option('cc_branding_settings', []);
-            if (!is_array($existing_branding))
-                $existing_branding = [];
-
-            // Intelligent media sanitization: allow IDs or URLs
-            $sanitize_media = function ($val) {
-                if (is_numeric($val) && (int) $val > 0)
-                    return absint($val);
-                if (is_string($val) && !empty($val))
-                    return esc_url_raw($val);
-                return 0;
-            };
-
-            // Mapping of fields to their sanitization functions
-            $fields = [
-                'enabled' => function ($v) {
-                    return !empty($v); },
-                'exclude_admins' => function ($v) {
-                    return !empty($v); },
-                'login_logo' => $sanitize_media,
-                'login_bg_color' => 'sanitize_hex_color',
-                'login_btn_color' => 'sanitize_hex_color',
-                'login_logo_url' => 'esc_url_raw',
-                'login_logo_link_url' => 'esc_url_raw',
-                'admin_bar_logo' => $sanitize_media,
-                'admin_bar_logo_url' => 'esc_url_raw',
-                'admin_bar_logo_link_url' => 'esc_url_raw',
-                'use_site_icon_for_admin_bar' => function ($v) {
-                    return !empty($v); },
-                'custom_primary_color' => 'sanitize_hex_color',
-                'custom_accent_color' => 'sanitize_hex_color',
-                'remove_wp_mentions' => function ($v) {
-                    return !empty($v); },
-                'custom_footer_text' => 'wp_kses_post',
-            ];
-
-            foreach ($fields as $field => $sanitizer) {
-                if (array_key_exists($field, $branding)) {
-                    $val = $branding[$field];
-                    if (is_callable($sanitizer)) {
-                        $existing_branding[$field] = $sanitizer($val);
-                    } elseif (function_exists($sanitizer)) {
-                        $existing_branding[$field] = $sanitizer($val);
-                    }
-                }
-            }
-
-            update_option('cc_branding_settings', $existing_branding);
-        }
-
-        update_option('cc_site_settings', $existing);
-
-        // Return the freshly saved state (including resolved URLs)
-        return $this->get_admin_site_settings($request);
-    }
 
 
     public function get_v1_site_options(\WP_REST_Request $request): \WP_REST_Response

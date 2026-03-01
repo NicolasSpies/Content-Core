@@ -33,6 +33,17 @@ class MultilingualRestHandler
             ];
 
             foreach ($namespaces as $ns) {
+                // Base index protection
+                register_rest_route($ns, '/', [
+                    'methods' => \WP_REST_Server::READABLE,
+                    'callback' => function () use ($ns) {
+                        return ['namespace' => $ns, 'status' => 'active'];
+                    },
+                    'permission_callback' => function () {
+                        return current_user_can('manage_options');
+                    },
+                ]);
+
                 register_rest_route($ns, '/sitemap', [
                     'methods' => 'GET',
                     'callback' => [$this, 'get_sitemap'],
@@ -294,6 +305,8 @@ class MultilingualRestHandler
                 continue;
             $posts = get_posts(['post_type' => $post_type, 'posts_per_page' => -1, 'post_status' => 'publish']);
             foreach ($posts as $post) {
+                if (!is_object($post))
+                    continue;
                 $lang = get_post_meta($post->ID, '_cc_language', true) ?: $default_lang;
                 $sitemap[] = [
                     'url' => get_permalink($post->ID),
@@ -311,6 +324,8 @@ class MultilingualRestHandler
             if (is_wp_error($terms))
                 continue;
             foreach ($terms as $term) {
+                if (!is_object($term))
+                    continue;
                 $lang = get_term_meta($term->term_id, '_cc_language', true) ?: $default_lang;
                 $sitemap[] = [
                     'url' => get_term_link((int) $term->term_id),

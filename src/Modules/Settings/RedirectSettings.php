@@ -93,17 +93,29 @@ class RedirectSettings
      */
     public function handle_frontend_redirect(): void
     {
-        // Absolute early exits for non-frontend contexts
+        // Absolute early exits for core system paths
         if (is_admin())
             return;
-        if (wp_doing_ajax())
+        if (wp_doing_ajax() || strpos($_SERVER['REQUEST_URI'], 'admin-ajax.php') !== false)
             return;
         if (wp_doing_cron())
             return;
-        if (defined('REST_REQUEST') && REST_REQUEST)
-            return;
         if (defined('WP_CLI') && WP_CLI)
             return;
+
+        // Force exclude critical system paths from redirection
+        $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+        if (
+            strpos($request_uri, '/wp-json/') !== false ||
+            strpos($request_uri, 'rest_route=') !== false ||
+            strpos($request_uri, 'admin-ajax.php') !== false ||
+            strpos($request_uri, 'wp-login.php') !== false ||
+            (defined('REST_REQUEST') && REST_REQUEST) ||
+            (defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) ||
+            (function_exists('rest_get_url_prefix') && strpos($request_uri, '/' . rest_get_url_prefix() . '/') !== false)
+        ) {
+            return;
+        }
 
         $settings = $this->module->get_registry()->get(SettingsModule::REDIRECT_KEY);
         if (empty($settings['enabled'])) {
@@ -123,20 +135,30 @@ class RedirectSettings
         if (!empty($excl['cli']) && defined('WP_CLI') && WP_CLI)
             return;
 
-        // ── Path Matching ──
+        // ── Path Matching (Portable / Subdirectory support) ──
         $from_path = $settings['from_path'] ?? '/';
-        $current_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-
-        if ($current_path !== $from_path) {
-            return;
-        }
-
         $target = $settings['target'] ?? '/wp-admin';
         $status = intval($settings['status_code'] ?? 302);
+
+        // Calculate absolute matches based on the WordPress home path
+        $home_path = parse_url(home_url(), PHP_URL_PATH) ?: '';
+        $home_path = untrailingslashit($home_path);
+
+        $abs_from = $home_path . '/' . ltrim($from_path, '/');
+        $current_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+        if ($current_path !== $abs_from) {
+            return;
+        }
 
         // Prevent redirect loop
         if ($target === $from_path) {
             return;
+        }
+
+        // Map target to absolute if it starts with a slash
+        if (strpos($target, '/') === 0) {
+            $target = $home_path . '/' . ltrim($target, '/');
         }
 
         // ── Query String Pass Through ──

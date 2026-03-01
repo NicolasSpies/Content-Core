@@ -16,7 +16,7 @@ class CacheService
         return is_array($actions) ? $actions : [];
     }
 
-    private function update_last_action(string $action, int $count, int $bytes): void
+    public function update_last_action(string $action, int $count, int $bytes): void
     {
         $actions = $this->get_last_actions();
         $actions[$action] = [

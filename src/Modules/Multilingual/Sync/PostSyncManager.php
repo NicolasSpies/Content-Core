@@ -222,7 +222,7 @@ class PostSyncManager
             AND tm_group.meta_value IN ($placeholders)
         ";
 
-        $args = array_merge([$tax_name, $lang], $groups);
+        $args = array_merge([$tax_name, $lang], (array) $groups);
         $results = $wpdb->get_col($wpdb->prepare($query, ...$args));
         return array_map('intval', $results);
     }

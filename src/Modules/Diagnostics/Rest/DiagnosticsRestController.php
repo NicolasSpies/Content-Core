@@ -25,6 +25,13 @@ class DiagnosticsRestController
     {
         $namespace = Plugin::get_instance()->get_rest_namespace() . '/diagnostics';
 
+        register_rest_route($namespace, '/', [
+            'methods' => 'GET',
+            'callback' => function () {
+                return ['module' => 'diagnostics', 'active' => true]; },
+            'permission_callback' => [$this, 'check_permission'],
+        ]);
+
         register_rest_route($namespace, '/run', [
             'methods' => 'POST',
             'callback' => [$this, 'run_checks'],

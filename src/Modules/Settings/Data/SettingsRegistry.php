@@ -51,7 +51,13 @@ class SettingsRegistry
     {
         $defaults = $this->get_defaults($key);
         $settings = get_option($key, $defaults);
-        return is_array($settings) ? array_replace_recursive($defaults, $settings) : $defaults;
+        
+        // Ensure $settings is an array for array_replace_recursive in PHP 8
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+
+        return array_replace_recursive((array) $defaults, (array) $settings);
     }
 
     /**
@@ -74,7 +80,19 @@ class SettingsRegistry
         $sanitized = $this->sanitize($key, $merged);
 
         // 4. Persist
-        return update_option($key, $sanitized);
+        $updated = update_option($key, $sanitized);
+
+        // WP update_option returns false if the value hasn't changed. 
+        // We only want to return false if the validation fails or if there's a database error.
+        // If the schema exists and we got here, we consider it a success if not explicitly failing.
+        // Actually, we can check if the current option value matches $sanitized.
+        if (!$updated && get_option($key) !== $sanitized) {
+            \ContentCore\Logger::error(sprintf('[CC Settings Registry] update_option failed for key: %s', $key));
+            return false;
+        }
+
+        \ContentCore\Logger::debug(sprintf('[CC Settings Registry] Settings saved successfully for key: %s', $key));
+        return true;
     }
 
     /**

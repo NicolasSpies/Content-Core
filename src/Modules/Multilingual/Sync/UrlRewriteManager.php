@@ -41,10 +41,10 @@ class UrlRewriteManager
         $default_slug = $obj->rewrite['slug'] ?? ($post->post_type === 'post' ? '' : $post->post_type);
         $base = $bases[$post->post_type][$lang] ?? $default_slug;
 
-        $home_url = home_url('/');
+        $home_url = untrailingslashit(home_url());
         $slug = $post->post_name;
         $url_path = $lang . '/' . (!empty($base) ? $base . '/' : '') . $slug;
-        return user_trailingslashit($home_url . $url_path);
+        return user_trailingslashit($home_url . '/' . $url_path);
     }
 
     public function cc_filter_page_link(string $post_link, int $post_id): string
@@ -61,7 +61,7 @@ class UrlRewriteManager
         if (!$lang || $lang === $default_lang)
             return $post_link;
 
-        return user_trailingslashit(home_url('/') . $lang . '/' . get_page_uri($post_id));
+        return user_trailingslashit(untrailingslashit(home_url()) . '/' . $lang . '/' . get_page_uri($post_id));
     }
 
 
@@ -75,7 +75,7 @@ class UrlRewriteManager
         if ($lang === $settings['default_lang'])
             return $url;
 
-        $home_url = home_url('/');
+        $home_url = untrailingslashit(home_url());
         $path = str_replace($home_url, '', $url);
         $tax_bases = $settings['taxonomy_bases'] ?? [];
         $tax_obj = get_taxonomy($taxonomy);
@@ -86,7 +86,7 @@ class UrlRewriteManager
             $path = preg_replace('/^' . preg_quote($default_base, '/') . '\//', $localized_base . '/', $path);
         }
 
-        return $home_url . $lang . '/' . $path;
+        return $home_url . '/' . $lang . '/' . $path;
     }
 
     public function cc_add_rewrite_rules(): void

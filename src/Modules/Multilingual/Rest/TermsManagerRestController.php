@@ -36,13 +36,13 @@ class TermsManagerRestController extends BaseRestController
         $base = '/terms-manager';
 
         register_rest_route($this->ns, $base . '/all-taxonomy-groups', [
-            'methods' => 'GET',
+            'methods' => \WP_REST_Server::READABLE,
             'callback' => [$this, 'get_all_taxonomy_groups'],
             'permission_callback' => [$this, 'check_admin_permissions'],
         ]);
 
         register_rest_route($this->ns, $base . '/create', [
-            'methods' => 'POST',
+            'methods' => \WP_REST_Server::EDITABLE,
             'callback' => [$this, 'create_term'],
             'permission_callback' => [$this, 'check_admin_permissions'],
             'args' => [
@@ -53,7 +53,7 @@ class TermsManagerRestController extends BaseRestController
         ]);
 
         register_rest_route($this->ns, $base . '/translate', [
-            'methods' => 'POST',
+            'methods' => \WP_REST_Server::EDITABLE,
             'callback' => [$this, 'create_translation'],
             'permission_callback' => [$this, 'check_admin_permissions'],
             'args' => [
@@ -65,7 +65,7 @@ class TermsManagerRestController extends BaseRestController
         ]);
 
         register_rest_route($this->ns, $base . '/rename', [
-            'methods' => 'POST',
+            'methods' => \WP_REST_Server::EDITABLE,
             'callback' => [$this, 'rename_term'],
             'permission_callback' => [$this, 'check_admin_permissions'],
             'args' => [
@@ -76,7 +76,7 @@ class TermsManagerRestController extends BaseRestController
         ]);
 
         register_rest_route($this->ns, $base . '/remove', [
-            'methods' => 'POST',
+            'methods' => \WP_REST_Server::EDITABLE,
             'callback' => [$this, 'remove_term'],
             'permission_callback' => [$this, 'check_admin_permissions'],
             'args' => [
@@ -86,7 +86,7 @@ class TermsManagerRestController extends BaseRestController
         ]);
 
         register_rest_route($this->ns, $base . '/delete-group', [
-            'methods' => 'POST',
+            'methods' => \WP_REST_Server::EDITABLE,
             'callback' => [$this, 'delete_group'],
             'permission_callback' => [$this, 'check_admin_permissions'],
             'args' => [
@@ -96,7 +96,7 @@ class TermsManagerRestController extends BaseRestController
         ]);
 
         register_rest_route($this->ns, $base . '/reorder', [
-            'methods' => 'POST',
+            'methods' => \WP_REST_Server::EDITABLE,
             'callback' => [$this, 'reorder_terms'],
             'permission_callback' => [$this, 'check_admin_permissions'],
             'args' => [

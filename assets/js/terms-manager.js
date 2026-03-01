@@ -13,15 +13,16 @@
 
     const cfg = window.ccTermsManager;
 
-    if (!cfg || !cfg.restBase) {
+    if (!cfg || !cfg.restBase || !cfg.nonce) {
         $(function () {
-            $('#cc-terms-manager').prepend('<div class="notice notice-error"><p><strong>Content Core Error:</strong> JS Configuration object (ccTermsManager) is missing or incomplete. The Terms Manager cannot initialize. Please check script localization.</p></div>');
+            $('#cc-terms-manager').prepend('<div class="notice notice-error" style="margin: 20px 0;"><p><strong>Content Core config missing.</strong> Assets not localized. Please check admin enqueue + caching plugins.</p></div>');
             $('#cc-tm-accordions').html('<p class="cc-tm-error">Initialization aborted due to missing configuration.</p>');
         });
         return;
     }
 
-    const REST = cfg.restBase;
+    const restPath = 'content-core/v1/terms-manager';
+    const nonce = cfg.nonce;
     const LANGS = cfg.languages || {};
     const DEFAULT = cfg.default || 'de';
     const LANG_KEYS = Object.keys(LANGS); // ordered: default first
@@ -35,14 +36,18 @@
             method: method || 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'X-WP-Nonce': cfg.nonce,
+                'X-WP-Nonce': nonce,
             },
             credentials: 'same-origin',
         };
         if (body) {
             opts.body = JSON.stringify(body);
         }
-        return fetch(REST + path, opts).then(function (res) {
+        // Construct the full URL using cfg.restBase (which already includes the namespace)
+        // and the relative path provided to apiFetch.
+        // Ensure there's only one slash between the base and the path.
+        const fullUrl = cfg.restBase.replace(/\/+$/, '') + '/' + path.replace(/^\/+/, '');
+        return fetch(fullUrl, opts).then(function (res) {
             return res.json().then(function (data) {
                 if (!res.ok) {
                     return Promise.reject(data.error || data.message || 'Server error ' + res.status);

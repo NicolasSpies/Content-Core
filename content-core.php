@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CONTENT_CORE_VERSION', '1.3.4');
+define('CONTENT_CORE_VERSION', '1.6.0');
 define('CONTENT_CORE_PLUGIN_FILE', __FILE__);
 define('CONTENT_CORE_PLUGIN_DIR', plugin_dir_path(CONTENT_CORE_PLUGIN_FILE));
 define('CONTENT_CORE_PLUGIN_URL', plugin_dir_url(CONTENT_CORE_PLUGIN_FILE));
