@@ -58,7 +58,7 @@ class BrandingModule implements ModuleInterface
             $saved = [];
         }
 
-        $this->settings_cache = array_merge($defaults, $saved);
+        $this->settings_cache = array_merge($defaults, (array) $saved);
         return $this->settings_cache;
     }
 

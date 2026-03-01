@@ -28,7 +28,7 @@ class RuntimeAuditRenderer
                     if (strpos($route, '/content-core/v1') === 0) {
                         $methods = [];
                         $has_permission_callback = false;
-                        foreach ($handlers as $handler) {
+                        foreach ((array) $handlers as $handler) {
                             if (!empty($handler['methods']) && is_array($handler['methods'])) {
                                 $methods = array_merge((array) $methods, array_keys((array) $handler['methods']));
                             }
@@ -246,7 +246,7 @@ class RuntimeAuditRenderer
                                 if (strpos($route, '/' . $expected_namespace) === 0) {
                                     $route_found = true;
                                     $methods = [];
-                                    foreach ($handlers as $h) {
+                                    foreach ((array) $handlers as $h) {
                                         if (!empty($h['methods']) && is_array($h['methods'])) {
                                             $methods = array_merge((array) $methods, array_keys((array) $h['methods']));
                                         }

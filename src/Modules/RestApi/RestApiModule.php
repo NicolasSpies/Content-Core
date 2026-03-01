@@ -43,8 +43,9 @@ class RestApiModule implements ModuleInterface
         register_rest_route($namespace, '/', [
             'methods' => \WP_REST_Server::READABLE,
             'callback' => function () {
-                return ['contentCore' => 'v1', 'status' => 'connected']; },
-            'permission_callback' => [$this, 'check_read_permission'],
+                return ['contentCore' => 'v1', 'status' => 'connected'];
+            },
+            'permission_callback' => '__return_true', // Open index for discovery
         ]);
 
         // Single post endpoint

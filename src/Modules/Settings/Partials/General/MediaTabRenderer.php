@@ -33,8 +33,8 @@ class MediaTabRenderer
                         </th>
                         <td>
                             <label class="cc-toggle">
-                                <input type="hidden" name="cc_media[enabled]" value="0">
-                                <input type="checkbox" name="cc_media[enabled]" value="1" <?php
+                                <input type="hidden" name="cc_media_settings[enabled]" value="0">
+                                <input type="checkbox" name="cc_media_settings[enabled]" value="1" <?php
                                 checked($media_settings['enabled']); ?>>
                                 <span class="cc-toggle-slider"></span>
                             </label>
@@ -45,7 +45,7 @@ class MediaTabRenderer
                             <?php _e('Max Width (px)', 'content-core'); ?>
                         </th>
                         <td>
-                            <input type="number" name="cc_media[max_width_px]"
+                            <input type="number" name="cc_media_settings[max_width_px]"
                                 value="<?php echo esc_attr($media_settings['max_width_px']); ?>" class="regular-text" step="1"
                                 min="100">
                             <p class="description">
@@ -58,7 +58,7 @@ class MediaTabRenderer
                             <?php _e('Output Format', 'content-core'); ?>
                         </th>
                         <td>
-                            <select name="cc_media[output_format]" disabled class="regular-text">
+                            <select name="cc_media_settings[output_format]" disabled class="regular-text">
                                 <option value="webp" selected>WebP</option>
                             </select>
                             <p class="description">
@@ -71,7 +71,7 @@ class MediaTabRenderer
                             <?php _e('Quality', 'content-core'); ?>
                         </th>
                         <td>
-                            <input type="number" name="cc_media[quality]"
+                            <input type="number" name="cc_media_settings[quality]"
                                 value="<?php echo esc_attr($media_settings['quality']); ?>" class="small-text" min="1"
                                 max="100">
                             <p class="description">
@@ -84,7 +84,7 @@ class MediaTabRenderer
                             <?php _e('PNG Conversion Mode', 'content-core'); ?>
                         </th>
                         <td>
-                            <select name="cc_media[png_mode]" class="regular-text">
+                            <select name="cc_media_settings[png_mode]" class="regular-text">
                                 <option value="lossless" <?php selected($media_settings['png_mode'], 'lossless'); ?>>
                                     <?php _e('Lossless (High Quality)', 'content-core'); ?>
                                 </option>
@@ -100,8 +100,8 @@ class MediaTabRenderer
                         </th>
                         <td>
                             <label class="cc-toggle">
-                                <input type="hidden" name="cc_media[delete_original]" value="0">
-                                <input type="checkbox" name="cc_media[delete_original]" value="1" <?php
+                                <input type="hidden" name="cc_media_settings[delete_original]" value="0">
+                                <input type="checkbox" name="cc_media_settings[delete_original]" value="1" <?php
                                 checked($media_settings['delete_original']); ?>>
                                 <span class="cc-toggle-slider"></span>
                             </label>
@@ -115,7 +115,8 @@ class MediaTabRenderer
                             <?php _e('Upload Limit (MB)', 'content-core'); ?>
                         </th>
                         <td>
-                            <input type="number" id="cc_media_upload_limit_mb" name="cc_media[upload_limit_mb]"
+                            <input type="number" id="cc_media_settings_upload_limit_mb"
+                                name="cc_media_settings[upload_limit_mb]"
                                 value="<?php echo esc_attr($media_settings['upload_limit_mb']); ?>" class="small-text" min="1"
                                 max="300" step="1" placeholder="25">
                             <p class="description">
@@ -141,6 +142,7 @@ class MediaTabRenderer
                         </td>
                     </tr>
                 </table>
+
             </div>
         </div>
         <?php
