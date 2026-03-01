@@ -28,6 +28,7 @@ class DiagnosticsModule implements ModuleInterface
         $this->registry->register(new Checks\MultilingualIntegrityCheck());
         $this->registry->register(new Checks\SettingsIntegrityCheck());
         $this->registry->register(new Checks\StructuralSanityCheck());
+        $this->registry->register(new Checks\ThemeInjectionCheck());
     }
 
     public function get_registry(): HealthCheckRegistry

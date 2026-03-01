@@ -9,9 +9,20 @@
     const { createElement: el, useState, useEffect, useCallback, useRef, Fragment } = wp.element;
     const apiFetch = wp.apiFetch;
     const __ = (wp.i18n && wp.i18n.__) ? wp.i18n.__ : function (s) { return s; };
-    const config = window.CC_SITE_SETTINGS || {};
+
+    const config = window.CC_SITE_SETTINGS;
+    if (!config || !config.restBase) {
+        document.addEventListener('DOMContentLoaded', function () {
+            const root = document.getElementById('cc-site-settings-root');
+            if (root) {
+                root.innerHTML = '<div class="notice notice-error"><p><strong>Content Core Error:</strong> JS Configuration object (CC_SITE_SETTINGS) is missing or incomplete. The React application cannot mount. Please check if your theme properly calls wp_head() and wp_footer(), or if a caching/optimization plugin is blocking script localization.</p></div>';
+            }
+        });
+        return;
+    }
+
     const nonce = config.nonce || '';
-    const restBase = config.restBase || '/wp-json/cc/v1/settings/site';
+    const restBase = config.restBase;
     const siteUrl = config.siteUrl || '';
     const siteOptionsUrl = config.siteOptionsUrl || '';
 
