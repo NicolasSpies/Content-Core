@@ -82,242 +82,228 @@ class ErrorLogScreen
         ], admin_url('admin.php'));
 
         ?>
-        <div class="wrap content-core-admin">
+        <div class="cc-page">
             <div class="cc-header">
-                <h1>
-                    <?php _e('Error Log', 'content-core'); ?>
-                </h1>
-                <div style="font-size:13px; color:var(--cc-text-muted);">
-                    <?php printf(
-                        esc_html__('%d total entries captured', 'content-core'),
-                        count($all_entries)
-                    ); ?>
+                <div>
+                    <h1><?php _e('Error Log', 'content-core'); ?></h1>
+                    <p class="cc-header-desc">
+                        <?php printf(esc_html__('%d total entries captured', 'content-core'), count($all_entries)); ?>
+                    </p>
                 </div>
             </div>
 
             <?php if (isset($_GET['cc_msg']) && $_GET['cc_msg'] === 'cleared'): ?>
-                <div class="notice notice-success is-dismissible">
-                    <p>
-                        <?php _e('Error log cleared.', 'content-core'); ?>
-                    </p>
+                <div class="cc-notice cc-status-healthy">
+                    <p><?php _e('Error log cleared.', 'content-core'); ?></p>
                 </div>
             <?php endif; ?>
 
-            <div class="cc-dashboard-grid">
+            <div class="cc-grid">
                 <!-- Toolbar: filters + actions -->
-                <div class="cc-card cc-card-full" style="padding:20px 28px;">
-                    <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; justify-content:space-between;">
-                        <!-- Filters -->
-                        <form method="get" action="<?php echo admin_url('admin.php'); ?>"
-                            style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
-                            <input type="hidden" name="page" value="cc-error-log">
+                <div class="cc-card cc-grid-full">
+                    <div class="cc-card-body">
+                        <div
+                            style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; justify-content:space-between;">
+                            <!-- Filters -->
+                            <form method="get" action="<?php echo admin_url('admin.php'); ?>"
+                                style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+                                <input type="hidden" name="page" value="cc-error-log">
 
-                            <div>
-                                <label
-                                    style="display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--cc-text-muted); margin-bottom:6px;">
-                                    <?php _e('Severity', 'content-core'); ?>
-                                </label>
-                                <select name="cc_severity" style="height:34px; min-width:130px;">
-                                    <option value="">
-                                        <?php _e('All severities', 'content-core'); ?>
-                                    </option>
-                                    <?php foreach (ErrorLogger::SEVERITIES as $s): ?>
-                                        <option value="<?php echo esc_attr($s); ?>" <?php selected($filter_severity, $s); ?>>
-                                            <?php echo esc_html(ucfirst($s)); ?>
+                                <div class="cc-field">
+                                    <label class="cc-field-label">
+                                        <?php _e('Severity', 'content-core'); ?>
+                                    </label>
+                                    <select name="cc_severity" class="cc-select">
+                                        <option value="">
+                                            <?php _e('All severities', 'content-core'); ?>
                                         </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
+                                        <?php foreach (ErrorLogger::SEVERITIES as $s): ?>
+                                            <option value="<?php echo esc_attr($s); ?>" <?php selected($filter_severity, $s); ?>>
+                                                <?php echo esc_html(ucfirst($s)); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
 
-                            <div>
-                                <label
-                                    style="display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--cc-text-muted); margin-bottom:6px;">
-                                    <?php _e('Date Range', 'content-core'); ?>
-                                </label>
-                                <select name="cc_days" style="height:34px; min-width:140px;">
-                                    <option value="0">
-                                        <?php _e('All time', 'content-core'); ?>
-                                    </option>
-                                    <option value="1" <?php selected($filter_days, 1); ?>>
-                                        <?php _e('Last 24 hours', 'content-core'); ?>
-                                    </option>
-                                    <option value="7" <?php selected($filter_days, 7); ?>>
-                                        <?php _e('Last 7 days', 'content-core'); ?>
-                                    </option>
-                                    <option value="30" <?php selected($filter_days, 30); ?>>
-                                        <?php _e('Last 30 days', 'content-core'); ?>
-                                    </option>
-                                </select>
-                            </div>
+                                <div class="cc-field">
+                                    <label class="cc-field-label">
+                                        <?php _e('Date Range', 'content-core'); ?>
+                                    </label>
+                                    <select name="cc_days" class="cc-select">
+                                        <option value="0">
+                                            <?php _e('All time', 'content-core'); ?>
+                                        </option>
+                                        <option value="1" <?php selected($filter_days, 1); ?>>
+                                            <?php _e('Last 24 hours', 'content-core'); ?>
+                                        </option>
+                                        <option value="7" <?php selected($filter_days, 7); ?>>
+                                            <?php _e('Last 7 days', 'content-core'); ?>
+                                        </option>
+                                        <option value="30" <?php selected($filter_days, 30); ?>>
+                                            <?php _e('Last 30 days', 'content-core'); ?>
+                                        </option>
+                                    </select>
+                                </div>
 
-                            <button type="submit" class="button button-primary" style="height:34px;">
-                                <?php _e('Filter', 'content-core'); ?>
-                            </button>
+                                <button type="submit" class="cc-button-primary">
+                                    <?php _e('Filter', 'content-core'); ?>
+                                </button>
 
-                            <?php if ($filter_severity || $filter_days > 0): ?>
-                                <a href="<?php echo esc_url(add_query_arg('page', 'cc-error-log', admin_url('admin.php'))); ?>"
-                                    class="button" style="height:34px; line-height:32px;">
-                                    <?php _e('Reset', 'content-core'); ?>
-                                </a>
-                            <?php endif; ?>
-                        </form>
+                                <?php if ($filter_severity || $filter_days > 0): ?>
+                                    <a href="<?php echo esc_url(add_query_arg('page', 'cc-error-log', admin_url('admin.php'))); ?>"
+                                        class="cc-button-secondary">
+                                        <?php _e('Reset', 'content-core'); ?>
+                                    </a>
+                                <?php endif; ?>
+                            </form>
 
-                        <!-- Actions -->
-                        <div style="display:flex; gap:10px;">
-                            <button type="button" class="button button-secondary"
-                                onclick="fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/export')); ?>', { headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(res => res.blob()).then(blob => { const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'cc-error-log-' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); });">
-                                <span class="dashicons dashicons-download"
-                                    style="margin-top:4px; margin-right:4px; font-size:16px;"></span>
-                                <?php _e('Export JSON', 'content-core'); ?>
-                            </button>
+                            <!-- Actions -->
+                            <div style="display:flex; gap:10px;">
+                                <button type="button" class="cc-button-secondary"
+                                    onclick="fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/export')); ?>', { headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(res => res.blob()).then(blob => { const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'cc-error-log-' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); });">
+                                    <span class="dashicons dashicons-download"></span>
+                                    <?php _e('Export JSON', 'content-core'); ?>
+                                </button>
 
-                            <?php
-                            $cutoff = function_exists('current_time') ? (int) current_time('timestamp') - 86400 : time() - 86400;
-                            $has_active = false;
-                            $has_resolved = false;
-                            foreach ($all_entries as $entry) {
-                                if (($entry['timestamp'] ?? 0) >= $cutoff) {
-                                    $has_active = true;
-                                } else {
-                                    $has_resolved = true;
+                                <?php
+                                $cutoff = function_exists('current_time') ? (int) current_time('timestamp') - 86400 : time() - 86400;
+                                $has_active = false;
+                                $has_resolved = false;
+                                foreach ($all_entries as $entry) {
+                                    if (($entry['timestamp'] ?? 0) >= $cutoff) {
+                                        $has_active = true;
+                                    } else {
+                                        $has_resolved = true;
+                                    }
                                 }
-                            }
-                            ?>
-                            <?php if ($has_active): ?>
-                                <span style="font-size:12px; color:var(--cc-text-muted); align-self:center;">
-                                    <?php _e('Active errors cannot be cleared.', 'content-core'); ?>
-                                </span>
-                            <?php endif; ?>
-                            <button type="button" class="button" style="color:#d63638; border-color:#d63638;"
-                                onclick="if(confirm('<?php echo esc_js(__('Clear resolved log entries (older than 24h)?', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-old')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(async (res) => { const text = await res.text(); console.log('Clear response:', text); window.location.href = window.location.href.split('&cc_msg=')[0] + '&cc_msg=cleared'; }); }"
-                                <?php echo !$has_resolved ? 'disabled title="' . esc_attr__('No resolved entries to clear.', 'content-core') . '"' : ''; ?>>
-                                <span class="dashicons dashicons-trash"
-                                    style="margin-top:4px; margin-right:4px; font-size:16px;"></span>
-                                <?php _e('Clear Resolved Entries', 'content-core'); ?>
-                            </button>
+                                ?>
+                                <button type="button" class="cc-button-secondary"
+                                    style="color:var(--cc-error); border-color:var(--cc-error);"
+                                    onclick="if(confirm('<?php echo esc_js(__('Clear resolved log entries (older than 24h)?', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-old')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(async (res) => { window.location.href = window.location.href.split('&cc_msg=')[0] + '&cc_msg=cleared'; }); }"
+                                    <?php echo !$has_resolved ? 'disabled' : ''; ?>>
+                                    <span class="dashicons dashicons-trash"></span>
+                                    <?php _e('Clear Resolved', 'content-core'); ?>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Table -->
-                <div class="cc-card cc-card-full" style="padding:0; overflow:hidden;">
+                <div class="cc-card cc-grid-full" style="padding:0;">
                     <?php if (empty($paged_entries)): ?>
-                        <div style="padding:48px 28px; text-align:center; color:var(--cc-text-muted);">
+                        <div class="cc-card-body" style="text-align:center; padding:48px;">
                             <span class="dashicons dashicons-yes-alt"
-                                style="font-size:40px; width:40px; height:40px; color:#00a32a; display:block; margin:0 auto 12px;"></span>
-                            <strong style="font-size:15px; display:block; margin-bottom:6px;">
+                                style="font-size:40px; width:40px; height:40px; color:var(--cc-health-healthy-text); margin-bottom:12px;"></span>
+                            <h2>
                                 <?php _e('No errors logged', 'content-core'); ?>
-                            </strong>
-                            <span style="font-size:13px;">
+                            </h2>
+                            <p class="cc-help">
                                 <?php _e('Content Core has not detected any errors matching your filter.', 'content-core'); ?>
-                            </span>
+                            </p>
                         </div>
                     <?php else: ?>
-                        <table class="widefat fixed striped" style="border:0; border-radius:0;">
-                            <thead>
-                                <tr>
-                                    <th style="width:80px;">
-                                        <?php _e('Severity', 'content-core'); ?>
-                                    </th>
-                                    <th style="width:155px;">
-                                        <?php _e('Timestamp', 'content-core'); ?>
-                                    </th>
-                                    <th>
-                                        <?php _e('Message', 'content-core'); ?>
-                                    </th>
-                                    <th style="width:220px;">
-                                        <?php _e('File : Line', 'content-core'); ?>
-                                    </th>
-                                    <th style="width:140px;">
-                                        <?php _e('Screen', 'content-core'); ?>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($paged_entries as $entry):
-                                    $sev = $entry['severity'] ?? 'notice';
-                                    $color = $severity_colors[$sev] ?? '#646970';
-                                    $time = isset($entry['timestamp']) ? date('Y-m-d H:i:s', (int) $entry['timestamp']) : '—';
-                                    $trace = $entry['trace'] ?? null;
-                                    $uid = 'cc-trace-' . md5($entry['message'] . $entry['timestamp']);
-                                    ?>
-                                    <?php
-                                    $is_active = isset($entry['timestamp']) && $entry['timestamp'] >= $cutoff;
-                                    ?>
+                        <div style="overflow-x:auto;">
+                            <table class="cc-table">
+                                <thead>
                                     <tr>
-                                        <td>
-                                            <span
-                                                style="display:inline-block; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; background:<?php echo esc_attr($color); ?>22; color:<?php echo esc_attr($color); ?>; border:1px solid <?php echo esc_attr($color); ?>44;">
-                                                <?php echo esc_html(strtoupper($sev)); ?>
-                                            </span>
-                                            <span
-                                                style="display:inline-block; margin-top:4px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; padding:1px 4px; border-radius:3px; background:<?php echo $is_active ? '#d6363811' : '#00a32a11'; ?>; color:<?php echo $is_active ? '#d63638' : '#00a32a'; ?>">
-                                                <?php echo $is_active ? __('Active', 'content-core') : __('Resolved', 'content-core'); ?>
-                                            </span>
-                                        </td>
-                                        <td style="font-size:12px; color:var(--cc-text-muted);">
-                                            <?php echo esc_html($time); ?>
-                                        </td>
-                                        <td style="font-size:13px; word-break:break-word;">
-                                            <?php echo esc_html($entry['message'] ?? ''); ?>
-                                            <?php if ($trace): ?>
-                                                <br>
-                                                <a href="#"
-                                                    onclick="document.getElementById('<?php echo esc_attr($uid); ?>').style.display = document.getElementById('<?php echo esc_attr($uid); ?>').style.display === 'none' ? 'block' : 'none'; return false;"
-                                                    style="font-size:11px; color:var(--cc-text-muted);">
-                                                    <?php _e('[stack trace]', 'content-core'); ?>
-                                                </a>
-                                                <pre id="<?php echo esc_attr($uid); ?>"
-                                                    style="display:none; font-size:10px; white-space:pre-wrap; background:var(--cc-bg-soft); padding:8px; margin-top:6px; border-radius:4px; border:1px solid var(--cc-border);"><?php echo esc_html($trace); ?></pre>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td
-                                            style="font-size:12px; font-family:monospace; word-break:break-word; color:var(--cc-text-muted);">
-                                            <?php echo esc_html($entry['file'] ?? ''); ?>
-                                            <?php if ($entry['line'] ?? 0): ?>
-                                                <strong style="color:var(--cc-text);">:
-                                                    <?php echo (int) $entry['line']; ?>
-                                                </strong>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td style="font-size:12px; color:var(--cc-text-muted);">
-                                            <?php echo esc_html($entry['screen'] ?? ''); ?>
-                                        </td>
+                                        <th style="width:100px;">
+                                            <?php _e('Severity', 'content-core'); ?>
+                                        </th>
+                                        <th style="width:160px;">
+                                            <?php _e('Timestamp', 'content-core'); ?>
+                                        </th>
+                                        <th>
+                                            <?php _e('Message', 'content-core'); ?>
+                                        </th>
+                                        <th style="width:240px;">
+                                            <?php _e('File : Line', 'content-core'); ?>
+                                        </th>
+                                        <th style="width:140px;">
+                                            <?php _e('Screen', 'content-core'); ?>
+                                        </th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-
-                        <!-- Pagination -->
-                        <?php if ($total_pages > 1): ?>
-                            <div
-                                style="padding:14px 20px; display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--cc-border);">
-                                <span style="font-size:13px; color:var(--cc-text-muted);">
-                                    <?php printf(
-                                        esc_html__('Page %1$d of %2$d (%3$d entries)', 'content-core'),
-                                        $page,
-                                        $total_pages,
-                                        $total_filtered
-                                    ); ?>
-                                </span>
-                                <div style="display:flex; gap:6px;">
-                                    <?php if ($page > 1): ?>
-                                        <a href="<?php echo esc_url(add_query_arg('paged', $page - 1, $base_url)); ?>"
-                                            class="button button-small">←
-                                            <?php _e('Prev', 'content-core'); ?>
-                                        </a>
-                                    <?php endif; ?>
-                                    <?php if ($page < $total_pages): ?>
-                                        <a href="<?php echo esc_url(add_query_arg('paged', $page + 1, $base_url)); ?>"
-                                            class="button button-small">
-                                            <?php _e('Next', 'content-core'); ?> →
-                                        </a>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($paged_entries as $entry):
+                                        $sev = $entry['severity'] ?? 'notice';
+                                        $color = $severity_colors[$sev] ?? '#646970';
+                                        $time = isset($entry['timestamp']) ? date('Y-m-d H:i:s', (int) $entry['timestamp']) : '—';
+                                        $uid = 'cc-trace-' . md5(($entry['message'] ?? '') . ($entry['timestamp'] ?? ''));
+                                        $is_active = isset($entry['timestamp']) && $entry['timestamp'] >= $cutoff;
+                                        ?>
+                                        <tr>
+                                            <td>
+                                                <span class="cc-status-pill"
+                                                    style="background:<?php echo esc_attr($color); ?>11; color:<?php echo esc_attr($color); ?>; border:1px solid <?php echo esc_attr($color); ?>22;">
+                                                    <?php echo esc_html(strtoupper($sev)); ?>
+                                                </span>
+                                                <div
+                                                    style="margin-top:4px; font-size:9px; font-weight:700; color:<?php echo $is_active ? 'var(--cc-error)' : 'var(--cc-health-healthy-text)'; ?>;">
+                                                    <?php echo $is_active ? __('ACTIVE', 'content-core') : __('RESOLVED', 'content-core'); ?>
+                                                </div>
+                                            </td>
+                                            <td style="font-size:12px; color:var(--cc-text-muted);">
+                                                <?php echo esc_html($time); ?>
+                                            </td>
+                                            <td style="font-size:13px;">
+                                                <div style="font-weight:600;">
+                                                    <?php echo esc_html($entry['message'] ?? ''); ?>
+                                                </div>
+                                                <?php if (!empty($entry['trace'])): ?>
+                                                    <a href="#"
+                                                        onclick="document.getElementById('<?php echo esc_attr($uid); ?>').style.display = document.getElementById('<?php echo esc_attr($uid); ?>').style.display === 'none' ? 'block' : 'none'; return false;"
+                                                        style="font-size:11px; color:var(--cc-accent-color);">
+                                                        <?php _e('[stack trace]', 'content-core'); ?>
+                                                    </a>
+                                                    <pre id="<?php echo esc_attr($uid); ?>" class="cc-code-block"
+                                                        style="display:none; margin-top:8px;"><?php echo esc_html($entry['trace']); ?></pre>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td style="font-size:11px; font-family:monospace; color:var(--cc-text-muted);">
+                                                <?php echo esc_html($entry['file'] ?? ''); ?>:<strong>
+                                                    <?php echo (int) ($entry['line'] ?? 0); ?>
+                                                </strong>
+                                            </td>
+                                            <td style="font-size:12px; color:var(--cc-text-muted);">
+                                                <?php echo esc_html($entry['screen'] ?? ''); ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     <?php endif; ?>
                 </div>
+
+                <!-- Pagination -->
+                <?php if ($total_pages > 1): ?>
+                    <div class="cc-card cc-grid-full"
+                        style="padding:16px 24px; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:13px; color:var(--cc-text-muted);">
+                            <?php printf(
+                                esc_html__('Page %1$d of %2$d (%3$d entries)', 'content-core'),
+                                $page,
+                                $total_pages,
+                                $total_filtered
+                            ); ?>
+                        </span>
+                        <div style="display:flex; gap:8px;">
+                            <?php if ($page > 1): ?>
+                                <a href="<?php echo esc_url(add_query_arg('paged', $page - 1, $base_url)); ?>"
+                                    class="cc-button-secondary">←
+                                    <?php _e('Prev', 'content-core'); ?>
+                                </a>
+                            <?php endif; ?>
+                            <?php if ($page < $total_pages): ?>
+                                <a href="<?php echo esc_url(add_query_arg('paged', $page + 1, $base_url)); ?>"
+                                    class="cc-button-secondary">
+                                    <?php _e('Next', 'content-core'); ?> →
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
         <?php
@@ -377,208 +363,190 @@ class ErrorLogScreen
             'cc_days' => $filter_days ?: false,
         ], admin_url('admin.php'));
 
+        $cutoff = function_exists('current_time') ? (int) current_time('timestamp') - 86400 : time() - 86400;
+
         ?>
 
         <?php if (isset($_GET['cc_msg']) && $_GET['cc_msg'] === 'cleared'): ?>
-            <div class="notice notice-success is-dismissible">
+            <div class="cc-notice cc-status-healthy">
                 <p><?php _e('Error log cleared.', 'content-core'); ?></p>
             </div>
         <?php endif; ?>
 
-        <div class="cc-dashboard-grid">
+        <div class="cc-grid">
             <!-- Toolbar: filters + actions -->
-            <div class="cc-card cc-card-full" style="padding:20px 28px;">
-                <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; justify-content:space-between;">
-                    <!-- Filters -->
-                    <form method="get" action="<?php echo admin_url('admin.php'); ?>"
-                        style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
-                        <input type="hidden" name="page" value="cc-diagnostics">
-                        <input type="hidden" name="tab" value="error-log">
+            <div class="cc-card cc-grid-full">
+                <div class="cc-card-body">
+                    <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; justify-content:space-between;">
+                        <!-- Filters -->
+                        <form method="get" action="<?php echo admin_url('admin.php'); ?>"
+                            style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
+                            <input type="hidden" name="page" value="cc-diagnostics">
+                            <input type="hidden" name="tab" value="error-log">
 
-                        <div>
-                            <label
-                                style="display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--cc-text-muted); margin-bottom:6px;">
-                                <?php _e('Severity', 'content-core'); ?>
-                            </label>
-                            <select name="cc_severity" style="height:34px; min-width:130px;">
-                                <option value=""><?php _e('All severities', 'content-core'); ?></option>
-                                <?php foreach (ErrorLogger::SEVERITIES as $s): ?>
-                                    <option value="<?php echo esc_attr($s); ?>" <?php selected($filter_severity, $s); ?>>
-                                        <?php echo esc_html(ucfirst($s)); ?>
+                            <div class="cc-field">
+                                <label class="cc-field-label">
+                                    <?php _e('Severity', 'content-core'); ?>
+                                </label>
+                                <select name="cc_severity" class="cc-select">
+                                    <option value="">
+                                        <?php _e('All severities', 'content-core'); ?>
                                     </option>
-                                <?php endforeach; ?>
-                            </select>
+                                    <?php foreach (ErrorLogger::SEVERITIES as $s): ?>
+                                        <option value="<?php echo esc_attr($s); ?>" <?php selected($filter_severity, $s); ?>>
+                                            <?php echo esc_html(ucfirst($s)); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="cc-field">
+                                <label class="cc-field-label">
+                                    <?php _e('Date Range', 'content-core'); ?>
+                                </label>
+                                <select name="cc_days" class="cc-select">
+                                    <option value="0">
+                                        <?php _e('All time', 'content-core'); ?>
+                                    </option>
+                                    <option value="1" <?php selected($filter_days, 1); ?>>
+                                        <?php _e('Last 24 hours', 'content-core'); ?>
+                                    </option>
+                                    <option value="7" <?php selected($filter_days, 7); ?>>
+                                        <?php _e('Last 7 days', 'content-core'); ?>
+                                    </option>
+                                    <option value="30" <?php selected($filter_days, 30); ?>>
+                                        <?php _e('Last 30 days', 'content-core'); ?>
+                                    </option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="cc-button-primary">
+                                <?php _e('Filter', 'content-core'); ?>
+                            </button>
+                        </form>
+
+                        <!-- Actions -->
+                        <div style="display:flex; gap:10px;">
+                            <button type="button" class="cc-button-secondary"
+                                onclick="fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/export')); ?>', { headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(res => res.blob()).then(blob => { const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'cc-error-log-' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); });">
+                                <span class="dashicons dashicons-download"></span>
+                                <?php _e('Export JSON', 'content-core'); ?>
+                            </button>
+                            <button type="button" class="cc-button-secondary"
+                                style="color:var(--cc-error); border-color:var(--cc-error);"
+                                onclick="if(confirm('<?php echo esc_js(__('Clear resolved log entries (older than 24h)?', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-old')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(async (res) => { window.location.reload(); }); }">
+                                <span class="dashicons dashicons-trash"></span>
+                                <?php _e('Clear Resolved', 'content-core'); ?>
+                            </button>
                         </div>
-
-                        <div>
-                            <label
-                                style="display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--cc-text-muted); margin-bottom:6px;">
-                                <?php _e('Date Range', 'content-core'); ?>
-                            </label>
-                            <select name="cc_days" style="height:34px; min-width:140px;">
-                                <option value="0"><?php _e('All time', 'content-core'); ?></option>
-                                <option value="1" <?php selected($filter_days, 1); ?>>
-                                    <?php _e('Last 24 hours', 'content-core'); ?>
-                                </option>
-                                <option value="7" <?php selected($filter_days, 7); ?>>
-                                    <?php _e('Last 7 days', 'content-core'); ?>
-                                </option>
-                                <option value="30" <?php selected($filter_days, 30); ?>>
-                                    <?php _e('Last 30 days', 'content-core'); ?>
-                                </option>
-                            </select>
-                        </div>
-
-                        <button type="submit" class="button button-primary" style="height:34px;">
-                            <?php _e('Filter', 'content-core'); ?>
-                        </button>
-
-                        <?php if ($filter_severity || $filter_days > 0): ?>
-                            <a href="<?php echo esc_url(add_query_arg(['page' => 'cc-diagnostics', 'tab' => 'error-log'], admin_url('admin.php'))); ?>"
-                                class="button" style="height:34px; line-height:32px;">
-                                <?php _e('Reset', 'content-core'); ?>
-                            </a>
-                        <?php endif; ?>
-                    </form>
-
-                    <!-- Actions -->
-                    <div style="display:flex; gap:10px;">
-                        <button type="button" class="button button-secondary"
-                            onclick="fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/export')); ?>', { headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(res => res.blob()).then(blob => { const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = 'cc-error-log-' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); });">
-                            <span class="dashicons dashicons-download"
-                                style="margin-top:4px; margin-right:4px; font-size:16px;"></span>
-                            <?php _e('Export JSON', 'content-core'); ?>
-                        </button>
-
-                        <?php
-                        $cutoff = function_exists('current_time') ? (int) current_time('timestamp') - 86400 : time() - 86400;
-                        $has_active = false;
-                        $has_resolved = false;
-                        foreach ($all_entries as $entry) {
-                            if (($entry['timestamp'] ?? 0) >= $cutoff) {
-                                $has_active = true;
-                            } else {
-                                $has_resolved = true;
-                            }
-                        }
-                        ?>
-                        <?php if ($has_active): ?>
-                            <span style="font-size:12px; color:var(--cc-text-muted); align-self:center;">
-                                <?php _e('Active errors cannot be cleared.', 'content-core'); ?>
-                            </span>
-                        <?php endif; ?>
-                        <button type="button" class="button" style="color:#d63638; border-color:#d63638;"
-                            onclick="if(confirm('<?php echo esc_js(__('Clear resolved log entries (older than 24h)?', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-old')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(async (res) => { const text = await res.text(); console.log('Clear response:', text); window.location.href = window.location.href.split('&cc_msg=')[0] + '&cc_msg=cleared'; }); }"
-                            <?php echo !$has_resolved ? 'disabled title="' . esc_attr__('No resolved entries to clear.', 'content-core') . '"' : ''; ?>>
-                            <span class="dashicons dashicons-trash"
-                                style="margin-top:4px; margin-right:4px; font-size:16px;"></span>
-                            <?php _e('Clear Resolved Entries', 'content-core'); ?>
-                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Table -->
-            <div class="cc-card cc-card-full" style="padding:0; overflow:hidden;">
-                <?php if (empty($paged_entries)): ?>
-                    <div style="padding:48px 28px; text-align:center; color:var(--cc-text-muted);">
-                        <span class="dashicons dashicons-yes-alt"
-                            style="font-size:40px; width:40px; height:40px; color:#00a32a; display:block; margin:0 auto 12px;"></span>
-                        <strong style="font-size:15px; display:block; margin-bottom:6px;">
-                            <?php _e('No errors logged', 'content-core'); ?>
-                        </strong>
-                        <span style="font-size:13px;">
-                            <?php _e('Content Core has not detected any errors matching your filter.', 'content-core'); ?>
-                        </span>
-                    </div>
-                <?php else: ?>
-                    <table class="widefat fixed striped" style="border:0; border-radius:0;">
+            <div class="cc-card cc-grid-full" style="padding:0;">
+                <div style="overflow-x:auto;">
+                    <table class="cc-table">
                         <thead>
                             <tr>
-                                <th style="width:80px;"><?php _e('Severity', 'content-core'); ?></th>
-                                <th style="width:155px;"><?php _e('Timestamp', 'content-core'); ?></th>
-                                <th><?php _e('Message', 'content-core'); ?></th>
-                                <th style="width:220px;"><?php _e('File : Line', 'content-core'); ?></th>
-                                <th style="width:140px;"><?php _e('Screen', 'content-core'); ?></th>
+                                <th style="width:100px;">
+                                    <?php _e('Severity', 'content-core'); ?>
+                                </th>
+                                <th style="width:160px;">
+                                    <?php _e('Timestamp', 'content-core'); ?>
+                                </th>
+                                <th>
+                                    <?php _e('Message', 'content-core'); ?>
+                                </th>
+                                <th style="width:240px;">
+                                    <?php _e('File : Line', 'content-core'); ?>
+                                </th>
+                                <th style="width:140px;">
+                                    <?php _e('Screen', 'content-core'); ?>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($paged_entries as $entry):
-                                $sev = $entry['severity'] ?? 'notice';
-                                $color = $severity_colors[$sev] ?? '#646970';
-                                $time = isset($entry['timestamp']) ? date('Y-m-d H:i:s', (int) $entry['timestamp']) : '—';
-                                $trace = $entry['trace'] ?? null;
-                                $uid = 'cc-trace-' . md5(($entry['message'] ?? '') . ($entry['timestamp'] ?? ''));
-                                ?>
-                                <?php
-                                $is_active = isset($entry['timestamp']) && $entry['timestamp'] >= $cutoff;
-                                ?>
+                            <?php if (empty($paged_entries)): ?>
                                 <tr>
-                                    <td>
-                                        <span
-                                            style="display:inline-block; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; background:<?php echo esc_attr($color); ?>22; color:<?php echo esc_attr($color); ?>; border:1px solid <?php echo esc_attr($color); ?>44;">
-                                            <?php echo esc_html(strtoupper($sev)); ?>
-                                        </span>
-                                        <span
-                                            style="display:inline-block; margin-top:4px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; padding:1px 4px; border-radius:3px; background:<?php echo $is_active ? '#d6363811' : '#00a32a11'; ?>; color:<?php echo $is_active ? '#d63638' : '#00a32a'; ?>">
-                                            <?php echo $is_active ? __('Active', 'content-core') : __('Resolved', 'content-core'); ?>
-                                        </span>
-                                    </td>
-                                    <td style="font-size:12px; color:var(--cc-text-muted);"><?php echo esc_html($time); ?></td>
-                                    <td style="font-size:13px; word-break:break-word;">
-                                        <?php echo esc_html($entry['message'] ?? ''); ?>
-                                        <?php if ($trace): ?>
-                                            <br>
-                                            <a href="#"
-                                                onclick="document.getElementById('<?php echo esc_attr($uid); ?>').style.display = document.getElementById('<?php echo esc_attr($uid); ?>').style.display === 'none' ? 'block' : 'none'; return false;"
-                                                style="font-size:11px; color:var(--cc-text-muted);">
-                                                <?php _e('[stack trace]', 'content-core'); ?>
-                                            </a>
-                                            <pre id="<?php echo esc_attr($uid); ?>"
-                                                style="display:none; font-size:10px; white-space:pre-wrap; background:var(--cc-bg-soft); padding:8px; margin-top:6px; border-radius:4px; border:1px solid var(--cc-border);"><?php echo esc_html($trace); ?></pre>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td
-                                        style="font-size:12px; font-family:monospace; word-break:break-word; color:var(--cc-text-muted);">
-                                        <?php echo esc_html($entry['file'] ?? ''); ?>
-                                        <?php if ($entry['line'] ?? 0): ?>
-                                            <strong style="color:var(--cc-text);">: <?php echo (int) $entry['line']; ?></strong>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td style="font-size:12px; color:var(--cc-text-muted);">
-                                        <?php echo esc_html($entry['screen'] ?? ''); ?>
+                                    <td colspan="5" style="padding:48px; text-align:center; color:var(--cc-text-muted);">
+                                        <?php _e('No errors found.', 'content-core'); ?>
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
+                            <?php else: ?>
+                                <?php foreach ($paged_entries as $entry):
+                                    $sev = $entry['severity'] ?? 'notice';
+                                    $color = $severity_colors[$sev] ?? '#646970';
+                                    $time = isset($entry['timestamp']) ? date('Y-m-d H:i:s', (int) $entry['timestamp']) : '—';
+                                    $uid = 'cc-trace-inline-' . md5(($entry['message'] ?? '') . ($entry['timestamp'] ?? ''));
+                                    $is_active = isset($entry['timestamp']) && $entry['timestamp'] >= $cutoff;
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <span class="cc-status-pill"
+                                                style="background:<?php echo esc_attr($color); ?>11; color:<?php echo esc_attr($color); ?>; border:1px solid <?php echo esc_attr($color); ?>22;">
+                                                <?php echo esc_html(strtoupper($sev)); ?>
+                                            </span>
+                                        </td>
+                                        <td style="font-size:12px; color:var(--cc-text-muted);">
+                                            <?php echo esc_html($time); ?>
+                                        </td>
+                                        <td style="font-size:13px;">
+                                            <div style="font-weight:600;">
+                                                <?php echo esc_html($entry['message'] ?? ''); ?>
+                                            </div>
+                                            <?php if (!empty($entry['trace'])): ?>
+                                                <a href="#"
+                                                    onclick="document.getElementById('<?php echo esc_attr($uid); ?>').style.display = document.getElementById('<?php echo esc_attr($uid); ?>').style.display === 'none' ? 'block' : 'none'; return false;"
+                                                    style="font-size:11px; color:var(--cc-accent-color);">
+                                                    <?php _e('[stack trace]', 'content-core'); ?>
+                                                </a>
+                                                <pre id="<?php echo esc_attr($uid); ?>" class="cc-code-block"
+                                                    style="display:none; margin-top:8px;"><?php echo esc_html($entry['trace']); ?></pre>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="font-size:11px; font-family:monospace; color:var(--cc-text-muted);">
+                                            <?php echo esc_html($entry['file'] ?? ''); ?>:<strong>
+                                                <?php echo (int) ($entry['line'] ?? 0); ?>
+                                            </strong>
+                                        </td>
+                                        <td style="font-size:12px; color:var(--cc-text-muted);">
+                                            <?php echo esc_html($entry['screen'] ?? ''); ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
-
-                    <!-- Pagination -->
-                    <?php if ($total_pages > 1): ?>
-                        <div
-                            style="padding:14px 20px; display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--cc-border);">
-                            <span style="font-size:13px; color:var(--cc-text-muted);">
-                                <?php printf(
-                                    esc_html__('Page %1$d of %2$d (%3$d entries)', 'content-core'),
-                                    $page_num,
-                                    $total_pages,
-                                    $total_filtered
-                                ); ?>
-                            </span>
-                            <div style="display:flex; gap:6px;">
-                                <?php if ($page_num > 1): ?>
-                                    <a href="<?php echo esc_url(add_query_arg('paged', $page_num - 1, $base_url)); ?>"
-                                        class="button button-small">← <?php _e('Prev', 'content-core'); ?></a>
-                                <?php endif; ?>
-                                <?php if ($page_num < $total_pages): ?>
-                                    <a href="<?php echo esc_url(add_query_arg('paged', $page_num + 1, $base_url)); ?>"
-                                        class="button button-small"><?php _e('Next', 'content-core'); ?> →</a>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-                <?php endif; ?>
+                </div>
             </div>
+
+            <!-- Pagination -->
+            <?php if ($total_pages > 1): ?>
+                <div class="cc-card cc-grid-full"
+                    style="padding:16px 24px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:13px; color:var(--cc-text-muted);">
+                        <?php printf(
+                            esc_html__('Page %1$d of %2$d', 'content-core'),
+                            $page_num,
+                            $total_pages
+                        ); ?>
+                    </span>
+                    <div style="display:flex; gap:8px;">
+                        <?php if ($page_num > 1): ?>
+                            <a href="<?php echo esc_url(add_query_arg('paged', $page_num - 1, $base_url)); ?>"
+                                class="cc-button-secondary">←
+                                <?php _e('Prev', 'content-core'); ?>
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($page_num < $total_pages): ?>
+                            <a href="<?php echo esc_url(add_query_arg('paged', $page_num + 1, $base_url)); ?>"
+                                class="cc-button-secondary">
+                                <?php _e('Next', 'content-core'); ?> →
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
         <?php
     }

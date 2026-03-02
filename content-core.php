@@ -3,7 +3,7 @@
  * Plugin Name: Content Core
  * Plugin URI:  
  * Description: Content Core is a custom engineered WordPress framework built from scratch by Nicolas Spies. It provides structured content architecture, controlled admin environments, modular extensions, and scalable backend logic for modern agency projects..
- * Version:     1.6.2
+ * Version:     1.6.3
  * Author:      Nicolas Spies
  * Text Domain: content-core
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CONTENT_CORE_VERSION', '1.6.2');
+define('CONTENT_CORE_VERSION', '1.6.3');
 define('CONTENT_CORE_PLUGIN_FILE', __FILE__);
 define('CONTENT_CORE_PLUGIN_DIR', plugin_dir_path(CONTENT_CORE_PLUGIN_FILE));
 define('CONTENT_CORE_PLUGIN_URL', plugin_dir_url(CONTENT_CORE_PLUGIN_FILE));
@@ -38,20 +38,12 @@ spl_autoload_register(function ($class) {
 
 
 // ── Internal Error Logger ────────────────────────────────────────────────────
-// Instantiated immediately after the autoloader so errors during plugin
-// bootstrap are captured too. Stored in a global so AdminMenu can access it.
-$GLOBALS['cc_error_logger'] = new \ContentCore\Admin\ErrorLogger(CONTENT_CORE_PLUGIN_DIR);
-$GLOBALS['cc_error_logger']->register_handlers();
+// Instantiated and handlers registered immediately for bootstrap capture.
+\ContentCore\Plugin::get_instance()->get_error_logger()->register_handlers();
 
 // Initialize the Plugin
 function content_core_init()
 {
-	// Step A: Enable safe logging
-	if (defined('WP_DEBUG') && WP_DEBUG) {
-		ini_set('display_errors', '0');
-		ini_set('log_errors', '1');
-	}
-
 	$plugin = \ContentCore\Plugin::get_instance();
 	$plugin->init();
 
@@ -124,88 +116,90 @@ add_filter('wp_handle_upload_prefilter', function ($file) {
 
 function cc_content_core_sanitize_svg(string $svg): ?string
 {
-	// Reject obvious dangerous patterns fast
+	// 1. Initial rejection of obvious dangerous patterns
 	$lower = strtolower($svg);
-	if (strpos($lower, '<script') !== false)
-		return null;
-	if (strpos($lower, 'javascript:') !== false)
-		return null;
-	if (strpos($lower, 'onload=') !== false)
-		return null;
-	if (strpos($lower, 'onerror=') !== false)
-		return null;
+	$blocked = ['<script', 'javascript:', 'vbscript:', 'onload=', 'onerror=', 'onclick=', 'onmouseover=', 'onmouseenter='];
+	foreach ($blocked as $pattern) {
+		if (strpos($lower, $pattern) !== false) {
+			\ContentCore\Logger::warning('SVG rejected: dangerous pattern detected.', ['pattern' => $pattern]);
+			return null;
+		}
+	}
 
-	// Parse XML safely
+	// 2. Parse XML safely
 	$prev = libxml_use_internal_errors(true);
 	$dom = new DOMDocument();
-
-	// Prevent network access
-	$ok = $dom->loadXML($svg, LIBXML_NONET | LIBXML_NOENT);
+	// Prevent ENTITY loading (XXE)
+	$ok = $dom->loadXML($svg, LIBXML_NONET | LIBXML_NOENT | LIBXML_DTDLOAD);
 	libxml_clear_errors();
 	libxml_use_internal_errors($prev);
 
-	if (!$ok)
+	if (!$ok || !$dom->documentElement) {
 		return null;
+	}
 
-	// Remove any script tags if present
-	$scripts = $dom->getElementsByTagName('script');
-	while ($scripts->length > 0) {
-		$scripts->item(0)->parentNode->removeChild($scripts->item(0));
+	// 3. Remove dangerous tags
+	$dangerous_tags = ['script', 'foreignObject', 'iframe', 'object', 'embed', 'applet', 'meta', 'link', 'style'];
+	foreach ($dangerous_tags as $tag) {
+		$nodes = $dom->getElementsByTagName($tag);
+		while ($nodes->length > 0) {
+			$nodes->item(0)->parentNode->removeChild($nodes->item(0));
+		}
+	}
+
+	// 4. Strip ALL 'on*' attributes and hazardous 'href' values
+	$all_elements = $dom->getElementsByTagName('*');
+	foreach ($all_elements as $element) {
+		if (!$element instanceof \DOMElement) {
+			continue;
+		}
+		$attr_names = [];
+		if ($element->hasAttributes()) {
+			foreach ($element->attributes as $attr) {
+				$attr_names[] = $attr->nodeName;
+			}
+		}
+
+		foreach ($attr_names as $attr_name) {
+			$name_lower = strtolower($attr_name);
+			$value_lower = strtolower($element->getAttribute($attr_name));
+
+			// Block any attribute starting with 'on' (event handlers)
+			if (strpos($name_lower, 'on') === 0) {
+				$element->removeAttribute($attr_name);
+				continue;
+			}
+
+			// Block URI-based attributes with dangerous protocols
+			$uri_attrs = ['href', 'xlink:href', 'src', 'action', 'formaction', 'data'];
+			if (in_array($name_lower, $uri_attrs, true)) {
+				$blocked_protocols = ['javascript:', 'vbscript:', 'data:', 'file:'];
+				foreach ($blocked_protocols as $protocol) {
+					if (strpos($value_lower, $protocol) === 0) {
+						$element->removeAttribute($attr_name);
+						break;
+					}
+				}
+			}
+
+			// Block hazardous style contents (tracking/expression XSS)
+			if ($name_lower === 'style') {
+				if (strpos($value_lower, 'url(') !== false || strpos($value_lower, 'expression(') !== false) {
+					$element->removeAttribute($attr_name);
+				}
+			}
+		}
+	}
+
+	// 5. Final check: ensure the root is actually <svg>
+	if (strtolower($dom->documentElement->nodeName) !== 'svg') {
+		return null;
 	}
 
 	return $dom->saveXML($dom->documentElement);
 }
 
-// ── Custom WP Login Logo ─────────────────────────────────────────────────────
 
-// Logic is moved to BrandingModule to allow independent login screen branding.
-
-function cc_site_options_logo_url(): ?string
-{
-	// Content Core stores site options by language, e.g. cc_site_options_de
-	$settings = get_option('cc_languages_settings', []);
-	$lang = $settings['default_lang'] ?? 'de';
-	$opts = get_option('cc_site_options_' . $lang);
-
-	if (is_array($opts) && !empty($opts['logo_id'])) {
-		$url = wp_get_attachment_url((int) $opts['logo_id']);
-		if ($url)
-			return $url;
-	}
-
-	return null;
-}
-
-// ── Google SEO Preview ───────────────────────────────────────────────────────
-
-add_action('admin_enqueue_scripts', function ($hook) {
-	if (strpos($hook, 'cc-seo') === false && strpos($hook, 'cc-site-settings') === false)
-		return;
-
-	wp_enqueue_script(
-		'cc-seo-preview',
-		plugins_url('assets/cc-seo-preview.js', __FILE__),
-		[],
-		'1.0.0',
-		true
-	);
-
-	wp_localize_script('cc-seo-preview', 'CC_SEO_PREVIEW', [
-		'siteUrl' => home_url('/'),
-		'defaultTitle' => get_bloginfo('name'),
-		'defaultDesc' => get_bloginfo('description'),
-	]);
-});
-
-function cc_render_seo_preview_box()
-{
-	echo '
-	<div class="cc-seo-preview" style="margin-top:16px;padding:16px;border:1px solid #dcdcde;border-radius:8px;background:#fff;max-width:720px;">
-		<div class="cc-seo-preview-domain" style="font-size:12px;color:#5f6368;margin-bottom:6px;"></div>
-		<div class="cc-seo-preview-title" style="font-size:20px;line-height:1.3;color:#1a0dab;margin-bottom:6px;word-break:break-word;"></div>
-		<div class="cc-seo-preview-desc" style="font-size:14px;line-height:1.4;color:#4d5156;word-break:break-word;"></div>
-	</div>';
-}
 
 // ── Site Images Helpers ──────────────────────────────────────────────────────
 

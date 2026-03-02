@@ -169,8 +169,9 @@ class RestApiModule implements ModuleInterface
 
         // Note: admin /settings/* routes are registered in SettingsRestController.php
 
-        if (class_exists('\\ContentCore\\Admin\\Rest\\ErrorLogRestController') && isset($GLOBALS['cc_error_logger'])) {
-            $error_rest = new \ContentCore\Admin\Rest\ErrorLogRestController($GLOBALS['cc_error_logger'], $namespace);
+        if (class_exists('\\ContentCore\\Admin\\Rest\\ErrorLogRestController')) {
+            $logger = \ContentCore\Plugin::get_instance()->get_error_logger();
+            $error_rest = new \ContentCore\Admin\Rest\ErrorLogRestController($logger, $namespace);
             $error_rest->register_routes();
         }
     }
@@ -463,8 +464,8 @@ class RestApiModule implements ModuleInterface
         }
 
         // Check if the options page actually exists to avoid probing
-        $page = get_page_by_path($slug, OBJECT, 'cc_options_page');
-        if (!$page || $page->post_status !== 'publish') {
+        $page = get_page_by_path($slug, 'OBJECT', 'cc_options_page');
+        if (!is_a($page, 'WP_Post') || $page->post_status !== 'publish') {
             return false;
         }
 
@@ -826,6 +827,10 @@ class RestApiModule implements ModuleInterface
         $plugin = \ContentCore\Plugin::get_instance();
         $ml = $plugin->get_module('multilingual');
         $site_mod = $plugin->get_module('site_options');
+
+        if (!($site_mod instanceof \ContentCore\Modules\SiteOptions\SiteOptionsModule)) {
+            return new \WP_REST_Response(['message' => 'Site Options module not active.'], 500);
+        }
 
         $requested_lang = $request->get_param('lang');
         $default_lang = 'de';

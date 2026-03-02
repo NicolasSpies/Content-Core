@@ -9,39 +9,28 @@ use WP_Error;
 
 /**
  * REST controller for Manage Multilingual Terms.
- *
- * Namespace: content-core/v1
- * Routes:
- *   GET  /terms-manager/groups        — list all groups for a taxonomy
- *   POST /terms-manager/create        — create a new term + assign meta
- *   POST /terms-manager/translate     — create a translation and link to group
- *   POST /terms-manager/rename        — rename a term
- *   POST /terms-manager/remove        — delete a single term
- *   POST /terms-manager/delete-group  — delete all terms in a group
- *   POST /terms-manager/reorder       — update cc_order for terms
  */
 class TermsManagerRestController extends BaseRestController
 {
-    private MultilingualModule $module;
-    private string $ns;
+    protected $namespace = 'content-core/v1';
+    protected $rest_base = 'terms-manager';
+    /** @var MultilingualModule */
+    private $module;
 
-    public function __construct(MultilingualModule $module, string $namespace)
+    public function __construct(MultilingualModule $module)
     {
         $this->module = $module;
-        $this->ns = $namespace;
     }
 
     public function register_routes(): void
     {
-        $base = '/terms-manager';
-
-        register_rest_route($this->ns, $base . '/all-taxonomy-groups', [
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/all-taxonomy-groups', [
             'methods' => \WP_REST_Server::READABLE,
             'callback' => [$this, 'get_all_taxonomy_groups'],
             'permission_callback' => [$this, 'check_admin_permissions'],
         ]);
 
-        register_rest_route($this->ns, $base . '/create', [
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/create', [
             'methods' => \WP_REST_Server::EDITABLE,
             'callback' => [$this, 'create_term'],
             'permission_callback' => [$this, 'check_admin_permissions'],
@@ -52,7 +41,7 @@ class TermsManagerRestController extends BaseRestController
             ],
         ]);
 
-        register_rest_route($this->ns, $base . '/translate', [
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/translate', [
             'methods' => \WP_REST_Server::EDITABLE,
             'callback' => [$this, 'create_translation'],
             'permission_callback' => [$this, 'check_admin_permissions'],
@@ -64,7 +53,7 @@ class TermsManagerRestController extends BaseRestController
             ],
         ]);
 
-        register_rest_route($this->ns, $base . '/rename', [
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/rename', [
             'methods' => \WP_REST_Server::EDITABLE,
             'callback' => [$this, 'rename_term'],
             'permission_callback' => [$this, 'check_admin_permissions'],
@@ -75,7 +64,7 @@ class TermsManagerRestController extends BaseRestController
             ],
         ]);
 
-        register_rest_route($this->ns, $base . '/remove', [
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/remove', [
             'methods' => \WP_REST_Server::EDITABLE,
             'callback' => [$this, 'remove_term'],
             'permission_callback' => [$this, 'check_admin_permissions'],
@@ -85,7 +74,7 @@ class TermsManagerRestController extends BaseRestController
             ],
         ]);
 
-        register_rest_route($this->ns, $base . '/delete-group', [
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/delete-group', [
             'methods' => \WP_REST_Server::EDITABLE,
             'callback' => [$this, 'delete_group'],
             'permission_callback' => [$this, 'check_admin_permissions'],
@@ -95,7 +84,7 @@ class TermsManagerRestController extends BaseRestController
             ],
         ]);
 
-        register_rest_route($this->ns, $base . '/reorder', [
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/reorder', [
             'methods' => \WP_REST_Server::EDITABLE,
             'callback' => [$this, 'reorder_terms'],
             'permission_callback' => [$this, 'check_admin_permissions'],
@@ -122,7 +111,7 @@ class TermsManagerRestController extends BaseRestController
         $response_data = [];
 
         foreach ($taxonomies as $tax) {
-            if (!$tax->show_ui) {
+            if (!($tax instanceof \WP_Taxonomy) || !$tax->show_ui) {
                 continue;
             }
 
@@ -132,7 +121,7 @@ class TermsManagerRestController extends BaseRestController
                 'number' => 0,
             ]);
 
-            if (is_wp_error($terms)) {
+            if (is_wp_error($terms) || !is_array($terms)) {
                 continue;
             }
 
@@ -140,6 +129,9 @@ class TermsManagerRestController extends BaseRestController
             $ungrouped = [];
 
             foreach ($terms as $term) {
+                if (!($term instanceof \WP_Term)) {
+                    continue;
+                }
                 $raw_lang = get_term_meta($term->term_id, '_cc_language', true) ?: ($this->module->get_settings()['default_lang'] ?? 'de');
                 $lang = strtolower(trim($raw_lang));
                 $group_id = get_term_meta($term->term_id, '_cc_translation_group', true);
@@ -324,14 +316,17 @@ class TermsManagerRestController extends BaseRestController
             ],
         ]);
 
-        if (is_wp_error($terms)) {
-            return new WP_REST_Response(['error' => $terms->get_error_message()], 500);
+        if (is_wp_error($terms) || !is_array($terms)) {
+            return new WP_REST_Response(['deleted' => [], 'errors' => [is_wp_error($terms) ? $terms->get_error_message() : 'No terms found']], 200);
         }
 
         $deleted = [];
         $errors = [];
 
         foreach ($terms as $term) {
+            if (!($term instanceof \WP_Term)) {
+                continue;
+            }
             delete_term_meta($term->term_id, '_cc_language');
             delete_term_meta($term->term_id, '_cc_translation_group');
             delete_term_meta($term->term_id, 'cc_order');
@@ -364,8 +359,11 @@ class TermsManagerRestController extends BaseRestController
         }
 
         foreach ($order as $item) {
-            $term_id = absint($item['term_id'] ?? 0);
-            $position = absint($item['order'] ?? 0);
+            if (!is_array($item)) {
+                continue;
+            }
+            $term_id = (int) ($item['term_id'] ?? 0);
+            $position = (int) ($item['order'] ?? 0);
             if ($term_id) {
                 update_term_meta($term_id, 'cc_order', $position);
             }
@@ -391,12 +389,15 @@ class TermsManagerRestController extends BaseRestController
             ],
         ]);
 
-        if (is_wp_error($terms) || empty($terms)) {
+        if (is_wp_error($terms) || !is_array($terms) || empty($terms)) {
             return 0;
         }
 
         $max = 0;
         foreach ($terms as $t) {
+            if (!($t instanceof \WP_Term)) {
+                continue;
+            }
             $o = (int) (get_term_meta($t->term_id, 'cc_order', true) ?: 0);
             if ($o > $max) {
                 $max = $o;

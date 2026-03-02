@@ -130,26 +130,21 @@
         }
 
         return el('div', {
-            style: {
-                border: '1px solid #dcdcde',
-                borderRadius: '8px',
-                padding: '20px',
-                background: '#fff',
-                marginBottom: '16px',
-            }
+            className: 'cc-card',
+            style: { marginBottom: '24px' }
         },
-            el('div', { style: { display: 'flex', alignItems: 'flex-start', gap: '20px', flexWrap: 'wrap' } },
+            el('div', { className: 'cc-card-body', style: { display: 'flex', alignItems: 'flex-start', gap: '24px', flexWrap: 'wrap' } },
                 // Preview area
                 el('div', {
                     style: {
-                        width: '140px',
-                        minHeight: '100px',
-                        border: '2px dashed #dcdcde',
+                        width: '160px',
+                        height: '110px',
+                        border: '1px solid var(--cc-border)',
                         borderRadius: '6px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        background: '#f6f7f7',
+                        background: 'var(--cc-bg-soft)',
                         flexShrink: 0,
                         overflow: 'hidden',
                     }
@@ -157,26 +152,28 @@
                     imageUrl
                         ? el('img', {
                             src: imageUrl,
-                            style: { maxWidth: '100%', maxHeight: '100px', display: 'block', objectFit: 'contain' }
+                            style: { maxWidth: '100%', maxHeight: '100%', display: 'block', objectFit: 'contain' }
                         })
-                        : el('span', { style: { color: '#a7aaad', fontSize: '12px', textAlign: 'center', padding: '8px' } },
+                        : el('span', { style: { color: 'var(--cc-text-muted)', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' } },
                             __('No image', 'content-core')
                         )
                 ),
                 // Info + actions
-                el('div', { style: { flex: 1 } },
-                    el('div', { style: { fontWeight: 600, fontSize: '14px', marginBottom: '4px' } }, label),
-                    hint && el('div', { style: { fontSize: '12px', color: '#646970', marginBottom: '12px' } }, hint),
-                    el('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
+                el('div', { style: { flex: 1, minWidth: '250px' } },
+                    el('div', { className: 'cc-field-label', style: { marginBottom: '4px' } }, label),
+                    hint && el('div', { className: 'cc-help', style: { marginBottom: '16px' } }, hint),
+                    el('div', { style: { display: 'flex', gap: '8px' } },
                         el('button', {
                             type: 'button',
-                            className: 'button',
+                            className: 'cc-button-secondary',
                             onClick: openMedia,
+                            style: { padding: '6px 14px' }
                         }, imageId ? __('Replace', 'content-core') : __('Upload', 'content-core')),
                         !!imageId && el('button', {
                             type: 'button',
-                            className: 'button',
+                            className: 'cc-button-secondary',
                             onClick: onRemove,
+                            style: { padding: '6px 14px', color: 'var(--cc-error)' }
                         }, __('Remove', 'content-core'))
                     )
                 )
@@ -199,57 +196,55 @@
             onChange({ seo: { ...seo, [field]: value } });
         }
 
-        return el('div', null,
-            el('div', { className: 'cc-settings-card' },
-                el('p', { className: 'cc-card-desc' }, __('Default global SEO values. Individual pages can override these.', 'content-core')),
-                el('table', { className: 'form-table' },
-                    el('tbody', null,
-                        el('tr', null,
-                            el('th', { scope: 'row' }, __('Site Title', 'content-core')),
-                            el('td', null,
-                                el('input', {
-                                    type: 'text',
-                                    className: 'regular-text',
-                                    value: siteTitle,
-                                    placeholder: config.defaultTitle || '',
-                                    onChange: function (e) { handleChange('title', e.target.value); },
-                                }),
-                                el('p', { className: 'description' }, __('Used in page title templates.', 'content-core'))
-                            )
+        return el('div', { className: 'cc-grid' },
+            el('div', { className: 'cc-card' },
+                el('div', { className: 'cc-card-header' }, el('h2', null, __('Global SEO', 'content-core'))),
+                el('div', { className: 'cc-card-body' },
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Site Title', 'content-core')),
+                        el('div', { className: 'cc-field-input' },
+                            el('input', {
+                                type: 'text',
+                                value: siteTitle,
+                                placeholder: config.defaultTitle || '',
+                                onChange: function (e) { handleChange('title', e.target.value); },
+                            })
                         ),
-                        el('tr', null,
-                            el('th', { scope: 'row' }, __('Default Meta Description', 'content-core')),
-                            el('td', null,
-                                el('textarea', {
-                                    className: 'large-text',
-                                    rows: 4,
-                                    value: siteDesc,
-                                    placeholder: config.defaultDesc || '',
-                                    onChange: function (e) { handleChange('description', e.target.value); },
-                                }),
-                                el('p', { className: 'description' }, __('Fallback description when a page has none.', 'content-core'))
-                            )
-                        )
+                        el('p', { className: 'cc-help' }, __('Global title suffix or fallback. Used in page title templates.', 'content-core'))
+                    ),
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Default Meta Description', 'content-core')),
+                        el('div', { className: 'cc-field-input' },
+                            el('textarea', {
+                                rows: 4,
+                                value: siteDesc,
+                                placeholder: config.defaultDesc || '',
+                                onChange: function (e) { handleChange('description', e.target.value); },
+                            })
+                        ),
+                        el('p', { className: 'cc-help' }, __('Fallback description when a page has no specific SEO text provided.', 'content-core'))
                     )
                 )
             ),
 
             // Live SEO Preview
-            (previewTitle || previewDesc) && el('div', { className: 'cc-settings-card' },
-                el('h3', { style: { margin: '0 0 12px', fontSize: '14px', fontWeight: 600 } }, __('Search Result Preview', 'content-core')),
-                el('div', {
-                    style: {
-                        border: '1px solid #e8eaed',
-                        borderRadius: '8px',
-                        padding: '16px 20px',
-                        background: '#fff',
-                        maxWidth: '600px',
-                        fontFamily: 'arial, sans-serif',
-                    }
-                },
-                    el('div', { style: { fontSize: '12px', color: '#4d5156', marginBottom: '4px' } }, previewUrl),
-                    el('div', { style: { fontSize: '20px', color: '#1a0dab', marginBottom: '4px', lineHeight: 1.3 } }, previewTitle || __('(Site Title)', 'content-core')),
-                    el('div', { style: { fontSize: '14px', color: '#4d5156', lineHeight: 1.5 } }, previewDesc || __('(Meta Description)', 'content-core'))
+            el('div', { className: 'cc-card' },
+                el('div', { className: 'cc-card-header' }, el('h2', null, __('Search Preview', 'content-core'))),
+                el('div', { className: 'cc-card-body', style: { background: 'var(--cc-bg-soft)' } },
+                    el('div', {
+                        style: {
+                            border: '1px solid var(--cc-border)',
+                            borderRadius: '8px',
+                            padding: '24px',
+                            background: '#fff',
+                            fontFamily: 'arial, sans-serif',
+                            boxShadow: 'var(--cc-shadow)',
+                        }
+                    },
+                        el('div', { style: { fontSize: '13px', color: '#1a0dab', marginBottom: '4px', letterSpacing: 'normal' } }, previewUrl),
+                        el('div', { style: { fontSize: '20px', color: '#1a0dab', marginBottom: '4px', lineHeight: 1.3, textDecoration: 'none' } }, previewTitle || __('(Site Title)', 'content-core')),
+                        el('div', { style: { fontSize: '14px', color: '#4d5156', lineHeight: 1.5 } }, previewDesc || __('(Meta Description)', 'content-core'))
+                    )
                 )
             )
         );
@@ -281,13 +276,11 @@
             };
         }
 
-        return el('div', null,
-            el('div', { className: 'cc-settings-card' },
-                el('p', { className: 'cc-card-desc' }, __('Manage site-wide images. IDs are stored; URLs are resolved on output.', 'content-core')),
-
+        return el('div', { className: 'cc-grid' },
+            el('div', { className: 'cc-grid-full' },
                 el(ImagePicker, {
-                    label: __('Favicon', 'content-core'),
-                    hint: __('64×64 — Exactly 64x64 px. Used as site favicon and touch icon.', 'content-core'),
+                    label: __('Favicon (Site Icon)', 'content-core'),
+                    hint: __('Recommended 64×64 px. Used as the browser favicon and mobile touch icon.', 'content-core'),
                     imageId: images.social_icon_id || 0,
                     imageUrl: images.social_icon_id_url || '',
                     exactWidth: 64,
@@ -297,8 +290,8 @@
                 }),
 
                 el(ImagePicker, {
-                    label: __('Social Preview (OG Image)', 'content-core'),
-                    hint: __('1200×630 — Exactly 1200x630 px. Default Open Graph image for social sharing.', 'content-core'),
+                    label: __('Social Sharing Image', 'content-core'),
+                    hint: __('1200×630 px recommended. This image appears when your site is shared on social media (Facebook, LinkedIn, etc.).', 'content-core'),
                     imageId: images.og_default_id || 0,
                     imageUrl: images.og_default_id_url || '',
                     exactWidth: 1200,
@@ -327,118 +320,101 @@
         const behavior = cookie.behavior || {};
         const categories = cookie.categories || {};
 
-        return el('div', null,
-            el('div', { className: 'cc-settings-card' },
-                el('p', { className: 'cc-card-desc' }, __('Configure the consent banner shown to visitors.', 'content-core')),
-                el('table', { className: 'form-table' },
-                    el('tbody', null,
-                        el('tr', null,
-                            el('th', null, __('Enable Banner', 'content-core')),
-                            el('td', null,
-                                el('label', null,
-                                    el('input', {
-                                        type: 'checkbox',
-                                        checked: !!cookie.enabled,
-                                        onChange: function (e) { set('enabled', e.target.checked); }
-                                    }),
-                                    ' ', __('Show cookie consent banner to visitors', 'content-core')
-                                )
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('Banner Title', 'content-core')),
-                            el('td', null,
+        return el('div', { className: 'cc-grid' },
+            el('div', { className: 'cc-card' },
+                el('div', { className: 'cc-card-header' }, el('h2', null, __('Consent Banner', 'content-core'))),
+                el('div', { className: 'cc-card-body' },
+                    el('div', { className: 'cc-field' },
+                        el('div', { className: 'cc-toggle-wrap' },
+                            el('label', { className: 'cc-toggle' },
                                 el('input', {
-                                    type: 'text',
-                                    className: 'regular-text',
-                                    value: cookie.bannerTitle || '',
-                                    onChange: function (e) { set('bannerTitle', e.target.value); }
-                                })
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('Banner Text', 'content-core')),
-                            el('td', null,
-                                el('textarea', {
-                                    className: 'large-text',
-                                    rows: 3,
-                                    value: cookie.bannerText || '',
-                                    onChange: function (e) { set('bannerText', e.target.value); }
-                                })
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('Privacy Policy URL', 'content-core')),
-                            el('td', null,
-                                el('input', {
-                                    type: 'url',
-                                    className: 'regular-text',
-                                    value: cookie.policyUrl || '',
-                                    onChange: function (e) { set('policyUrl', e.target.value); }
-                                })
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('Accept All Label', 'content-core')),
-                            el('td', null,
-                                el('input', {
-                                    type: 'text',
-                                    className: 'regular-text',
-                                    value: labels.acceptAll || '',
-                                    onChange: function (e) { setNested('labels', 'acceptAll', e.target.value); }
-                                })
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('Reject All Label', 'content-core')),
-                            el('td', null,
-                                el('input', {
-                                    type: 'text',
-                                    className: 'regular-text',
-                                    value: labels.rejectAll || '',
-                                    onChange: function (e) { setNested('labels', 'rejectAll', e.target.value); }
-                                })
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('GA4 Measurement ID', 'content-core')),
-                            el('td', null,
-                                el('input', {
-                                    type: 'text',
-                                    className: 'regular-text',
-                                    placeholder: 'G-XXXXXXXXXX',
-                                    value: integrations.ga4MeasurementId || '',
-                                    onChange: function (e) { setNested('integrations', 'ga4MeasurementId', e.target.value); }
-                                })
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('GTM Container ID', 'content-core')),
-                            el('td', null,
-                                el('input', {
-                                    type: 'text',
-                                    className: 'regular-text',
-                                    placeholder: 'GTM-XXXXXXX',
-                                    value: integrations.gtmContainerId || '',
-                                    onChange: function (e) { setNested('integrations', 'gtmContainerId', e.target.value); }
-                                })
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('Categories', 'content-core')),
-                            el('td', null,
-                                ['analytics', 'marketing', 'preferences'].map(function (cat) {
-                                    return el('label', { key: cat, style: { display: 'block', marginBottom: '4px' } },
-                                        el('input', {
-                                            type: 'checkbox',
-                                            checked: !!categories[cat],
-                                            onChange: function (e) { setNested('categories', cat, e.target.checked); }
-                                        }),
-                                        ' ', cat.charAt(0).toUpperCase() + cat.slice(1)
-                                    );
-                                })
-                            )
+                                    type: 'checkbox',
+                                    checked: !!cookie.enabled,
+                                    onChange: function (e) { set('enabled', e.target.checked); }
+                                }),
+                                el('span', { className: 'cc-slider' })
+                            ),
+                            el('label', { className: 'cc-field-label', style: { margin: 0 } }, __('Enable Cookie Consent Banner', 'content-core'))
                         )
+                    ),
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Banner Title', 'content-core')),
+                        el('div', { className: 'cc-field-input' },
+                            el('input', {
+                                type: 'text',
+                                value: cookie.bannerTitle || '',
+                                onChange: function (e) { set('bannerTitle', e.target.value); }
+                            })
+                        )
+                    ),
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Banner Text', 'content-core')),
+                        el('div', { className: 'cc-field-input' },
+                            el('textarea', {
+                                rows: 3,
+                                value: cookie.bannerText || '',
+                                onChange: function (e) { set('bannerText', e.target.value); }
+                            })
+                        )
+                    ),
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Privacy Policy URL', 'content-core')),
+                        el('div', { className: 'cc-field-input' },
+                            el('input', {
+                                type: 'url',
+                                value: cookie.policyUrl || '',
+                                onChange: function (e) { set('policyUrl', e.target.value); }
+                            })
+                        )
+                    )
+                )
+            ),
+            el('div', { className: 'cc-card' },
+                el('div', { className: 'cc-card-header' }, el('h2', null, __('Integrations & Labels', 'content-core'))),
+                el('div', { className: 'cc-card-body' },
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Accept Button Label', 'content-core')),
+                        el('div', { className: 'cc-field-input' },
+                            el('input', {
+                                type: 'text',
+                                value: labels.acceptAll || '',
+                                onChange: function (e) { setNested('labels', 'acceptAll', e.target.value); }
+                            })
+                        )
+                    ),
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Reject Button Label', 'content-core')),
+                        el('div', { className: 'cc-field-input' },
+                            el('input', {
+                                type: 'text',
+                                value: labels.rejectAll || '',
+                                onChange: function (e) { setNested('labels', 'rejectAll', e.target.value); }
+                            })
+                        )
+                    ),
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Google Analytics (GA4) ID', 'content-core')),
+                        el('div', { className: 'cc-field-input' },
+                            el('input', {
+                                type: 'text',
+                                placeholder: 'G-XXXXXXXXXX',
+                                value: integrations.ga4MeasurementId || '',
+                                onChange: function (e) { setNested('integrations', 'ga4MeasurementId', e.target.value); }
+                            })
+                        )
+                    ),
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Active Categories', 'content-core')),
+                        ['analytics', 'marketing', 'preferences'].map(function (cat) {
+                            return el('label', { key: cat, style: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontSize: '13px' } },
+                                el('input', {
+                                    type: 'checkbox',
+                                    checked: !!categories[cat],
+                                    onChange: function (e) { setNested('categories', cat, e.target.checked); }
+                                }),
+                                cat.charAt(0).toUpperCase() + cat.slice(1)
+                            );
+                        })
                     )
                 )
             )
@@ -469,15 +445,15 @@
     // ─── Site Options Tab ────────────────────────────────────────────────────
 
     function SiteOptionsTab() {
-        return el('div', null,
-            el('div', { className: 'cc-settings-card' },
-                el('p', { className: 'cc-card-desc' },
+        return el('div', { className: 'cc-card' },
+            el('div', { className: 'cc-card-body' },
+                el('p', { className: 'cc-help', style: { marginBottom: '20px', fontSize: '14px', lineHeight: '1.6' } },
                     __('Site Options contain structured content fields (address, phone, email, social links, etc.) that are managed per language. Use the dedicated Site Options page to edit these values.', 'content-core')
                 ),
                 el('a', {
                     href: siteOptionsUrl,
-                    className: 'button button-primary',
-                    style: { textDecoration: 'none' },
+                    className: 'cc-button-primary',
+                    style: { textDecoration: 'none', display: 'inline-flex' },
                 }, __('Go to Site Options →', 'content-core'))
             )
         );
@@ -498,199 +474,125 @@
             onChange({ branding: { ...branding, ...updates } });
         }
 
-        return el('div', null,
-            el('div', { className: 'cc-settings-card' },
-                el('p', { className: 'cc-card-desc' }, __('Configure white-label branding for the client environment. These settings affect the login screen and the WordPress admin interface.', 'content-core')),
-                el('table', { className: 'form-table' },
-                    el('tbody', null,
-                        el('tr', null,
-                            el('th', null, __('General Settings', 'content-core')),
-                            el('td', null,
-                                el('div', { style: { display: 'flex', flexDirection: 'column', gap: '8px' } },
-                                    el('label', null,
-                                        el('input', {
-                                            type: 'checkbox',
-                                            checked: !!branding.enabled,
-                                            onChange: function (e) { set('enabled', e.target.checked); }
-                                        }),
-                                        ' ', __('Activate branding overrides', 'content-core')
-                                    ),
-                                    el('label', null,
-                                        el('input', {
-                                            type: 'checkbox',
-                                            checked: !!branding.exclude_admins,
-                                            onChange: function (e) { set('exclude_admins', e.target.checked); }
-                                        }),
-                                        ' ', __('Do not apply branding to administrator roles', 'content-core')
-                                    ),
-                                    el('label', null,
-                                        el('input', {
-                                            type: 'checkbox',
-                                            checked: !!branding.remove_wp_mentions,
-                                            onChange: function (e) { set('remove_wp_mentions', e.target.checked); }
-                                        }),
-                                        ' ', __('Hide default WordPress logos and mentions', 'content-core')
-                                    )
-                                )
-                            )
-                        ),
-
-                        // --- Admin Branding ---
-                        el('tr', null,
-                            el('th', { colSpan: 2, style: { padding: '20px 0 10px', borderBottom: '1px solid #eee' } },
-                                el('strong', null, __('WordPress Admin Interface', 'content-core'))
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('Admin Bar Color', 'content-core')),
-                            el('td', null,
+        return el('div', { className: 'cc-grid' },
+            el('div', { className: 'cc-card' },
+                el('div', { className: 'cc-card-header' }, el('h2', null, __('General & Admin Branding', 'content-core'))),
+                el('div', { className: 'cc-card-body' },
+                    el('div', { className: 'cc-field' },
+                        el('div', { className: 'cc-toggle-wrap', style: { marginBottom: '12px' } },
+                            el('label', { className: 'cc-toggle' },
                                 el('input', {
-                                    type: 'color',
-                                    value: branding.custom_primary_color || '#1e1e1e',
-                                    onChange: function (e) { set('custom_primary_color', e.target.value); },
-                                    style: { verticalAlign: 'middle', marginRight: '8px' }
+                                    type: 'checkbox',
+                                    checked: !!branding.enabled,
+                                    onChange: function (e) { set('enabled', e.target.checked); }
                                 }),
-                                el('span', { className: 'description' }, __('Main background color for the top admin bar.', 'content-core'))
-                            )
+                                el('span', { className: 'cc-slider' })
+                            ),
+                            el('label', { className: 'cc-field-label', style: { margin: 0 } }, __('Activate Branding Overrides', 'content-core'))
                         ),
-                        el('tr', null,
-                            el('th', null, __('Admin Accent Color', 'content-core')),
-                            el('td', null,
-                                el('input', {
-                                    type: 'color',
-                                    value: branding.custom_accent_color || '#2271b1',
-                                    onChange: function (e) { set('custom_accent_color', e.target.value); },
-                                    style: { verticalAlign: 'middle', marginRight: '8px' }
-                                }),
-                                el('p', { className: 'description' }, __('Used for primary buttons and active menu states.', 'content-core'))
-                            )
+                        el('label', { style: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontSize: '13px' } },
+                            el('input', {
+                                type: 'checkbox',
+                                checked: !!branding.exclude_admins,
+                                onChange: function (e) { set('exclude_admins', e.target.checked); }
+                            }),
+                            __('Do not apply branding to administrator roles', 'content-core')
                         ),
-                        el('tr', null,
-                            el('th', null, __('Admin Bar Logo', 'content-core')),
-                            el('td', null,
-                                el('div', { style: { marginBottom: '10px' } },
-                                    el('label', null,
-                                        el('input', {
-                                            type: 'checkbox',
-                                            checked: !!branding.use_site_icon_for_admin_bar,
-                                            onChange: function (e) { set('use_site_icon_for_admin_bar', e.target.checked); }
-                                        }),
-                                        ' ', __('Use Site Icon (Favicon)', 'content-core')
-                                    )
-                                ),
-                                !branding.use_site_icon_for_admin_bar && el(ImagePicker, {
-                                    imageId: branding.admin_bar_logo || 0,
-                                    imageUrl: branding.admin_bar_logo_url || '',
-                                    onChange: function (id, url) {
-                                        set({
-                                            admin_bar_logo: id,
-                                            admin_bar_logo_url: url
-                                        });
-                                    },
-                                    onRemove: function () {
-                                        set({
-                                            admin_bar_logo: 0,
-                                            admin_bar_logo_url: ''
-                                        });
-                                    }
-                                }),
-                                branding.use_site_icon_for_admin_bar && branding.site_icon_url && el('img', {
-                                    src: branding.site_icon_url,
-                                    style: { maxHeight: '32px', display: 'block', background: '#f0f0f1', padding: '4px', borderRadius: '4px' }
-                                }),
-                                el('p', { className: 'description' }, __('Small square image or SVG for the top left corner.', 'content-core'))
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('Admin Bar Logo Link', 'content-core')),
-                            el('td', null,
-                                el('input', {
-                                    type: 'url',
-                                    className: 'regular-text',
-                                    value: branding.admin_bar_logo_link_url || '',
-                                    placeholder: 'https://...',
-                                    onChange: function (e) { set('admin_bar_logo_link_url', e.target.value); }
-                                }),
-                                el('p', { className: 'description' }, __('Optional URL for the admin bar logo link.', 'content-core'))
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('Admin Footer Text', 'content-core')),
-                            el('td', null,
-                                el('textarea', {
-                                    className: 'large-text',
-                                    rows: 2,
-                                    value: branding.custom_footer_text || '',
-                                    onChange: function (e) { set('custom_footer_text', e.target.value); }
-                                }),
-                                el('p', { className: 'description' }, __('Replaces the default "Thank you for creating with WordPress".', 'content-core'))
-                            )
-                        ),
-
-                        // --- Login Branding ---
-                        el('tr', null,
-                            el('th', { colSpan: 2, style: { padding: '20px 0 10px', borderBottom: '1px solid #eee' } },
-                                el('strong', null, __('Login Screen', 'content-core'))
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('Login Screen Background', 'content-core')),
-                            el('td', null,
-                                el('input', {
-                                    type: 'color',
-                                    value: branding.login_bg_color || '#f1f1f1',
-                                    onChange: function (e) { set('login_bg_color', e.target.value); },
-                                    style: { verticalAlign: 'middle', marginRight: '8px' }
-                                })
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('Login Screen Accent Color', 'content-core')),
-                            el('td', null,
-                                el('input', {
-                                    type: 'color',
-                                    value: branding.login_btn_color || '#2271b1',
-                                    onChange: function (e) { set('login_btn_color', e.target.value); },
-                                    style: { verticalAlign: 'middle', marginRight: '8px' }
-                                }),
-                                el('p', { className: 'description' }, __('Primary color for the login button and theme accents.', 'content-core'))
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('Login Screen Logo', 'content-core')),
-                            el('td', null,
-                                el(ImagePicker, {
-                                    imageId: branding.login_logo || 0,
-                                    imageUrl: branding.login_logo_url || '',
-                                    onChange: function (id, url) {
-                                        set({
-                                            login_logo: id,
-                                            login_logo_url: url
-                                        });
-                                    },
-                                    onRemove: function () {
-                                        set({
-                                            login_logo: 0,
-                                            login_logo_url: ''
-                                        });
-                                    }
-                                }),
-                                el('p', { className: 'description' }, __('Client logo displayed on the login screen.', 'content-core'))
-                            )
-                        ),
-                        el('tr', null,
-                            el('th', null, __('Login Screen Logo Link', 'content-core')),
-                            el('td', null,
-                                el('input', {
-                                    type: 'url',
-                                    className: 'regular-text',
-                                    value: branding.login_logo_link_url || '',
-                                    placeholder: 'https://...',
-                                    onChange: function (e) { set('login_logo_link_url', e.target.value); }
-                                }),
-                                el('p', { className: 'description' }, __('Optional link for the login logo.', 'content-core'))
-                            )
+                        el('label', { style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' } },
+                            el('input', {
+                                type: 'checkbox',
+                                checked: !!branding.remove_wp_mentions,
+                                onChange: function (e) { set('remove_wp_mentions', e.target.checked); }
+                            }),
+                            __('Hide default WordPress logos and mentions', 'content-core')
                         )
+                    ),
+
+                    el('hr', { style: { margin: '24px 0', border: 'none', borderTop: '1px solid var(--cc-border-header)' } }),
+
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Admin Bar Background', 'content-core')),
+                        el('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' } },
+                            el('input', {
+                                type: 'color',
+                                value: branding.custom_primary_color || '#1e1e1e',
+                                onChange: function (e) { set('custom_primary_color', e.target.value); },
+                                style: { width: '44px', height: '44px', padding: '4px', border: '1px solid var(--cc-border)', borderRadius: '4px' }
+                            }),
+                            el('code', { style: { fontSize: '11px' } }, branding.custom_primary_color || '#1e1e1e')
+                        )
+                    ),
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Admin Accent Color', 'content-core')),
+                        el('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' } },
+                            el('input', {
+                                type: 'color',
+                                value: branding.custom_accent_color || '#2271b1',
+                                onChange: function (e) { set('custom_accent_color', e.target.value); },
+                                style: { width: '44px', height: '44px', padding: '4px', border: '1px solid var(--cc-border)', borderRadius: '4px' }
+                            }),
+                            el('code', { style: { fontSize: '11px' } }, branding.custom_accent_color || '#2271b1')
+                        )
+                    ),
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Admin Footer Text', 'content-core')),
+                        el('div', { className: 'cc-field-input' },
+                            el('textarea', {
+                                rows: 2,
+                                value: branding.custom_footer_text || '',
+                                onChange: function (e) { set('custom_footer_text', e.target.value); }
+                            })
+                        )
+                    )
+                )
+            ),
+            el('div', { className: 'cc-card' },
+                el('div', { className: 'cc-card-header' }, el('h2', null, __('Logos & Login Branding', 'content-core'))),
+                el('div', { className: 'cc-card-body' },
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Admin Bar Logo', 'content-core')),
+                        el('div', { style: { marginBottom: '12px' } },
+                            el('label', { style: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' } },
+                                el('input', {
+                                    type: 'checkbox',
+                                    checked: !!branding.use_site_icon_for_admin_bar,
+                                    onChange: function (e) { set('use_site_icon_for_admin_bar', e.target.checked); }
+                                }),
+                                __('Use Site Icon (Favicon) in Admin Bar', 'content-core')
+                            )
+                        ),
+                        !branding.use_site_icon_for_admin_bar && el(ImagePicker, {
+                            imageId: branding.admin_bar_logo || 0,
+                            imageUrl: branding.admin_bar_logo_url || '',
+                            onChange: function (id, url) {
+                                set({ admin_bar_logo: id, admin_bar_logo_url: url });
+                            },
+                            onRemove: function () {
+                                set({ admin_bar_logo: 0, admin_bar_logo_url: '' });
+                            }
+                        })
+                    ),
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Login Screen Logo', 'content-core')),
+                        el(ImagePicker, {
+                            imageId: branding.login_logo || 0,
+                            imageUrl: branding.login_logo_url || '',
+                            onChange: function (id, url) {
+                                set({ login_logo: id, login_logo_url: url });
+                            },
+                            onRemove: function () {
+                                set({ login_logo: 0, login_logo_url: '' });
+                            }
+                        })
+                    ),
+                    el('div', { className: 'cc-field' },
+                        el('label', { className: 'cc-field-label' }, __('Login Screen Accent Color', 'content-core')),
+                        el('input', {
+                            type: 'color',
+                            value: branding.login_btn_color || '#2271b1',
+                            onChange: function (e) { set('login_btn_color', e.target.value); },
+                            style: { width: '44px', height: '44px', padding: '4px', border: '1px solid var(--cc-border)', borderRadius: '4px' }
+                        })
                     )
                 )
             )
@@ -791,17 +693,6 @@
                 onDismiss: function () { setToast(null); }
             }),
 
-            // Tab nav
-            el('nav', { className: 'cc-react-tabs', style: { marginBottom: '20px' } },
-                tabs.map(function (tab) {
-                    return el('button', {
-                        key: tab.id,
-                        className: 'cc-tab-btn' + (activeTab === tab.id ? ' is-active' : ''),
-                        onClick: function () { setActiveTab(tab.id); }
-                    }, tab.label);
-                })
-            ),
-
             // Content
             activeTab === 'seo' && el(SeoTab, { settings: localSettings, onChange: handleChange }),
             activeTab === 'images' && el(SiteImagesTab, { settings: localSettings, onChange: handleChange }),
@@ -810,12 +701,28 @@
             activeTab === 'site-options' && el(SiteOptionsTab),
 
             // Footer / Actions
-            activeTab !== 'site-options' && el('div', { className: 'cc-settings-footer' },
+            activeTab !== 'site-options' && el('div', {
+                className: 'cc-form-actions',
+                style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    marginTop: '40px',
+                    padding: '24px',
+                    background: 'var(--cc-bg-card)',
+                    border: '1px solid var(--cc-border)',
+                    borderRadius: 'var(--cc-radius)',
+                    boxShadow: 'var(--cc-shadow)'
+                }
+            },
                 el('button', {
-                    className: 'button button-primary',
+                    className: 'cc-button-primary',
                     disabled: saving,
                     onClick: handleSave,
-                }, saving ? __('Saving...', 'content-core') : __('Save Settings', 'content-core')),
+                },
+                    el('span', { className: 'dashicons dashicons-saved', style: { fontSize: '18px', width: '18px', height: '18px' } }),
+                    saving ? __('Saving...', 'content-core') : __('Save Settings', 'content-core')
+                ),
                 saving && el('span', { className: 'spinner is-active', style: { float: 'none', marginLeft: '10px' } })
             )
         );

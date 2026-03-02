@@ -20,4 +20,13 @@ abstract class BaseRestController extends WP_REST_Controller
     {
         return current_user_can('manage_options');
     }
+
+    /**
+     * Standard initialization for Content Core REST controllers.
+     * Hooks register_routes into WordPress.
+     */
+    public function init(): void
+    {
+        add_action('rest_api_init', [$this, 'register_routes']);
+    }
 }

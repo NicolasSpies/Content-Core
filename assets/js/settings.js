@@ -332,49 +332,60 @@ jQuery(function ($) {
                             if (!data.admin_bar) data.admin_bar = {};
                             data.admin_bar[match[1]] = this.checked;
                         }
-                        return;
-                    }
+                    } else {
+                        const match = name.match(new RegExp('^' + prefix + '\\[(.+)\\]$'));
+                        if (match) {
+                            const fullKey = match[1];
+                            const parts = fullKey.split('][').map(p => p.replace(/\]$/, '').replace(/^\[/, ''));
 
-                    const match = name.match(new RegExp('^' + prefix + '\\[(.+)\\]$'));
-                    if (match) {
-                        const fullKey = match[1];
-                        const parts = fullKey.split('][').map(p => p.replace(/\]$/, '').replace(/^\[/, ''));
-                        let target = data;
-                        for (let i = 0; i < parts.length; i++) {
-                            const part = parts[i];
-                            if (i === parts.length - 1) {
-                                target[part] = this.checked;
-                            } else {
-                                if (!target[part]) target[part] = {};
-                                target = target[part];
+                            let target = data;
+                            for (let i = 0; i < parts.length; i++) {
+                                const part = parts[i];
+                                if (i === parts.length - 1) {
+                                    target[part] = this.checked;
+                                } else {
+                                    if (!target[part]) target[part] = (parts[i + 1] === '' ? [] : {});
+                                    target = target[part];
+                                }
                             }
                         }
                     }
                 });
             }
 
+            // Prepare data for API fetch
+            let dataToSave = {};
+            if (moduleKey === 'visibility') {
+                dataToSave = data;
+            } else {
+                const prefixMap = {
+                    'media': 'cc_media_settings',
+                    'redirect': 'cc_redirect_settings',
+                    'multilingual': 'cc_languages'
+                };
+                const prefix = prefixMap[moduleKey];
+                dataToSave[prefix] = data;
+                if (moduleKey === 'redirect' && data.admin_bar) {
+                    dataToSave.cc_admin_bar_link = data.admin_bar;
+                }
+            }
+
             wp.apiFetch({
-                path: 'content-core/v1/settings/' + moduleKey,
+                path: `content-core/v1/settings/${moduleKey}`,
                 method: 'POST',
-                data: isReset ? { reset: true } : data,
+                data: isReset ? { reset: true } : dataToSave,
                 headers: { 'X-WP-Nonce': CC_SETTINGS.nonce }
-            }).then(response => {
+            }).then(() => {
                 if (isReset) {
-                    const $notice = $('<div class="notice notice-success is-dismissible"><p>Settings reset to defaults. Reloading...</p></div>');
-                    $('.wrap h1').after($notice);
-                    setTimeout(() => window.location.reload(), 1500);
+                    window.location.reload();
                     return;
                 }
-                $submitBtn.prop('disabled', false).text(originalText);
-                // Notification
-                const $notice = $('<div class="notice notice-success is-dismissible"><p>Settings saved via REST.</p></div>');
-                $('.wrap h1').after($notice);
-                setTimeout(() => $notice.fadeOut(), 3000);
-            }).catch(err => {
+                showNotice('Settings saved.', 'success');
+            }).catch((err) => {
                 console.error('Save error:', err);
+                showNotice('Error saving settings: ' + (err.message || 'Unknown error'), 'error');
+            }).finally(() => {
                 $submitBtn.prop('disabled', false).text(originalText);
-                alert('Error saving settings: ' + (err.message || 'Unknown error'));
             });
         });
     }
-});

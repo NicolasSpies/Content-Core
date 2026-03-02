@@ -37,6 +37,13 @@ class Plugin
     private bool $initialized = false;
 
     /**
+     * Error Logger instance
+     *
+     * @var \ContentCore\Admin\ErrorLogger|null
+     */
+    private $error_logger = null;
+
+    /**
      * Main Instance
      *
      * @return Plugin
@@ -67,6 +74,10 @@ class Plugin
         }
 
         $this->initialized = true;
+
+        // Step 0: Run upgrades
+        $upgrade_service = new \ContentCore\Core\UpgradeService();
+        $upgrade_service->init();
 
         $this->register_modules();
         $this->init_modules();
@@ -203,7 +214,7 @@ class Plugin
      */
     public function get_version(): string
     {
-        return '1.6.2';
+        return '1.6.3';
     }
 
     /**
@@ -212,6 +223,17 @@ class Plugin
     public function get_rest_namespace(): string
     {
         return self::REST_NAMESPACE . '/' . self::REST_VERSION;
+    }
+
+    /**
+     * Get the error logger instance
+     */
+    public function get_error_logger(): \ContentCore\Admin\ErrorLogger
+    {
+        if (is_null($this->error_logger)) {
+            $this->error_logger = new \ContentCore\Admin\ErrorLogger(CONTENT_CORE_PLUGIN_DIR);
+        }
+        return $this->error_logger;
     }
 
     /**

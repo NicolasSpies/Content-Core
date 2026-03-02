@@ -297,4 +297,73 @@ jQuery(document).ready(function ($) {
 
     initSections();
 
+    /**
+     * Sidebar Menu Collapsible Logic
+     */
+    function initSidebarCollapse() {
+        var $menu = $('#toplevel_page_content-core');
+        if (!$menu.length) return;
+
+        var $submenu = $menu.find('.wp-submenu');
+        var $headers = $submenu.find('a[href*="-root"]');
+
+        $headers.each(function () {
+            var $header = $(this);
+            var $li = $header.parent();
+            var slug = $header.attr('href').split('page=')[1] || '';
+            var isCollapsed = false;
+
+            // Default states
+            if (slug.indexOf('cc-system-root') !== -1) {
+                isCollapsed = true;
+            }
+
+            // Check localStorage for persisted state
+            var savedState = localStorage.getItem('cc_menu_' + slug);
+            if (savedState) {
+                isCollapsed = savedState === 'collapsed';
+            }
+
+            // Mark header
+            $header.addClass('cc-menu-header-toggle');
+            if (isCollapsed) {
+                $header.addClass('is-collapsed');
+            }
+
+            // Toggle logic
+            $header.off('click').on('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                var currentlyCollapsed = $(this).hasClass('is-collapsed');
+                var newCollapsed = !currentlyCollapsed;
+
+                $(this).toggleClass('is-collapsed', newCollapsed);
+                localStorage.setItem('cc_menu_' + slug, newCollapsed ? 'collapsed' : 'expanded');
+
+                toggleSectionItems($(this), newCollapsed);
+            });
+
+            // Initial apply
+            if (isCollapsed) {
+                toggleSectionItems($header, true);
+            }
+        });
+
+        function toggleSectionItems($header, hide) {
+            var $next = $header.parent().next();
+            while ($next.length && !$next.find('a[href*="-root"]').length) {
+                if (hide) {
+                    $next.hide();
+                } else {
+                    $next.show();
+                }
+                $next = $next.next();
+            }
+        }
+    }
+
+    // Delay a bit to ensure WP has rendered everything
+    setTimeout(initSidebarCollapse, 100);
+
 });

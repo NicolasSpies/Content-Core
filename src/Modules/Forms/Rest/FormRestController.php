@@ -1,28 +1,20 @@
 <?php
 namespace ContentCore\Modules\Forms\Rest;
 
+use ContentCore\Modules\RestApi\BaseRestController;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 use ContentCore\Modules\Forms\Handlers\FormSubmissionHandler;
 
-class FormRestController
+class FormRestController extends BaseRestController
 {
-    private string $namespace;
-
-    public function __construct()
-    {
-        $this->namespace = \ContentCore\Plugin::REST_NAMESPACE . '/' . \ContentCore\Plugin::REST_VERSION;
-    }
-
-    public function init(): void
-    {
-        add_action('rest_api_init', [$this, 'register_routes']);
-    }
+    protected $namespace = 'content-core/v1';
+    protected $rest_base = 'forms';
 
     public function register_routes(): void
     {
-        register_rest_route($this->namespace, '/forms/(?P<slug>[a-zA-Z0-9-_]+)', [
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/(?P<slug>[a-zA-Z0-9-_]+)', [
             'methods' => WP_REST_Server::READABLE,
             'callback' => [$this, 'get_form'],
             'permission_callback' => '__return_true', // Publicly readable for frontend consumption
@@ -38,7 +30,7 @@ class FormRestController
             ]
         ]);
 
-        register_rest_route($this->namespace, '/forms/(?P<slug>[a-zA-Z0-9-_]+)/submit', [
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/(?P<slug>[a-zA-Z0-9-_]+)/submit', [
             'methods' => WP_REST_Server::CREATABLE,
             'callback' => [$this, 'submit_form'],
             'permission_callback' => '__return_true', // Protected by internal CSRF/Turnstile in the handler

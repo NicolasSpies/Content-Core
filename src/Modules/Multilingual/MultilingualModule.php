@@ -7,6 +7,8 @@ use ContentCore\Modules\Multilingual\Admin\LanguageListColumns;
 use ContentCore\Modules\Multilingual\Admin\TermLanguageColumns;
 use ContentCore\Modules\Multilingual\Admin\TermNativeLock;
 use ContentCore\Modules\Multilingual\Admin\TermsManagerAdmin;
+use ContentCore\Modules\Multilingual\Forms\FormTranslationManager;
+use ContentCore\Modules\Multilingual\Integrity\MultilingualIntegrity;
 use ContentCore\Modules\Multilingual\Rest\MultilingualRestHandler;
 use ContentCore\Modules\Multilingual\Rest\TermsManagerRestController;
 use ContentCore\Modules\Multilingual\Data\TranslationManager;
@@ -34,72 +36,59 @@ class MultilingualModule implements ModuleInterface
 
     public function init(): void
     {
+        // Core data managers are always needed for query interception and sync
         $this->translation_manager = new TranslationManager([$this, 'get_settings']);
         $this->term_translation_manager = new TermTranslationManager([$this, 'get_settings']);
 
-        $this->term_sync = new \ContentCore\Modules\Multilingual\Sync\TermSyncManager(
-            [$this, 'get_settings'],
-            $this->term_translation_manager
-        );
+        // Sync managers are always needed to handle saves/updates
+        $this->term_sync = new \ContentCore\Modules\Multilingual\Sync\TermSyncManager([$this, 'get_settings'], $this->term_translation_manager);
         $this->term_sync->init();
 
-        $this->post_sync = new \ContentCore\Modules\Multilingual\Sync\PostSyncManager(
-            [$this, 'get_settings'],
-            [$this, 'is_active'],
-            $this->translation_manager
-        );
+        $this->post_sync = new \ContentCore\Modules\Multilingual\Sync\PostSyncManager([$this, 'get_settings'], [$this, 'is_active'], $this->translation_manager);
         $this->post_sync->init();
 
         $this->url_rewrite = new \ContentCore\Modules\Multilingual\Sync\UrlRewriteManager([$this, 'get_settings']);
         $this->url_rewrite->init();
 
-        // Manually add support for core types because registered_post_type already fired
+        // Query Interception is critical for frontend/backend consistency
+        $this->term_query_interceptor = new \ContentCore\Modules\Multilingual\Query\TermQueryInterceptor([$this, 'get_settings'], [$this, 'is_active']);
+        $this->term_query_interceptor->init();
+
         add_post_type_support('post', 'cc-multilingual');
         add_post_type_support('page', 'cc-multilingual');
 
-        if (is_admin() || (defined('REST_REQUEST') && REST_REQUEST)) {
-            $this->editor = new LanguageEditor($this);
-            $this->editor->init();
+        if (is_admin()) {
+            add_action('admin_init', function () {
+                // Initialize Admin-only components lazily
+                $this->editor = new LanguageEditor($this);
+                $this->editor->init();
 
-            $this->columns = new LanguageListColumns($this);
-            $this->columns->init();
+                $this->columns = new LanguageListColumns($this);
+                $this->columns->init();
 
-            $this->term_columns = new TermLanguageColumns($this, $this->term_translation_manager);
-            $this->term_columns->init();
+                $this->term_columns = new TermLanguageColumns($this, $this->term_translation_manager);
+                $this->term_columns->init();
+
+                $this->admin_ui = new \ContentCore\Modules\Multilingual\Admin\AdminUIInjector([$this, 'is_active']);
+                $this->admin_ui->init();
+
+                $this->terms_manager_admin = new TermsManagerAdmin($this);
+                add_action('admin_enqueue_scripts', [$this->terms_manager_admin, 'enqueue_assets']);
+            });
 
             add_action('registered_post_type', [$this, 'handle_registered_post_type'], 10, 2);
-
-            $this->admin_ui = new \ContentCore\Modules\Multilingual\Admin\AdminUIInjector([$this, 'is_active']);
-            $this->admin_ui->init();
-
-            add_action('admin_init', [$this, 'handle_forms_backfill']);
-            add_action('admin_init', [$this, 'maybe_migrate_legacy_terms']);
-
-            // TermNativeLock is now a no-op — WordPress admin is fully restored.
-            $this->term_lock = new TermNativeLock();
-            $this->term_lock->init();
-
-            // Terms Manager admin page (no AJAX, no legacy logic)
-            $this->terms_manager_admin = new TermsManagerAdmin($this);
-            add_action('admin_enqueue_scripts', [$this->terms_manager_admin, 'enqueue_assets']);
         }
 
-        // Register Terms Manager REST routes
-        add_action('rest_api_init', function () {
-            $ns = \ContentCore\Plugin::get_instance()->get_rest_namespace();
-            $this->terms_manager_rest = new TermsManagerRestController($this, $ns);
-            $this->terms_manager_rest->register_routes();
-        });
+        // REST handlers are only needed on REST requests
+        if (defined('REST_REQUEST') && REST_REQUEST) {
+            add_action('rest_api_init', function () {
+                $this->terms_manager_rest = new TermsManagerRestController($this);
+                $this->terms_manager_rest->register_routes();
 
-        // Query Interception
-        $this->term_query_interceptor = new \ContentCore\Modules\Multilingual\Query\TermQueryInterceptor(
-            [$this, 'get_settings'],
-            [$this, 'is_active']
-        );
-        $this->term_query_interceptor->init();
-
-        $this->rest = new MultilingualRestHandler($this);
-        $this->rest->init();
+                $this->rest = new MultilingualRestHandler($this);
+                $this->rest->init();
+            });
+        }
 
         add_filter('query_vars', [$this, 'register_query_vars']);
 
@@ -197,116 +186,6 @@ class MultilingualModule implements ModuleInterface
         return $this->admin_ui->get_flag_html($code, $flag_id);
     }
 
-    /**
-     * One-time backfill for cc_form posts to ensure they have multilingual meta.
-     */
-    public function handle_forms_backfill(): void
-    {
-        if (!is_admin() || !current_user_can('manage_options')) {
-            return;
-        }
-
-        if (get_option('cc_forms_migrated_v1')) {
-            return;
-        }
-
-        $settings = $this->get_settings();
-        $default_lang = $settings['default_lang'] ?? 'de';
-
-        $posts = get_posts([
-            'post_type' => 'cc_form',
-            'posts_per_page' => -1,
-            'post_status' => 'any',
-            'fields' => 'ids',
-            // Only find posts missing the meta
-            'meta_query' => [
-                'relation' => 'OR',
-                [
-                    'key' => '_cc_language',
-                    'compare' => 'NOT EXISTS'
-                ],
-                [
-                    'key' => '_cc_translation_group',
-                    'compare' => 'NOT EXISTS'
-                ]
-            ]
-        ]);
-
-        if (!empty($posts)) {
-            foreach ($posts as $post_id) {
-                if (!get_post_meta($post_id, '_cc_language', true)) {
-                    update_post_meta($post_id, '_cc_language', $default_lang);
-                }
-                if (!get_post_meta($post_id, '_cc_translation_group', true)) {
-                    update_post_meta($post_id, '_cc_translation_group', wp_generate_uuid4());
-                }
-            }
-        }
-
-        update_option('cc_forms_migrated_v1', time());
-    }
-
-    /**
-     * One-time migration: backfill _cc_language and _cc_translation_group on all
-     * legacy terms that pre-date the multilingual system (i.e. are missing those metas).
-     *
-     * Safe on large datasets:
-     *  - Uses get_terms() with NOT EXISTS meta_query so only un-tagged terms are fetched.
-     *  - Checks each individual meta before writing (never overwrites existing values).
-     *  - Guarded by a version option so it only runs once per installation.
-     */
-    public function maybe_migrate_legacy_terms(): void
-    {
-        if (!is_admin() || !current_user_can('manage_options')) {
-            return;
-        }
-
-        // Version flag — bump this string if you ever need to re-run the migration.
-        if (get_option('cc_terms_lang_migrated_v3')) {
-            return;
-        }
-
-        $settings = $this->get_settings();
-        $default_lang = $settings['default_lang'] ?? 'de';
-
-        // Get all public taxonomies (built-in + custom).
-        $taxonomies = get_taxonomies(['public' => true], 'names');
-        if (empty($taxonomies)) {
-            update_option('cc_terms_lang_migrated_v2', time());
-            return;
-        }
-
-        // Fetch terms that are missing EITHER meta — we'll check individually before writing.
-        $terms = get_terms([
-            'taxonomy' => array_values($taxonomies),
-            'hide_empty' => false,
-            'fields' => 'ids',
-            'meta_query' => [
-                'relation' => 'OR',
-                [
-                    'key' => '_cc_language',
-                    'compare' => 'NOT EXISTS',
-                ],
-                [
-                    'key' => '_cc_translation_group',
-                    'compare' => 'NOT EXISTS',
-                ],
-            ],
-        ]);
-
-        if (!is_wp_error($terms) && !empty($terms)) {
-            foreach ($terms as $term_id) {
-                if (!get_term_meta($term_id, '_cc_language', true)) {
-                    update_term_meta($term_id, '_cc_language', $default_lang);
-                }
-                if (!get_term_meta($term_id, '_cc_translation_group', true)) {
-                    update_term_meta($term_id, '_cc_translation_group', wp_generate_uuid4());
-                }
-            }
-        }
-
-        update_option('cc_terms_lang_migrated_v3', time());
-    }
 
     public static function get_language_catalog(): array
     {

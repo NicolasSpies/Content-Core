@@ -1,59 +1,55 @@
 <?php
 namespace ContentCore\Modules\Diagnostics\Rest;
 
-use ContentCore\Plugin;
+use ContentCore\Modules\RestApi\BaseRestController;
 use ContentCore\Modules\Diagnostics\Engine\HealthCheckRegistry;
 use WP_REST_Request;
 use WP_REST_Response;
 
-class DiagnosticsRestController
+class DiagnosticsRestController extends BaseRestController
 {
     /** @var HealthCheckRegistry */
     private $registry;
+    protected $namespace = 'content-core/v1';
+    protected $rest_base = 'diagnostics';
 
     public function __construct(HealthCheckRegistry $registry)
     {
         $this->registry = $registry;
     }
 
-    public function init(): void
-    {
-        add_action('rest_api_init', [$this, 'register_routes']);
-    }
-
     public function register_routes(): void
     {
-        $namespace = Plugin::get_instance()->get_rest_namespace() . '/diagnostics';
-
-        register_rest_route($namespace, '/', [
+        register_rest_route($this->namespace, '/' . $this->rest_base, [
             'methods' => 'GET',
             'callback' => function () {
-                return ['module' => 'diagnostics', 'active' => true]; },
-            'permission_callback' => [$this, 'check_permission'],
+                return ['module' => 'diagnostics', 'active' => true];
+            },
+            'permission_callback' => [$this, 'check_admin_permissions'],
         ]);
 
-        register_rest_route($namespace, '/run', [
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/run', [
             'methods' => 'POST',
             'callback' => [$this, 'run_checks'],
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin_permissions'],
         ]);
 
-        register_rest_route($namespace, '/clear-resolved', [
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/clear-resolved', [
             'methods' => 'POST',
             'callback' => [$this, 'clear_resolved'],
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin_permissions'],
         ]);
 
-        register_rest_route($namespace, '/clear-all', [
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/clear-all', [
             'methods' => 'POST',
             'callback' => [$this, 'clear_all'],
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin_permissions'],
         ]);
 
-        register_rest_route($namespace, '/fix', [
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/fix', [
             'methods' => 'POST',
             'callback' => [$this, 'apply_fix'],
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin_permissions'],
             'args' => [
                 'issue_id' => [
                     'required' => true,
@@ -72,10 +68,10 @@ class DiagnosticsRestController
             ]
         ]);
 
-        register_rest_route($namespace, '/fix-preview', [
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/fix-preview', [
             'methods' => 'POST',
             'callback' => [$this, 'get_fix_preview'],
-            'permission_callback' => [$this, 'check_permission'],
+            'permission_callback' => [$this, 'check_admin_permissions'],
             'args' => [
                 'issue_id' => [
                     'required' => true,
@@ -93,11 +89,6 @@ class DiagnosticsRestController
                 ]
             ]
         ]);
-    }
-
-    public function check_permission(): bool
-    {
-        return current_user_can('manage_options');
     }
 
     public function run_checks(WP_REST_Request $request): WP_REST_Response
