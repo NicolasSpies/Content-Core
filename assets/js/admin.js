@@ -318,10 +318,9 @@ jQuery(document).ready(function ($) {
                 isCollapsed = true;
             }
 
-            // Check localStorage for persisted state
-            var savedState = localStorage.getItem('cc_menu_' + slug);
-            if (savedState) {
-                isCollapsed = savedState === 'collapsed';
+            // Check localized states (from user meta)
+            if (window.ccAdmin && ccAdmin.menuState && ccAdmin.menuState[slug]) {
+                isCollapsed = ccAdmin.menuState[slug] === 'collapsed';
             }
 
             // Mark header
@@ -339,7 +338,20 @@ jQuery(document).ready(function ($) {
                 var newCollapsed = !currentlyCollapsed;
 
                 $(this).toggleClass('is-collapsed', newCollapsed);
-                localStorage.setItem('cc_menu_' + slug, newCollapsed ? 'collapsed' : 'expanded');
+
+                // Persist via REST
+                if (window.wp && wp.apiFetch) {
+                    wp.apiFetch({
+                        path: 'content-core/v1/user-preferences/menu-state',
+                        method: 'POST',
+                        data: {
+                            slug: slug,
+                            state: newCollapsed ? 'collapsed' : 'expanded'
+                        }
+                    }).catch(function (err) {
+                        console.warn('Content Core: Failed to persist menu state.', err);
+                    });
+                }
 
                 toggleSectionItems($(this), newCollapsed);
             });

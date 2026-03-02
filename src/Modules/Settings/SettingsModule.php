@@ -42,6 +42,9 @@ class SettingsModule implements ModuleInterface
     /** @var MultilingualSettings */
     private $multilingual_settings;
 
+    /** @var SiteImagesSettings */
+    private $site_images_settings;
+
     /** @var CookieSettings */
     private $cookie_settings;
 
@@ -63,12 +66,34 @@ class SettingsModule implements ModuleInterface
 
         // Initialize sub-modules
         $this->seo_settings = new SeoSettings($this);
+        $this->seo_settings->init();
+
         $this->media_settings = new MediaSettings($this);
+        $this->media_settings->init();
+
+        $this->site_images_settings = new SiteImagesSettings($this);
+        $this->site_images_settings->init();
+
         $this->redirect_settings = new RedirectSettings($this);
+        $this->redirect_settings->init();
+
         $this->visibility_settings = new VisibilitySettings($this);
+        $this->visibility_settings->init();
+
         $this->multilingual_settings = new MultilingualSettings($this);
+        $this->multilingual_settings->init();
+
         $this->cookie_settings = new CookieSettings($this);
+        $this->cookie_settings->init();
+
+        // Apply external registration filters
+        $external_schemas = apply_filters('cc_settings_registry_schema', []);
+        foreach ($external_schemas as $key => $schema) {
+            $this->registry->register($key, $schema);
+        }
+
         $this->site_options_settings = new SiteOptionsSettings($this);
+        // Site options registration
 
         // Initialize Services
         $this->menu_categorizer = new Logic\MenuCategorizer($this);
@@ -95,6 +120,79 @@ class SettingsModule implements ModuleInterface
 
             add_action('wp_before_admin_bar_render', [$this->visibility_settings, 'apply_admin_bar_visibility']);
             add_action('admin_bar_menu', [$this->visibility_settings, 'apply_admin_bar_site_link'], 999);
+            add_action('admin_init', [$this, 'handle_settings_post_save']);
+        }
+    }
+
+    /**
+     * Handle traditional PHP POST saves for settings.
+     */
+    public function handle_settings_post_save(): void
+    {
+        if (!is_admin() || !isset($_POST['cc_menu_settings_nonce'])) {
+            return;
+        }
+
+        if (!wp_verify_nonce($_POST['cc_menu_settings_nonce'], 'cc_save_menu_settings')) {
+            return;
+        }
+
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        $submit_id = $_POST['cc_submit_id'] ?? '';
+        $redirect_to = remove_query_arg(['cc_action', 'cc_settings_error'], $_SERVER['REQUEST_URI']);
+        $success = true;
+
+        // 1. Visibility Settings
+        if (isset($_POST['cc_menu_admin']) || isset($_POST['cc_menu_client']) || isset($_POST['cc_admin_bar'])) {
+            $vis_data = [
+                'admin' => $_POST['cc_menu_admin'] ?? [],
+                'client' => $_POST['cc_menu_client'] ?? []
+            ];
+            $success = $success && $this->registry->save(self::OPTION_KEY, $vis_data);
+
+            if (isset($_POST['cc_admin_bar'])) {
+                $success = $success && $this->registry->save(self::ADMIN_BAR_KEY, $_POST['cc_admin_bar']);
+            }
+
+            // Order handling
+            if (isset($_POST['cc_core_order_admin']) || isset($_POST['cc_core_order_client'])) {
+                $order = [
+                    'admin' => !empty($_POST['cc_core_order_admin']) ? explode(',', $_POST['cc_core_order_admin']) : [],
+                    'client' => !empty($_POST['cc_core_order_client']) ? explode(',', $_POST['cc_core_order_client']) : []
+                ];
+                update_option(self::ORDER_KEY, $order);
+            }
+        }
+
+        // 2. Media Settings
+        if (isset($_POST['cc_media_settings'])) {
+            $success = $success && $this->registry->save(self::MEDIA_KEY, $_POST['cc_media_settings']);
+        }
+
+        // 3. Redirect Settings
+        if (isset($_POST['cc_redirect_settings'])) {
+            $success = $success && $this->registry->save(self::REDIRECT_KEY, $_POST['cc_redirect_settings']);
+
+            if (isset($_POST['cc_admin_bar_link'])) {
+                $success = $success && $this->registry->save(self::ADMIN_BAR_KEY, $_POST['cc_admin_bar_link']);
+            }
+        }
+
+        // 4. Multilingual Settings
+        if (isset($_POST['cc_languages'])) {
+            $success = $success && $this->registry->save('cc_languages_settings', $_POST['cc_languages']);
+        }
+
+        if ($success) {
+            wp_safe_redirect(add_query_arg('cc_action', 'settings_saved', $redirect_to));
+            exit;
+        } else {
+            set_transient('cc_settings_error', __('Failed to save some settings.', 'content-core'), 30);
+            wp_safe_redirect($redirect_to);
+            exit;
         }
     }
 

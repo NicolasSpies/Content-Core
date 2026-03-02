@@ -54,7 +54,7 @@ class DashboardRenderer
                     </div>
                 </div>
                 <div class="cc-card-body">
-                    <div class="cc-grid cc-grid-4">
+                    <div class="cc-grid cc-grid-5">
                         <div class="cc-data-group">
                             <span class="cc-field-label"><?php _e('Core Version', 'content-core'); ?></span>
                             <div class="cc-data-value">v<?php echo esc_html($plugin_version); ?></div>
@@ -73,7 +73,20 @@ class DashboardRenderer
                             <span class="cc-field-label"><?php _e('Last Health Check', 'content-core'); ?></span>
                             <div class="cc-data-value"><?php echo esc_html($health_report['checked_at']); ?></div>
                         </div>
+                        <div class="cc-data-group">
+                            <span class="cc-field-label"><?php _e('Multilingual', 'content-core'); ?></span>
+                            <div class="cc-data-value">
+                                <?php if ($ml_module && method_exists($ml_module, 'is_active') && $ml_module->is_active() && method_exists($ml_module, 'get_active_languages')): ?>
+                                    <span
+                                        class="cc-status-pill cc-status-healthy"><?php echo count($ml_module->get_active_languages()); ?>
+                                        <?php _e('Langs', 'content-core'); ?></span>
+                                <?php else: ?>
+                                    <span class="cc-status-pill cc-status-inactive"><?php _e('Inactive', 'content-core'); ?></span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     </div>
+
                 </div>
                 <div class="cc-card-footer">
                     <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="margin:0;">
@@ -91,6 +104,27 @@ class DashboardRenderer
             </div>
 
             <div class="cc-grid">
+                <!-- Section: Active Modules -->
+                <div class="cc-card">
+                    <div class="cc-card-header">
+                        <h2>
+                            <span class="dashicons dashicons-plugins-checked"></span>
+                            <?php _e('Active Modules', 'content-core'); ?>
+                        </h2>
+                    </div>
+                    <div class="cc-card-body">
+                        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                            <?php
+                            $active_modules = $plugin->get_active_modules();
+                            foreach ($active_modules as $id => $class): ?>
+                                <span class="cc-status-pill cc-status-healthy" style="padding:4px 10px;">
+                                    <?php echo esc_html(ucwords(str_replace('_', ' ', $id))); ?>
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Section: Connectivity & Subsystems -->
                 <div class="cc-card">
                     <div class="cc-card-header">
@@ -100,19 +134,23 @@ class DashboardRenderer
                         </h2>
                     </div>
                     <div class="cc-card-body">
-                        <div class="cc-data-list">
+                        <div class="cc-grid cc-grid-3" style="gap:16px;">
                             <?php foreach ($subsystems as $key => $sub): ?>
-                                <div
-                                    style="display:flex; justify-content:space-between; align-items:center; padding: 12px 0; border-bottom: 1px solid var(--cc-border-light);">
-                                    <span
-                                        style="font-weight:600;"><?php echo esc_html(ucfirst(str_replace('_', ' ', $key))); ?></span>
-                                    <span class="cc-status-pill cc-status-<?php echo esc_attr($sub['status']); ?>">
+                                <div class="cc-data-group"
+                                    style="padding:16px; border:1px solid var(--cc-border-light); border-radius:8px; background:var(--cc-bg-soft); text-align:center;">
+                                    <span class="cc-field-label"
+                                        style="display:block; margin-bottom:12px; font-size:11px; text-transform:uppercase; letter-spacing:0.05em;">
+                                        <?php echo esc_html($sub['label'] ?? ucfirst(str_replace('_', ' ', $key))); ?>
+                                    </span>
+                                    <span class="cc-status-pill cc-status-<?php echo esc_attr($sub['status']); ?>"
+                                        style="font-size:12px; padding:6px 14px;">
                                         <?php echo esc_html($sub['short_label']); ?>
                                     </span>
                                 </div>
                             <?php endforeach; ?>
                         </div>
                     </div>
+
                 </div>
 
                 <!-- Section: Cache & Storage -->
@@ -155,6 +193,14 @@ class DashboardRenderer
                             <?php wp_nonce_field('cc_cache_nonce'); ?>
                             <button type="submit" class="cc-button-secondary">
                                 <?php _e('Clear Expired', 'content-core'); ?>
+                            </button>
+                        </form>
+                        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="margin:0;">
+                            <input type="hidden" name="action" value="cc_rebuild_runtime_cache">
+                            <?php wp_nonce_field('cc_rebuild_cache_nonce'); ?>
+                            <button type="submit" class="cc-button-primary">
+                                <span class="dashicons dashicons-hammer" style="margin-right:4px;"></span>
+                                <?php _e('Rebuild Runtime Cache', 'content-core'); ?>
                             </button>
                         </form>
                     </div>

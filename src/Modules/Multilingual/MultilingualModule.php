@@ -73,22 +73,19 @@ class MultilingualModule implements ModuleInterface
                 $this->admin_ui->init();
 
                 $this->terms_manager_admin = new TermsManagerAdmin($this);
-                add_action('admin_enqueue_scripts', [$this->terms_manager_admin, 'enqueue_assets']);
             });
 
             add_action('registered_post_type', [$this, 'handle_registered_post_type'], 10, 2);
         }
 
-        // REST handlers are only needed on REST requests
-        if (defined('REST_REQUEST') && REST_REQUEST) {
-            add_action('rest_api_init', function () {
-                $this->terms_manager_rest = new TermsManagerRestController($this);
-                $this->terms_manager_rest->register_routes();
+        // REST handlers
+        add_action('rest_api_init', function () {
+            $this->terms_manager_rest = new TermsManagerRestController($this);
+            $this->terms_manager_rest->register_routes();
 
-                $this->rest = new MultilingualRestHandler($this);
-                $this->rest->init();
-            });
-        }
+            $this->rest = new MultilingualRestHandler($this);
+            $this->rest->init();
+        });
 
         add_filter('query_vars', [$this, 'register_query_vars']);
 

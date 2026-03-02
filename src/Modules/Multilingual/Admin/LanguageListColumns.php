@@ -15,7 +15,7 @@ class LanguageListColumns
 
     public function init(): void
     {
-        add_action('admin_init', [$this, 'register_admin_hooks']);
+        $this->register_admin_hooks();
     }
 
     public function register_admin_hooks(): void
@@ -23,6 +23,7 @@ class LanguageListColumns
         add_action('pre_get_posts', [$this, 'apply_filters']);
         add_filter('the_posts', [$this, 'prefetch_translations'], 10, 2);
         add_action("restrict_manage_posts", [$this, "add_filters"]);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
 
         $post_types = get_post_types(["show_ui" => true]);
         foreach ($post_types as $post_type) {
@@ -43,6 +44,21 @@ class LanguageListColumns
                 add_filter($column_filter, [$this, 'add_columns']);
                 add_action($column_action, [$this, 'render_column'], 10, 2);
             }
+        }
+    }
+
+    /**
+     * Enqueue assets for post lists.
+     */
+    public function enqueue_assets($hook): void
+    {
+        if ($hook !== 'edit.php' || !$this->module->is_active()) {
+            return;
+        }
+
+        $screen = get_current_screen();
+        if ($screen && $this->should_show_column($screen->post_type)) {
+            wp_enqueue_style('cc-admin-modern');
         }
     }
 

@@ -45,7 +45,7 @@ class SettingsRestController extends BaseRestController
                 'seo' => $this->registry->get(SettingsModule::SEO_KEY),
                 'images' => $this->registry->get('cc_site_images'),
                 'cookie' => $this->registry->get(SettingsModule::COOKIE_KEY),
-                'branding' => get_option('cc_branding_settings', [])
+                'branding' => $this->registry->get('cc_branding_settings')
             ]);
         }
 
@@ -114,12 +114,14 @@ class SettingsRestController extends BaseRestController
                     \ContentCore\Logger::error('[CC Settings REST] Cookie save failed');
                 }
             }
+
             if (isset($params['branding'])) {
-                // Branding uses its own option
-                $saved = update_option('cc_branding_settings', $params['branding']);
-                // Note: update_option returns false if the value is the same as already stored. 
-                // We should check if it's strictly false or use get_option comparison or just assume success if not an error.
-                // However, the registry->save() usually return true if data is validated.
+                $saved = $this->registry->save('cc_branding_settings', $params['branding']);
+                if (!$saved) {
+                    $success = false;
+                    $errors[] = 'Failed to save branding settings';
+                    \ContentCore\Logger::error('[CC Settings REST] Branding save failed');
+                }
             }
 
             if (!$success) {

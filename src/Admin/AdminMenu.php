@@ -49,9 +49,11 @@ class AdminMenu
         }
 
         // Robust detection: Content Core pages, settings, or our specific post types/taxonomies
+        // Also include standard post lists (edit.php) if the post type supports CC multilingual
         $is_cc = (strpos($screen->id, 'content-core') !== false
             || strpos($screen->id, 'cc_') !== false
-            || (isset($screen->post_type) && strpos($screen->post_type, 'cc_') === 0));
+            || (isset($screen->post_type) && strpos($screen->post_type, 'cc_') === 0)
+            || ($screen->base === 'edit' && !empty($screen->post_type) && post_type_supports($screen->post_type, 'cc-multilingual')));
 
         if (!$is_cc) {
             return;
@@ -76,6 +78,21 @@ class AdminMenu
         wp_add_inline_style('cc-admin-modern', $custom_css);
 
         wp_enqueue_script('cc-admin-js');
+        wp_localize_script('cc-admin-js', 'ccAdmin', [
+            'menuState' => get_user_meta(get_current_user_id(), 'cc_menu_state', true) ?: [],
+            'restUrl' => esc_url_raw(rest_url('content-core/v1')),
+            'nonce' => wp_create_nonce('wp_rest')
+        ]);
+
+        // Multilingual Terms Manager assets
+        if (strpos($screen->id, 'cc-manage-terms') !== false) {
+            $ml_module = $plugin->get_module('multilingual');
+            if ($ml_module instanceof \ContentCore\Modules\Multilingual\MultilingualModule) {
+                $terms_admin = new \ContentCore\Modules\Multilingual\Admin\TermsManagerAdmin($ml_module);
+                $terms_admin->enqueue_assets($hook);
+            }
+        }
+
         wp_enqueue_script('jquery-ui-sortable');
     }
 

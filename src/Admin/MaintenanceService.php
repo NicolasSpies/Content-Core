@@ -22,6 +22,7 @@ class MaintenanceService
         add_action('admin_post_cc_flush_object_cache', [$this, 'handle_flush_object_cache']);
         add_action('admin_post_cc_duplicate_site_options', [$this, 'handle_duplicate_site_options']);
         add_action('admin_post_cc_refresh_health', [$this, 'handle_refresh_health']);
+        add_action('admin_post_cc_rebuild_runtime_cache', [$this, 'handle_rebuild_runtime_cache']);
         add_action('admin_post_cc_fix_missing_languages', [$this, 'handle_fix_missing_languages']);
         add_action('admin_post_cc_terms_manager_action', [$this, 'handle_terms_manager_action']);
     }
@@ -210,9 +211,13 @@ class MaintenanceService
      */
     public function handle_refresh_health(): void
     {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
+        }
+
         check_admin_referer('cc_refresh_health_nonce');
         $service = new CacheService();
-        $service->refresh_consolidated_health_report();
+        $service->get_consolidated_health_report(true);
 
         $audit = new AuditService();
         $audit->log_action('refresh_health', 'success', __('Refreshed system health report.', 'content-core'));
@@ -222,12 +227,49 @@ class MaintenanceService
     }
 
     /**
+     * Handle rebuild runtime cache via admin_post
+     */
+    public function handle_rebuild_runtime_cache(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            wp_die(__('Invalid request method.', 'content-core'), 405);
+        }
+
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
+        }
+
+        check_admin_referer('cc_rebuild_cache_nonce');
+
+        $service = new CacheService();
+        $res = $service->rebuild_runtime_cache();
+
+        $audit = new AuditService();
+        $audit->log_action('rebuild_runtime_cache', 'success', __('Rebuilt entire runtime cache and health report.', 'content-core'));
+
+        wp_safe_redirect(admin_url('admin.php?page=content-core&cc_action=cache_rebuilt'));
+        exit;
+    }
+
+    /**
      * Handle fixing missing languages via admin_post
      */
     public function handle_fix_missing_languages(): void
     {
-        // This logic would be moved from AdminMenu if fully implemented there.
-        // For now, matching the registration in init().
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.', 'content-core'));
+        }
+
+        check_admin_referer('cc_fix_missing_languages_nonce');
+
+        $service = new CacheService();
+        $count = $service->fix_missing_language_meta();
+
+        $audit = new AuditService();
+        $audit->log_action('fix_missing_languages', 'success', sprintf(__('Fixed missing language meta for %d posts.', 'content-core'), $count));
+
+        wp_safe_redirect(admin_url('admin.php?page=content-core&cc_action=languages_fixed&cc_count=' . $count));
+        exit;
     }
 
     /** @deprecated No longer used  */

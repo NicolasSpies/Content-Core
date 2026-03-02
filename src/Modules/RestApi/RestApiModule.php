@@ -39,13 +39,17 @@ class RestApiModule implements ModuleInterface
     {
         $namespace = \ContentCore\Plugin::REST_NAMESPACE . '/' . \ContentCore\Plugin::REST_VERSION;
 
-        // Base namespace index route - helps discovery and adds explicit permission check
+        // Base namespace index route
         register_rest_route($namespace, '/', [
             'methods' => \WP_REST_Server::READABLE,
             'callback' => function () {
-                return ['contentCore' => 'v1', 'status' => 'connected'];
+                return [
+                    'contentCore' => 'v1',
+                    'status' => 'connected',
+                    'timestamp' => current_time('mysql')
+                ];
             },
-            'permission_callback' => '__return_true', // Open index for discovery
+            'permission_callback' => [$this, 'check_base_permission'],
         ]);
 
         // Single post endpoint
@@ -173,6 +177,11 @@ class RestApiModule implements ModuleInterface
             $logger = \ContentCore\Plugin::get_instance()->get_error_logger();
             $error_rest = new \ContentCore\Admin\Rest\ErrorLogRestController($logger, $namespace);
             $error_rest->register_routes();
+        }
+
+        if (class_exists('\\ContentCore\\Admin\\Rest\\UserPreferencesRestController')) {
+            $user_pref_rest = new \ContentCore\Admin\Rest\UserPreferencesRestController();
+            $user_pref_rest->register_routes();
         }
     }
 
@@ -426,6 +435,17 @@ class RestApiModule implements ModuleInterface
     }
 
     /**
+     * Permission check for the base namespace route.
+     * Open by default but filterable.
+     *
+     * @return bool
+     */
+    public function check_base_permission(): bool
+    {
+        return (bool) apply_filters('cc_rest_base_permission', current_user_can('manage_options'));
+    }
+
+    /**
      * Permission check for reading posts
      */
     public function check_read_permission(\WP_REST_Request $request): bool
@@ -536,7 +556,7 @@ class RestApiModule implements ModuleInterface
             case 'image':
             case 'file':
                 if (is_numeric($value)) {
-                    $ids[] = absint($value);
+                    $ids[] = (int) $value;
                 }
                 break;
             case 'gallery':
@@ -552,7 +572,7 @@ class RestApiModule implements ModuleInterface
                 if (is_array($value)) {
                     foreach ($value as $id) {
                         if (is_numeric($id))
-                            $ids[] = absint($id);
+                            $ids[] = (int) $id;
                     }
                 }
                 break;
@@ -628,7 +648,7 @@ class RestApiModule implements ModuleInterface
             return (object) [];
         }
 
-        $post_id = absint($post_obj['id']);
+        $post_id = (int) $post_obj['id'];
         if ($post_id <= 0) {
             return (object) [];
         }
@@ -759,7 +779,7 @@ class RestApiModule implements ModuleInterface
      */
     private function format_media_v1($id, \WP_REST_Request $request)
     {
-        $attachment_id = absint($id);
+        $attachment_id = (int) $id;
         if (!$attachment_id)
             return null;
 

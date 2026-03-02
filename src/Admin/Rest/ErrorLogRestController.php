@@ -43,6 +43,31 @@ class ErrorLogRestController extends BaseRestController
             ]
         ]);
 
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/clear-filtered', [
+            [
+                'methods' => \WP_REST_Server::CREATABLE,
+                'callback' => [$this, 'clear_filtered_log'],
+                'permission_callback' => [$this, 'check_admin_permissions'],
+                'args' => [
+                    'severity' => ['required' => false, 'type' => 'string'],
+                    'days' => ['required' => false, 'type' => 'integer'],
+                ]
+            ]
+        ]);
+
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/delete', [
+            [
+                'methods' => \WP_REST_Server::CREATABLE,
+                'callback' => [$this, 'delete_entry'],
+                'permission_callback' => [$this, 'check_admin_permissions'],
+                'args' => [
+                    'timestamp' => ['required' => true, 'type' => 'integer'],
+                    'message' => ['required' => true, 'type' => 'string'],
+                    'file' => ['required' => true, 'type' => 'string'],
+                ]
+            ]
+        ]);
+
         register_rest_route($this->namespace, '/' . $this->rest_base . '/export', [
             [
                 'methods' => \WP_REST_Server::READABLE,
@@ -72,9 +97,36 @@ class ErrorLogRestController extends BaseRestController
         ]);
     }
 
+    public function clear_filtered_log(WP_REST_Request $request): WP_REST_Response
+    {
+        $severity = sanitize_text_field($request->get_param('severity') ?? '');
+        $days = (int) ($request->get_param('days') ?? 0);
+
+        $this->logger->clear_filtered($severity, $days);
+
+        return rest_ensure_response([
+            'success' => true,
+            'message' => __('Filtered log entries have been permanently deleted.', 'content-core'),
+        ]);
+    }
+
     public function export_log(\WP_REST_Request $request): \WP_REST_Response
     {
         $entries = $this->logger->get_entries();
         return rest_ensure_response($entries);
+    }
+
+    public function delete_entry(WP_REST_Request $request): WP_REST_Response
+    {
+        $this->logger->delete_specific_entry([
+            'timestamp' => $request->get_param('timestamp'),
+            'message' => $request->get_param('message'),
+            'file' => $request->get_param('file'),
+        ]);
+
+        return rest_ensure_response([
+            'success' => true,
+            'message' => __('Log entry deleted.', 'content-core'),
+        ]);
     }
 }

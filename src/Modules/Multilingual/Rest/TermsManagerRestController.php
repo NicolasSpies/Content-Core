@@ -170,7 +170,9 @@ class TermsManagerRestController extends BaseRestController
             foreach ($ungrouped as $u) {
                 $all[] = $u;
             }
-            usort($all, fn($a, $b) => $a['group_order'] <=> $b['group_order']);
+            usort($all, function ($a, $b) {
+                return $a['group_order'] <=> $b['group_order'];
+            });
 
             $response_data[] = [
                 'taxonomy' => $tax->name,

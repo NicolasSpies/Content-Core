@@ -241,6 +241,65 @@ class ErrorLogger
     }
 
     /**
+     * Delete a specific log entry.
+     * Matches by timestamp, message and file to ensure uniqueness.
+     */
+    public function delete_specific_entry(array $target): void
+    {
+        try {
+            $entries = get_option(self::OPTION_KEY, []);
+            if (!is_array($entries)) {
+                return;
+            }
+
+            $filtered = array_filter($entries, function ($e) use ($target) {
+                return !(
+                    ($e['timestamp'] ?? 0) === ($target['timestamp'] ?? -1) &&
+                    ($e['message'] ?? '') === ($target['message'] ?? null) &&
+                    ($e['file'] ?? '') === ($target['file'] ?? null)
+                );
+            });
+
+            update_option(self::OPTION_KEY, array_values($filtered), false);
+        } catch (\Throwable $e) {
+            // fail-safe
+        }
+    }
+
+    /**
+     * Clear entries based on filters (severity and/or date range).
+     */
+    public function clear_filtered(string $severity = '', int $days = 0): void
+    {
+        try {
+            $entries = get_option(self::OPTION_KEY, []);
+            if (!is_array($entries)) {
+                return;
+            }
+
+            $now = time();
+            $since = $days > 0 ? $now - ($days * 86400) : 0;
+
+            $filtered = array_filter($entries, function ($e) use ($severity, $since) {
+                // If severity is provided and doesn't match, keep it
+                if ($severity && ($e['severity'] ?? '') !== $severity) {
+                    return true;
+                }
+                // If since is provided and entry is older than since, keep it
+                if ($since && ($e['timestamp'] ?? 0) < $since) {
+                    return true;
+                }
+                // Otherwise, it matches the filter — so delete it (return false)
+                return false;
+            });
+
+            update_option(self::OPTION_KEY, array_values($filtered), false);
+        } catch (\Throwable $e) {
+            // fail-safe
+        }
+    }
+
+    /**
      * Clear all log entries.
      */
     public function clear(): void

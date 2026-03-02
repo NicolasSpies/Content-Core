@@ -12,6 +12,73 @@ class VisibilitySettings
     private $module;
 
     /**
+     * Initialize Visibility settings registration.
+     */
+    public function init(): void
+    {
+        $this->module->get_registry()->register(SettingsModule::OPTION_KEY, [
+            'default' => [
+                'admin' => [],
+                'client' => [],
+            ],
+            'sanitize_callback' => [$this, 'sanitize_visibility_settings'],
+        ]);
+
+        $this->module->get_registry()->register(SettingsModule::ADMIN_BAR_KEY, [
+            'default' => [
+                'enabled' => false,
+                'hide_wp_logo' => false,
+                'hide_comments' => false,
+                'hide_new_content' => false,
+                'url' => '',
+                'new_tab' => false,
+            ],
+            'sanitize_callback' => [$this, 'sanitize_admin_bar_settings'],
+        ]);
+
+        $this->module->get_registry()->register(SettingsModule::ORDER_KEY, [
+            'default' => [
+                'admin' => [],
+                'client' => [],
+            ],
+        ]);
+    }
+
+    /**
+     * Sanitize visibility settings.
+     */
+    public function sanitize_visibility_settings(array $settings): array
+    {
+        $sanitized = ['admin' => [], 'client' => []];
+        if (isset($settings['admin']) && is_array($settings['admin'])) {
+            foreach ($settings['admin'] as $slug => $visible) {
+                $sanitized['admin'][sanitize_key($slug)] = !empty($visible);
+            }
+        }
+        if (isset($settings['client']) && is_array($settings['client'])) {
+            foreach ($settings['client'] as $slug => $visible) {
+                $sanitized['client'][sanitize_key($slug)] = !empty($visible);
+            }
+        }
+        return $sanitized;
+    }
+
+    /**
+     * Sanitize admin bar settings.
+     */
+    public function sanitize_admin_bar_settings(array $settings): array
+    {
+        return [
+            'enabled' => !empty($settings['enabled']),
+            'hide_wp_logo' => !empty($settings['hide_wp_logo']),
+            'hide_comments' => !empty($settings['hide_comments']),
+            'hide_new_content' => !empty($settings['hide_new_content']),
+            'url' => esc_url_raw($settings['url'] ?? ''),
+            'new_tab' => !empty($settings['new_tab']),
+        ];
+    }
+
+    /**
      * @param SettingsModule $module
      */
     public function __construct(SettingsModule $module)

@@ -12,6 +12,38 @@ class RedirectSettings
     private $module;
 
     /**
+     * Initialize Redirect settings registration.
+     */
+    public function init(): void
+    {
+        $this->module->get_registry()->register(SettingsModule::REDIRECT_KEY, [
+            'default' => self::get_defaults(),
+            'sanitize_callback' => [$this, 'sanitize_redirect_settings_array'],
+        ]);
+    }
+
+    /**
+     * Sanitize Redirect settings array.
+     */
+    public function sanitize_redirect_settings_array(array $settings): array
+    {
+        return [
+            'enabled' => !empty($settings['enabled']),
+            'from_path' => $this->sanitize_redirect_path($settings['from_path'] ?? '/'),
+            'target' => sanitize_text_field($settings['target'] ?? '/wp-admin'),
+            'status_code' => in_array($settings['status_code'] ?? '302', ['301', '302']) ? $settings['status_code'] : '302',
+            'pass_query' => !empty($settings['pass_query']),
+            'exclusions' => [
+                'admin' => !empty($settings['exclusions']['admin']),
+                'ajax' => !empty($settings['exclusions']['ajax']),
+                'rest' => !empty($settings['exclusions']['rest']),
+                'cron' => !empty($settings['exclusions']['cron']),
+                'cli' => !empty($settings['exclusions']['cli']),
+            ]
+        ];
+    }
+
+    /**
      * @param SettingsModule $module
      */
     public function __construct(SettingsModule $module)

@@ -270,6 +270,21 @@ class CacheService
         return $result;
     }
 
+    /**
+     * Rebuild the entire runtime cache (CC caches + Health Report).
+     */
+    public function rebuild_runtime_cache(): array
+    {
+        $clear_res = $this->clear_content_core_caches();
+        $this->get_consolidated_health_report(true);
+
+        return [
+            'success' => true,
+            'cleared_count' => $clear_res['count'],
+            'cleared_bytes' => $clear_res['bytes']
+        ];
+    }
+
     public function get_system_status(): array
     {
         $status = 'healthy';
@@ -298,6 +313,8 @@ class CacheService
         }
 
         return [
+            'id' => 'system',
+            'label' => __('System Core', 'content-core'),
             'status' => $status,
             'short_label' => sprintf(__('v%s', 'content-core'), CONTENT_CORE_VERSION),
             'message' => $status === 'healthy' ? __('System core is stable.', 'content-core') : __('System has configuration issues.', 'content-core'),
@@ -337,7 +354,17 @@ class CacheService
 
         $settings = $ml_module->get_settings();
         $result['is_active'] = true;
-        $result['default_lang'] = $settings['default_lang'] ?? 'de';
+
+        // Determine default lang from settings, then from active languages list if possible
+        $default_lang = $settings['default_lang'] ?? '';
+        if (empty($default_lang) && !empty($settings['languages'])) {
+            $default_lang = $settings['languages'][0]['code'] ?? 'de';
+        }
+        if (empty($default_lang)) {
+            $default_lang = 'de';
+        }
+
+        $result['default_lang'] = $default_lang;
         $result['enabled_languages'] = array_column($settings['languages'] ?? [], 'code');
         $result['fallback_enabled'] = !empty($settings['fallback_enabled']);
 
@@ -474,7 +501,7 @@ class CacheService
         $enabled_languages = [];
         $is_ml_active = false;
 
-        if ($ml_module && method_exists($ml_module, 'is_active') && $ml_module->is_active()) {
+        if ($ml_module && method_exists($ml_module, 'is_active') && $ml_module->is_active() && method_exists($ml_module, 'get_settings')) {
             $settings = $ml_module->get_settings();
             $default_lang = $settings['default_lang'] ?? 'de';
             $enabled_languages = array_column($settings['languages'] ?? [], 'code');
@@ -530,7 +557,7 @@ class CacheService
             }
         } else {
             $result['total_forms'] = (int) $wpdb->get_var("
-                SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'cc_form' AND post_status IN ('publish', 'draft', 'pending', 'private')
+                SELECT COUNT(ID) FROM {$wpdb->posts} WHERE post_type = 'cc_form' AND post_status IN ('publish', 'draft', 'pending', 'private', 'future')
             ");
         }
 
@@ -593,6 +620,8 @@ class CacheService
         $health = $this->get_multilingual_health();
         if (!$health['is_active']) {
             return [
+                'id' => 'multilingual',
+                'label' => __('Multilingual', 'content-core'),
                 'status' => 'healthy',
                 'short_label' => __('Inactive', 'content-core'),
                 'message' => __('Multilingual module is not active or not required.', 'content-core'),
@@ -609,6 +638,8 @@ class CacheService
         }
 
         return [
+            'id' => 'multilingual',
+            'label' => __('Multilingual', 'content-core'),
             'status' => $status,
             'short_label' => strtoupper($health['default_lang']),
             'message' => $status === 'healthy' ? __('Multilingual system is operational.', 'content-core') : $issues[0],
@@ -623,6 +654,8 @@ class CacheService
         $health = $this->get_site_options_health();
         if (!$health['is_active']) {
             return [
+                'id' => 'site_options',
+                'label' => __('Site Options', 'content-core'),
                 'status' => 'healthy',
                 'short_label' => __('Inactive', 'content-core'),
                 'message' => __('Site Options module is not active.', 'content-core'),
@@ -644,6 +677,8 @@ class CacheService
         }
 
         return [
+            'id' => 'site_options',
+            'label' => __('Site Options', 'content-core'),
             'status' => $status,
             'short_label' => sprintf(__('%d Configured', 'content-core'), count($health['languages_with_options'])),
             'message' => $status === 'healthy' ? __('Site options are correctly configured.', 'content-core') : $issues[0],
@@ -658,6 +693,8 @@ class CacheService
         $health = $this->get_forms_overview();
         if (!$health['is_active']) {
             return [
+                'id' => 'forms',
+                'label' => __('Forms', 'content-core'),
                 'status' => 'healthy',
                 'short_label' => __('Inactive', 'content-core'),
                 'message' => __('Forms module is not active.', 'content-core'),
@@ -665,6 +702,8 @@ class CacheService
         }
 
         return [
+            'id' => 'forms',
+            'label' => __('Forms', 'content-core'),
             'status' => 'healthy',
             'short_label' => sprintf(__('%d Forms', 'content-core'), $health['total_forms']),
             'message' => sprintf(__('%d total entries recorded.', 'content-core'), $health['total_entries']),
@@ -676,6 +715,8 @@ class CacheService
     {
         if (!class_exists('\ContentCore\Modules\RestApi\RestApiModule')) {
             return [
+                'id' => 'rest_api',
+                'label' => __('REST API', 'content-core'),
                 'status' => 'critical',
                 'short_label' => __('Disabled', 'content-core'),
                 'message' => __('REST API module is not loaded.', 'content-core'),
@@ -704,6 +745,8 @@ class CacheService
 
         if ($last_error) {
             return [
+                'id' => 'rest_api',
+                'label' => __('REST API', 'content-core'),
                 'status' => 'critical',
                 'short_label' => __('Error', 'content-core'),
                 'message' => sprintf(__('REST Discovery failed: %s', 'content-core'), $last_error),
@@ -719,6 +762,8 @@ class CacheService
 
         if (!$diag_ns) {
             return [
+                'id' => 'rest_api',
+                'label' => __('REST API', 'content-core'),
                 'status' => 'critical',
                 'short_label' => __('Not Found', 'content-core'),
                 'message' => __('REST API namespace not found. Rewrite rules may need flushing.', 'content-core'),
@@ -735,6 +780,8 @@ class CacheService
 
         if ($diag_count === 0) {
             return [
+                'id' => 'rest_api',
+                'label' => __('REST API', 'content-core'),
                 'status' => 'critical',
                 'short_label' => __('Inactive', 'content-core'),
                 'message' => __('REST API namespace found but no routes detected. Subsystem registration failed.', 'content-core'),
@@ -749,6 +796,8 @@ class CacheService
         }
 
         return [
+            'id' => 'rest_api',
+            'label' => __('REST API', 'content-core'),
             'status' => 'healthy',
             'short_label' => __('Connected', 'content-core'),
             'message' => sprintf(__('REST API active with %d registered routes.', 'content-core'), $diag_count),
@@ -771,13 +820,34 @@ class CacheService
             }
         }
 
-        $subsystems = [
-            'system' => $this->get_system_status(),
-            'multilingual' => $this->get_multilingual_status(),
-            'site_options' => $this->get_site_options_status(),
-            'forms' => $this->get_forms_status(),
-            'rest_api' => $this->get_rest_api_status(),
-        ];
+        try {
+            $subsystems = [
+                'system' => $this->get_system_status(),
+                'multilingual' => $this->get_multilingual_status(),
+                'site_options' => $this->get_site_options_status(),
+                'forms' => $this->get_forms_status(),
+                'rest_api' => $this->get_rest_api_status(),
+            ];
+        } catch (\Throwable $e) {
+            \ContentCore\Logger::error('Consolidated Health Report crashed: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'status' => 'critical',
+                'health_index' => 0,
+                'subsystems' => [],
+                'issues' => [
+                    [
+                        'message' => __('Critical failure during health monitoring.', 'content-core'),
+                        'status' => 'critical'
+                    ]
+                ],
+                'checked_at' => current_time('mysql'),
+            ];
+        }
 
         $score_map = ['healthy' => 100, 'warning' => 50, 'critical' => 0];
         $weights = [

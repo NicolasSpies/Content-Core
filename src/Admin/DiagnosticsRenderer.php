@@ -76,7 +76,79 @@ class DiagnosticsRenderer
             </nav>
 
             <?php if ($active_tab === 'system-health'): ?>
-                <div id="cc-diagnostics-react-root"></div>
+                <div class="cc-grid">
+                    <?php foreach ($subsystems as $id => $sub):
+                        $status_class = 'cc-status-healthy';
+                        if ($sub['status'] === 'warning')
+                            $status_class = 'cc-status-warning';
+                        if ($sub['status'] === 'critical')
+                            $status_class = 'cc-status-critical';
+                        ?>
+                        <div class="cc-card">
+                            <div class="cc-card-header">
+                                <h2><?php echo esc_html($sub['label']); ?></h2>
+                                <span class="cc-status-pill <?php echo $status_class; ?>">
+                                    <?php echo esc_html(strtoupper($sub['status'])); ?>
+                                </span>
+                            </div>
+                            <div class="cc-card-body">
+                                <p style="font-size:13px; margin-bottom:12px; color:var(--cc-text-muted);">
+                                    <?php echo esc_html($sub['message']); ?>
+                                </p>
+
+                                <?php if (!empty($sub['data'])): ?>
+                                    <div class="cc-divider"></div>
+                                    <div class="cc-data-list">
+                                        <?php foreach ($sub['data'] as $key => $val): ?>
+                                            <div class="cc-data-item">
+                                                <span
+                                                    class="cc-data-label-sm"><?php echo esc_html(ucwords(str_replace('_', ' ', $key))); ?></span>
+                                                <code style="font-size:11px;"><?php
+                                                if (is_bool($val))
+                                                    echo $val ? 'true' : 'false';
+                                                elseif (is_array($val))
+                                                    echo 'Array[' . count($val) . ']';
+                                                else
+                                                    echo esc_html((string) $val);
+                                                ?></code>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if (!empty($sub['actions'])): ?>
+                                    <div style="margin-top:16px; display:flex; gap:8px;">
+                                        <?php foreach ($sub['actions'] as $action): ?>
+                                            <button type="button" class="cc-button-secondary"
+                                                onclick="if(confirm('<?php echo esc_js($action['confirm'] ?? ''); ?>')) { ccHandleDiagnosticAction('<?php echo esc_js($action['callback']); ?>'); }">
+                                                <?php echo esc_html($action['label']); ?>
+                                            </button>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <script>
+                    function ccHandleDiagnosticAction(callback) {
+                        fetch('<?php echo esc_url(rest_url('content-core/v1/cache/rebuild')); ?>', {
+                            method: 'POST',
+                            headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' },
+                            body: JSON.stringify({ action: callback })
+                        })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    window.location.reload();
+                                } else {
+                                    alert(data.message || 'Action failed');
+                                }
+                            })
+                            .catch(err => alert('Network error'));
+                    }
+                </script>
             <?php elseif ($active_tab === 'runtime-audit'): ?>
                 <?php RuntimeAuditRenderer::render(); ?>
             <?php elseif ($active_tab === 'error-log'): ?>

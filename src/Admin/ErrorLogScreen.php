@@ -53,12 +53,16 @@ class ErrorLogScreen
         $filtered = $all_entries;
 
         if ($filter_severity && in_array($filter_severity, ErrorLogger::SEVERITIES, true)) {
-            $filtered = array_values(array_filter($filtered, fn($e) => ($e['severity'] ?? '') === $filter_severity));
+            $filtered = array_values(array_filter($filtered, function ($e) use ($filter_severity) {
+                return ($e['severity'] ?? '') === $filter_severity;
+            }));
         }
 
         if ($filter_days > 0) {
             $since = time() - ($filter_days * 86400);
-            $filtered = array_values(array_filter($filtered, fn($e) => ($e['timestamp'] ?? 0) >= $since));
+            $filtered = array_values(array_filter($filtered, function ($e) use ($since) {
+                return ($e['timestamp'] ?? 0) >= $since;
+            }));
         }
 
         $total_filtered = count($filtered);
@@ -184,6 +188,23 @@ class ErrorLogScreen
                                     <span class="dashicons dashicons-trash"></span>
                                     <?php _e('Clear Resolved', 'content-core'); ?>
                                 </button>
+
+                                <?php if ($filter_severity || $filter_days > 0): ?>
+                                    <button type="button" class="cc-button-secondary"
+                                        style="background-color:rgba(214, 54, 56, 0.05); color:var(--cc-error); border-color:var(--cc-error);"
+                                        onclick="if(confirm('<?php echo esc_js(__('PERMANENTLY DELETE ALL entries matching current filters? This cannot be undone.', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-filtered')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>', 'Content-Type': 'application/json' }, body: JSON.stringify({ severity: '<?php echo esc_js($filter_severity); ?>', days: <?php echo (int) $filter_days; ?> }) }).then(async (res) => { window.location.reload(); }); }">
+                                        <span class="dashicons dashicons-filter"></span>
+                                        <?php _e('Hard Delete Filtered', 'content-core'); ?>
+                                    </button>
+                                <?php endif; ?>
+
+                                <button type="button" class="cc-button-secondary"
+                                    style="background-color:rgba(214, 54, 56, 0.05); color:var(--cc-error); border-color:var(--cc-error);"
+                                    onclick="if(confirm('<?php echo esc_js(__('PERMANENTLY DELETE ALL log entries? This cannot be undone.', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(async (res) => { window.location.href = window.location.href.split('&cc_msg=')[0] + '&cc_msg=cleared'; }); }"
+                                    <?php echo empty($all_entries) ? 'disabled' : ''; ?>>
+                                    <span class="dashicons dashicons-dismiss"></span>
+                                    <?php _e('Hard Delete All', 'content-core'); ?>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -221,6 +242,9 @@ class ErrorLogScreen
                                         </th>
                                         <th style="width:140px;">
                                             <?php _e('Screen', 'content-core'); ?>
+                                        </th>
+                                        <th style="width:100px; text-align:right;">
+                                            <?php _e('Actions', 'content-core'); ?>
                                         </th>
                                     </tr>
                                 </thead>
@@ -267,6 +291,35 @@ class ErrorLogScreen
                                             </td>
                                             <td style="font-size:12px; color:var(--cc-text-muted);">
                                                 <?php echo esc_html($entry['screen'] ?? ''); ?>
+                                            </td>
+                                            <td style="text-align:right;">
+                                                <button type="button" class="cc-button-secondary cc-button-sm"
+                                                    style="color:var(--cc-error); min-width:auto; padding:4px 8px;" onclick="if(confirm('<?php echo esc_js(__('Delete this entry?', 'content-core')); ?>')) { 
+                                                        const btn = this;
+                                                        btn.disabled = true;
+                                                        fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/delete')); ?>', { 
+                                                            method: 'POST', 
+                                                            headers: { 
+                                                                'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>',
+                                                                'Content-Type': 'application/json'
+                                                            },
+                                                            body: JSON.stringify({
+                                                                timestamp: <?php echo (int) ($entry['timestamp'] ?? 0); ?>,
+                                                                message: <?php echo json_encode($entry['message'] ?? ''); ?>,
+                                                                file: <?php echo json_encode($entry['file'] ?? ''); ?>
+                                                            })
+                                                        }).then(res => res.json()).then(data => {
+                                                            if(data.success) {
+                                                                btn.closest('tr').style.opacity = '0.3';
+                                                                btn.closest('tr').style.pointerEvents = 'none';
+                                                            } else {
+                                                                btn.disabled = false;
+                                                                alert(data.message || 'Error deleting entry');
+                                                            }
+                                                        }); 
+                                                    }">
+                                                    <span class="dashicons dashicons-trash"></span>
+                                                </button>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -333,12 +386,16 @@ class ErrorLogScreen
         $filtered = $all_entries;
 
         if ($filter_severity && in_array($filter_severity, ErrorLogger::SEVERITIES, true)) {
-            $filtered = array_values(array_filter($filtered, fn($e) => ($e['severity'] ?? '') === $filter_severity));
+            $filtered = array_values(array_filter($filtered, function ($e) use ($filter_severity) {
+                return ($e['severity'] ?? '') === $filter_severity;
+            }));
         }
 
         if ($filter_days > 0) {
             $since = time() - ($filter_days * 86400);
-            $filtered = array_values(array_filter($filtered, fn($e) => ($e['timestamp'] ?? 0) >= $since));
+            $filtered = array_values(array_filter($filtered, function ($e) use ($since) {
+                return ($e['timestamp'] ?? 0) >= $since;
+            }));
         }
 
         $total_filtered = count($filtered);
@@ -432,11 +489,27 @@ class ErrorLogScreen
                                 <span class="dashicons dashicons-download"></span>
                                 <?php _e('Export JSON', 'content-core'); ?>
                             </button>
+                            <?php if ($filter_severity || $filter_days > 0): ?>
+                                <button type="button" class="cc-button-secondary"
+                                    style="background-color:rgba(214, 54, 56, 0.05); color:var(--cc-error); border-color:var(--cc-error);"
+                                    onclick="if(confirm('<?php echo esc_js(__('PERMANENTLY DELETE ALL entries matching current filters? This cannot be undone.', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-filtered')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>', 'Content-Type': 'application/json' }, body: JSON.stringify({ severity: '<?php echo esc_js($filter_severity); ?>', days: <?php echo (int)$filter_days; ?> }) }).then(async (res) => { window.location.reload(); }); }">
+                                    <span class="dashicons dashicons-filter"></span>
+                                    <?php _e('Hard Delete Filtered', 'content-core'); ?>
+                                </button>
+                            <?php endif; ?>
+
                             <button type="button" class="cc-button-secondary"
                                 style="color:var(--cc-error); border-color:var(--cc-error);"
                                 onclick="if(confirm('<?php echo esc_js(__('Clear resolved log entries (older than 24h)?', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-old')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(async (res) => { window.location.reload(); }); }">
                                 <span class="dashicons dashicons-trash"></span>
                                 <?php _e('Clear Resolved', 'content-core'); ?>
+                            </button>
+                            <button type="button" class="cc-button-secondary"
+                                style="background-color:rgba(214, 54, 56, 0.05); color:var(--cc-error); border-color:var(--cc-error);"
+                                onclick="if(confirm('<?php echo esc_js(__('PERMANENTLY DELETE ALL log entries? This cannot be undone.', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(async (res) => { window.location.reload(); }); }"
+                                <?php echo empty($all_entries) ? 'disabled' : ''; ?>>
+                                <span class="dashicons dashicons-dismiss"></span>
+                                <?php _e('Hard Delete All', 'content-core'); ?>
                             </button>
                         </div>
                     </div>
@@ -462,6 +535,9 @@ class ErrorLogScreen
                                 </th>
                                 <th style="width:140px;">
                                     <?php _e('Screen', 'content-core'); ?>
+                                </th>
+                                <th style="width:100px; text-align:right;">
+                                    <?php _e('Actions', 'content-core'); ?>
                                 </th>
                             </tr>
                         </thead>
@@ -511,6 +587,35 @@ class ErrorLogScreen
                                         </td>
                                         <td style="font-size:12px; color:var(--cc-text-muted);">
                                             <?php echo esc_html($entry['screen'] ?? ''); ?>
+                                        </td>
+                                        <td style="text-align:right;">
+                                            <button type="button" class="cc-button-secondary cc-button-sm"
+                                                style="color:var(--cc-error); min-width:auto; padding:4px 8px;" onclick="if(confirm('<?php echo esc_js(__('Delete this entry?', 'content-core')); ?>')) { 
+                                                    const btn = this;
+                                                    btn.disabled = true;
+                                                    fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/delete')); ?>', { 
+                                                        method: 'POST', 
+                                                        headers: { 
+                                                            'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>',
+                                                            'Content-Type': 'application/json'
+                                                        },
+                                                        body: JSON.stringify({
+                                                            timestamp: <?php echo (int) ($entry['timestamp'] ?? 0); ?>,
+                                                            message: <?php echo json_encode($entry['message'] ?? ''); ?>,
+                                                            file: <?php echo json_encode($entry['file'] ?? ''); ?>
+                                                        })
+                                                    }).then(res => res.json()).then(data => {
+                                                        if(data.success) {
+                                                            btn.closest('tr').style.opacity = '0.3';
+                                                            btn.closest('tr').style.pointerEvents = 'none';
+                                                        } else {
+                                                            btn.disabled = false;
+                                                            alert(data.message || 'Error deleting entry');
+                                                        }
+                                                    }); 
+                                                }">
+                                                <span class="dashicons dashicons-trash"></span>
+                                            </button>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>

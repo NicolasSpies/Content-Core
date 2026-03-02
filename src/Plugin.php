@@ -109,7 +109,6 @@ class Plugin
             'rest_api' => \ContentCore\Modules\RestApi\RestApiModule::class,
             'options_pages' => \ContentCore\Modules\OptionsPages\OptionsPagesModule::class,
             'content_types' => \ContentCore\Modules\ContentTypes\ContentTypesModule::class,
-            'settings' => \ContentCore\Modules\Settings\SettingsModule::class,
             'multilingual' => \ContentCore\Modules\Multilingual\MultilingualModule::class,
             'media' => \ContentCore\Modules\Media\MediaModule::class,
             'seo' => \ContentCore\Modules\Seo\SeoModule::class,
@@ -118,6 +117,7 @@ class Plugin
             'branding' => \ContentCore\Modules\Branding\BrandingModule::class,
             'diagnostics' => \ContentCore\Modules\Diagnostics\DiagnosticsModule::class,
             'site_options' => \ContentCore\Modules\SiteOptions\SiteOptionsModule::class,
+            'settings' => \ContentCore\Modules\Settings\SettingsModule::class,
         ];
 
         foreach ($module_classes as $id => $class_name) {
