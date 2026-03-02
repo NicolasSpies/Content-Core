@@ -81,23 +81,43 @@ class Assets
         $css_dir = $assets_dir . '/css';
         $js_dir = $assets_dir . '/js';
 
-        if (!is_dir($css_dir)) {
-            mkdir($css_dir, 0755, true);
-        }
-        if (!is_dir($js_dir)) {
-            mkdir($js_dir, 0755, true);
-        }
+        try {
+            // Create CSS directory with error handling
+            if (!is_dir($css_dir)) {
+                if (!@mkdir($css_dir, 0755, true) && !is_dir($css_dir)) {
+                    throw new \Exception("Failed to create CSS directory: {$css_dir}");
+                }
+            }
 
-        $files = [
-            $css_dir . '/admin.css' => '/* Minimal Content Core Admin CSS */',
-            $css_dir . '/post-edit.css' => '/* Minimal Content Core Post Edit CSS */',
-            $css_dir . '/metabox-ui.css' => '/* Minimal Content Core Metabox UI CSS */',
-            $js_dir . '/admin.js' => '/* Minimal Content Core Admin JS */console.log("wp-content/plugins/Content-Core/assets/js/admin.js loaded");'
-        ];
+            // Create JS directory with error handling
+            if (!is_dir($js_dir)) {
+                if (!@mkdir($js_dir, 0755, true) && !is_dir($js_dir)) {
+                    throw new \Exception("Failed to create JS directory: {$js_dir}");
+                }
+            }
 
-        foreach ($files as $file => $content) {
-            if (!file_exists($file)) {
-                file_put_contents($file, $content);
+            $files = [
+                $css_dir . '/admin.css' => '/* Minimal Content Core Admin CSS */',
+                $css_dir . '/post-edit.css' => '/* Minimal Content Core Post Edit CSS */',
+                $css_dir . '/metabox-ui.css' => '/* Minimal Content Core Metabox UI CSS */',
+                $js_dir . '/admin.js' => '/* Minimal Content Core Admin JS */console.log("wp-content/plugins/Content-Core/assets/js/admin.js loaded");'
+            ];
+
+            foreach ($files as $file => $content) {
+                if (!file_exists($file)) {
+                    $result = @file_put_contents($file, $content);
+                    if ($result === false) {
+                        throw new \Exception("Failed to write file: {$file}");
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // Log error but don't break plugin initialization
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                trigger_error('Content Core: ' . $e->getMessage(), E_USER_WARNING);
+            }
+            if (class_exists('\ContentCore\Logger')) {
+                \ContentCore\Logger::warning('Asset initialization failed: ' . $e->getMessage());
             }
         }
     }

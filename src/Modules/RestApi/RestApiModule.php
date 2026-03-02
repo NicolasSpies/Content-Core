@@ -213,10 +213,12 @@ class RestApiModule implements ModuleInterface
         $id = $request->get_param('id');
 
         if (!is_numeric($id) || $id <= 0) {
-            return new \WP_Error(
-                'rest_post_invalid_id',
-                __('Invalid post ID.', 'content-core'),
-                ['status' => 404]
+            return new \WP_REST_Response(
+                [
+                    'code' => 'rest_post_invalid_id',
+                    'message' => __('Invalid post ID.', 'content-core'),
+                ],
+                404
             );
         }
 
@@ -537,8 +539,15 @@ class RestApiModule implements ModuleInterface
                 }
                 break;
             case 'gallery':
-                if (is_string($value))
-                    $value = json_decode($value, true);
+                if (is_string($value)) {
+                    $decoded = json_decode($value, true);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        \ContentCore\Logger::warning('Invalid JSON in gallery field: ' . json_last_error_msg(), ['raw_value' => substr($value, 0, 100)]);
+                        $value = [];
+                    } else {
+                        $value = $decoded;
+                    }
+                }
                 if (is_array($value)) {
                     foreach ($value as $id) {
                         if (is_numeric($id))
@@ -547,8 +556,15 @@ class RestApiModule implements ModuleInterface
                 }
                 break;
             case 'repeater':
-                if (is_string($value))
-                    $value = json_decode($value, true);
+                if (is_string($value)) {
+                    $decoded = json_decode($value, true);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        \ContentCore\Logger::warning('Invalid JSON in repeater field: ' . json_last_error_msg(), ['raw_value' => substr($value, 0, 100)]);
+                        $value = [];
+                    } else {
+                        $value = $decoded;
+                    }
+                }
                 if (is_array($value)) {
                     $sub_fields = $schema['sub_fields'] ?? [];
                     $sub_schemas = [];
@@ -565,8 +581,15 @@ class RestApiModule implements ModuleInterface
                 }
                 break;
             case 'group':
-                if (is_string($value))
-                    $value = json_decode($value, true);
+                if (is_string($value)) {
+                    $decoded = json_decode($value, true);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        \ContentCore\Logger::warning('Invalid JSON in group field: ' . json_last_error_msg(), ['raw_value' => substr($value, 0, 100)]);
+                        $value = [];
+                    } else {
+                        $value = $decoded;
+                    }
+                }
                 if (is_array($value)) {
                     $sub_fields = $schema['sub_fields'] ?? [];
                     foreach ($sub_fields as $sub) {
@@ -651,7 +674,13 @@ class RestApiModule implements ModuleInterface
 
             case 'gallery':
                 if (is_string($value)) {
-                    $value = json_decode($value, true);
+                    $decoded = json_decode($value, true);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        \ContentCore\Logger::warning('Invalid JSON in gallery format: ' . json_last_error_msg());
+                        $value = [];
+                    } else {
+                        $value = $decoded;
+                    }
                 }
                 $ids = is_array($value) ? $value : [];
                 $formatted_gallery = [];
@@ -665,7 +694,13 @@ class RestApiModule implements ModuleInterface
 
             case 'repeater':
                 if (is_string($value)) {
-                    $value = json_decode($value, true);
+                    $decoded = json_decode($value, true);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        \ContentCore\Logger::warning('Invalid JSON in repeater format: ' . json_last_error_msg());
+                        $value = [];
+                    } else {
+                        $value = $decoded;
+                    }
                 }
                 if (!is_array($value) || empty($value)) {
                     return [];
@@ -692,7 +727,13 @@ class RestApiModule implements ModuleInterface
 
             case 'group':
                 if (is_string($value)) {
-                    $value = json_decode($value, true);
+                    $decoded = json_decode($value, true);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        \ContentCore\Logger::warning('Invalid JSON in group format: ' . json_last_error_msg());
+                        $value = [];
+                    } else {
+                        $value = $decoded;
+                    }
                 }
                 if (!is_array($value)) {
                     return null;

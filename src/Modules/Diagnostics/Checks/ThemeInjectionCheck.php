@@ -42,8 +42,10 @@ class ThemeInjectionCheck implements HealthCheckInterface
         }
 
         if (file_exists($header_path)) {
-            $content = file_get_contents($header_path);
-            if (strpos($content, 'wp_head') === false) {
+            $content = @file_get_contents($header_path);
+            if ($content === false) {
+                // Can't read file — skip check
+            } elseif (strpos($content, 'wp_head') === false) {
                 $results[] = new HealthCheckResult(
                     'theme_missing_wp_head',
                     'critical',
@@ -54,8 +56,10 @@ class ThemeInjectionCheck implements HealthCheckInterface
         }
 
         if (file_exists($footer_path)) {
-            $content = file_get_contents($footer_path);
-            if (strpos($content, 'wp_footer') === false) {
+            $content = @file_get_contents($footer_path);
+            if ($content === false) {
+                // Can't read file — skip check
+            } elseif (strpos($content, 'wp_footer') === false) {
                 $results[] = new HealthCheckResult(
                     'theme_missing_wp_footer',
                     'critical',
