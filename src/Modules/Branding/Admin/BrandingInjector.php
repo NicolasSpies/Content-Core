@@ -82,7 +82,7 @@ class BrandingInjector
             --cc-glass: rgba(255, 255, 255, 0.01);
             --cc-border: rgba(255, 255, 255, 0.05);
             --cc-ink: #f8fafc;
-            --cc-ink-soft: #94a3b8;
+            --cc-ink-soft: #a2a8af;
         }
 
         html, body {
@@ -151,7 +151,7 @@ class BrandingInjector
 
         /* Fix Remember Me alignment */
         body.login .forgetmenot {
-            margin-top: 12px !important;
+            margin-bottom: 24px !important;
             float: none !important;
             display: flex !important;
             align-items: center !important;

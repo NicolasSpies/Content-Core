@@ -33,16 +33,7 @@ class MultilingualRestHandler
             ];
 
             foreach ($namespaces as $ns) {
-                // Base index protection
-                register_rest_route($ns, '/', [
-                    'methods' => \WP_REST_Server::READABLE,
-                    'callback' => function () use ($ns) {
-                        return ['namespace' => $ns, 'status' => 'active'];
-                    },
-                    'permission_callback' => function () {
-                        return current_user_can('manage_options');
-                    },
-                ]);
+                // Base index is centrally handled by RestApiModule
 
                 register_rest_route($ns, '/sitemap', [
                     'methods' => 'GET',

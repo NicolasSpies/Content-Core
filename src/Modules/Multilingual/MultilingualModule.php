@@ -151,7 +151,7 @@ class MultilingualModule implements ModuleInterface
             $settings = [];
         }
 
-        $merged = array_merge($defaults, (array) $settings);
+        $merged = array_merge((array) $defaults, (array) $settings);
 
         if (empty($merged['languages']) || !is_array($merged['languages'])) {
             $merged['languages'] = (array) ($defaults['languages'] ?? []);

@@ -977,6 +977,9 @@ class RestApiModule implements ModuleInterface
             $ns_with_slash = '/' . ltrim($namespace, '/');
 
             $all_routes = $server->get_routes();
+            if (!is_array($all_routes)) {
+                $all_routes = [];
+            }
             $our_routes = [];
 
             foreach ($all_routes as $route => $handlers) {

@@ -33,8 +33,8 @@ class RedirectTabRenderer
                         </th>
                         <td>
                             <label class="cc-toggle">
-                                <input type="hidden" name="cc_redirect[enabled]" value="0">
-                                <input type="checkbox" name="cc_redirect[enabled]" value="1" <?php
+                                <input type="hidden" name="cc_redirect_settings[enabled]" value="0">
+                                <input type="checkbox" name="cc_redirect_settings[enabled]" value="1" <?php
                                 checked($red_settings['enabled']); ?>>
                                 <span class="cc-toggle-slider"></span>
                             </label>
@@ -45,7 +45,7 @@ class RedirectTabRenderer
                             <?php _e('From Path', 'content-core'); ?>
                         </th>
                         <td>
-                            <input type="text" name="cc_redirect[from_path]"
+                            <input type="text" name="cc_redirect_settings[from_path]"
                                 value="<?php echo esc_attr($red_settings['from_path']); ?>" class="regular-text"
                                 placeholder="/">
                             <p class="description">
@@ -58,7 +58,7 @@ class RedirectTabRenderer
                             <?php _e('Target Path / URL', 'content-core'); ?>
                         </th>
                         <td>
-                            <input type="text" name="cc_redirect[target]"
+                            <input type="text" name="cc_redirect_settings[target]"
                                 value="<?php echo esc_attr($red_settings['target']); ?>" class="regular-text"
                                 placeholder="/wp-admin">
                             <p class="description">
@@ -71,7 +71,7 @@ class RedirectTabRenderer
                             <?php _e('Status Code', 'content-core'); ?>
                         </th>
                         <td>
-                            <select name="cc_redirect[status_code]">
+                            <select name="cc_redirect_settings[status_code]">
                                 <option value="302" <?php selected($red_settings['status_code'], '302'); ?>>302 Found
                                     (Temporary)</option>
                                 <option value="301" <?php selected($red_settings['status_code'], '301'); ?>>301 Moved
@@ -85,8 +85,8 @@ class RedirectTabRenderer
                         </th>
                         <td>
                             <label class="cc-toggle">
-                                <input type="hidden" name="cc_redirect[pass_query]" value="0">
-                                <input type="checkbox" name="cc_redirect[pass_query]" value="1" <?php checked($red_settings['pass_query']); ?>>
+                                <input type="hidden" name="cc_redirect_settings[pass_query]" value="0">
+                                <input type="checkbox" name="cc_redirect_settings[pass_query]" value="1" <?php checked($red_settings['pass_query']); ?>>
                                 <span class="cc-toggle-slider"></span>
                             </label>
                         </td>
@@ -97,11 +97,11 @@ class RedirectTabRenderer
                         </th>
                         <td>
                             <fieldset>
-                                <label><input type="checkbox" name="cc_redirect[exclusions][admin]" value="1" <?php checked($red_settings['exclusions']['admin']); ?>> Admin Area (/wp-admin)</label><br>
-                                <label><input type="checkbox" name="cc_redirect[exclusions][ajax]" value="1" <?php checked($red_settings['exclusions']['ajax']); ?>> AJAX Requests</label><br>
-                                <label><input type="checkbox" name="cc_redirect[exclusions][rest]" value="1" <?php checked($red_settings['exclusions']['rest']); ?>> REST API</label><br>
-                                <label><input type="checkbox" name="cc_redirect[exclusions][cron]" value="1" <?php checked($red_settings['exclusions']['cron']); ?>> WP Cron</label><br>
-                                <label><input type="checkbox" name="cc_redirect[exclusions][cli]" value="1" <?php checked($red_settings['exclusions']['cli']); ?>> WP CLI</label>
+                                <label><input type="checkbox" name="cc_redirect_settings[exclusions][admin]" value="1" <?php checked($red_settings['exclusions']['admin']); ?>> Admin Area (/wp-admin)</label><br>
+                                <label><input type="checkbox" name="cc_redirect_settings[exclusions][ajax]" value="1" <?php checked($red_settings['exclusions']['ajax']); ?>> AJAX Requests</label><br>
+                                <label><input type="checkbox" name="cc_redirect_settings[exclusions][rest]" value="1" <?php checked($red_settings['exclusions']['rest']); ?>> REST API</label><br>
+                                <label><input type="checkbox" name="cc_redirect_settings[exclusions][cron]" value="1" <?php checked($red_settings['exclusions']['cron']); ?>> WP Cron</label><br>
+                                <label><input type="checkbox" name="cc_redirect_settings[exclusions][cli]" value="1" <?php checked($red_settings['exclusions']['cli']); ?>> WP CLI</label>
                             </fieldset>
                             <p class="description">
                                 <?php _e('Requests matching these criteria will NEVER be redirected, even if the From Path matches.', 'content-core'); ?>

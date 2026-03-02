@@ -37,10 +37,10 @@ class BrandingModule implements ModuleInterface
         }
 
         $defaults = [
-            'enabled' => false,
+            'enabled' => true,
             'exclude_admins' => true,
             'login_logo' => '',
-            'login_bg_color' => '#f0f0f1',
+            'login_bg_color' => '#0A0A0A',
             'login_btn_color' => '#2271b1',
             'login_logo_link_url' => '',
             'admin_bar_logo' => '',
@@ -49,8 +49,8 @@ class BrandingModule implements ModuleInterface
             'use_site_icon_for_admin_bar' => false,
             'custom_primary_color' => '',
             'custom_accent_color' => '',
-            'remove_wp_mentions' => false,
-            'custom_footer_text' => '',
+            'remove_wp_mentions' => true,
+            'custom_footer_text' => 'Built and maintained by <a href="https://www.google.be" target="_blank">Nicolas Spies</a>',
         ];
 
         $saved = get_option(self::SETTINGS_KEY, []);
@@ -58,7 +58,7 @@ class BrandingModule implements ModuleInterface
             $saved = [];
         }
 
-        $this->settings_cache = array_merge($defaults, (array) $saved);
+        $this->settings_cache = array_merge((array) $defaults, (array) $saved);
         return $this->settings_cache;
     }
 

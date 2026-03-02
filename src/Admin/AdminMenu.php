@@ -145,10 +145,15 @@ class AdminMenu
 
         $plugin = \ContentCore\Plugin::get_instance();
 
-        // 1) Dashboard (Content Core -> Dashboard)
-        if (isset($GLOBALS['submenu']['content-core'])) {
-            $GLOBALS['submenu']['content-core'][0][0] = __('Dashboard', 'content-core');
-        }
+        // 1) Dashboard (Rename the first submenu entry)
+        add_submenu_page(
+            'content-core',
+            __('Dashboard', 'content-core'),
+            __('Dashboard', 'content-core'),
+            'manage_options',
+            'content-core',
+            [$this, 'render_main_dashboard']
+        );
 
         // Submenu: REST API -> Content Core
         if ($plugin->is_module_active('rest_api')) {
