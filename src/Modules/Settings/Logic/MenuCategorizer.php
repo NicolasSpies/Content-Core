@@ -46,6 +46,11 @@ class MenuCategorizer
             if (empty($clean))
                 continue;
 
+            // Skip legacy Link Manager entries that may be registered but not shown in modern WP sidebars.
+            if (in_array($slug, ['link-manager.php', 'edit-tags.php?taxonomy=link_category'], true)) {
+                continue;
+            }
+
             $items[$slug] = $clean;
         }
 
@@ -64,12 +69,7 @@ class MenuCategorizer
 
         $appearance_slugs = ['themes.php'];
         $system_slugs = ['plugins.php', 'users.php', 'tools.php', 'options-general.php'];
-        $skip_slugs = ['content-core'];
-
         foreach ($items as $slug => $title) {
-            if (in_array($slug, $skip_slugs, true)) {
-                continue;
-            }
             if ($this->is_content_slug($slug)) {
                 $core[$slug] = $title;
             } elseif (in_array($slug, $appearance_slugs, true)) {

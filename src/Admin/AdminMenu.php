@@ -25,12 +25,16 @@ class AdminMenu
         $maintenance = new MaintenanceService();
         $maintenance->init();
 
-        // 4. UI Fragments
+        // 4. Standard WordPress dashboard replacement for client roles
+        $dashboard_customizer = new StandardDashboardCustomizer();
+        $dashboard_customizer->init();
+
+        // 5. UI Fragments
         add_action('admin_footer', [$this, 'maybe_render_footer_audit']);
         add_filter('admin_footer_text', [$this, 'maybe_remove_footer_text'], 11);
         add_filter('update_footer', [$this, 'maybe_remove_footer_text'], 11);
 
-        // Error Log actions — delegated to ErrorLogScreen
+        // 6. Error Log actions — delegated to ErrorLogScreen
         $logger = \ContentCore\Plugin::get_instance()->get_error_logger();
         if ($logger instanceof \ContentCore\Admin\ErrorLogger) {
             $error_log_screen = new \ContentCore\Admin\ErrorLogScreen($logger);

@@ -40,7 +40,7 @@ class MenuRegistry
         }
 
         if ($_GET['page'] === 'cc-settings-hub') {
-            wp_redirect(admin_url('admin.php?page=cc-site-options'));
+            wp_redirect(admin_url('admin.php?page=cc-multilingual'));
             exit;
         }
     }
@@ -115,7 +115,29 @@ class MenuRegistry
         $site_options_admin = ($site_options_module instanceof \ContentCore\Modules\SiteOptions\SiteOptionsModule) ? $site_options_module->get_admin() : null;
 
         if ($site_options_admin) {
-            add_submenu_page('content-core', __('Site Options', 'content-core'), __('Site Options', 'content-core'), 'manage_options', 'cc-site-options', [$site_options_admin, 'render_page']);
+            $site_profile_callback = $site_options_admin ? [$site_options_admin, 'render_page'] : '__return_null';
+            if ($settings_module && method_exists($settings_module, 'render_site_settings_page')) {
+                $site_profile_callback = [$settings_module, 'render_site_settings_page'];
+            }
+
+            add_menu_page(
+                __('Site Profile', 'content-core'),
+                __('Site Profile', 'content-core'),
+                'edit_posts',
+                'cc-site-options',
+                $site_profile_callback,
+                'dashicons-admin-generic',
+                31
+            );
+
+            add_submenu_page(
+                'content-core',
+                __('Site Profile Fields', 'content-core'),
+                __('Site Profile Fields', 'content-core'),
+                'manage_options',
+                'cc-site-profile-fields',
+                [$site_options_admin, 'render_schema_page']
+            );
         }
 
         if ($settings_module) {
@@ -130,7 +152,7 @@ class MenuRegistry
                 'cc-cookie-banner' => __('Cookie Banner', 'content-core'),
             ];
             foreach ($pages as $slug => $label) {
-                $callback = (in_array($slug, ['cc-seo', 'cc-branding', 'cc-cookie-banner', 'cc-site-images'])) ? [$settings_module, 'render_site_settings_page'] : [$settings_module, 'render_settings_page'];
+                $callback = (in_array($slug, ['cc-seo', 'cc-cookie-banner', 'cc-site-images'])) ? [$settings_module, 'render_site_settings_page'] : [$settings_module, 'render_settings_page'];
                 add_submenu_page('content-core', $label, $label, 'manage_options', $slug, $callback);
             }
         }

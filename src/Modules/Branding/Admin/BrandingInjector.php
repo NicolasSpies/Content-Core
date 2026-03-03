@@ -369,7 +369,13 @@ class BrandingInjector
                 // Submenu panel styling and positioning fix
                 $css[] = "#adminmenu .wp-has-current-submenu .wp-submenu, #adminmenu .wp-has-current-submenu .wp-submenu.sub-open, #adminmenu .wp-has-current-submenu.opened .wp-submenu { background-color: #2F363D !important; border-left: 4px solid var(--cc-brand-accent) !important; box-sizing: border-box; }";
                 // Only use left offset for fly-outs when the menu is NOT expanded
-                $css[] = "body.folded #adminmenu .wp-has-current-submenu .wp-submenu, #adminmenu .opensub .wp-submenu { left: 160px !important; }";
+                $css[] = "body.folded #adminmenu .wp-has-current-submenu .wp-submenu, body.folded #adminmenu .opensub .wp-submenu { left: 160px !important; }";
+
+                // Remove tiny top gap in admin sidebar under the top toolbar.
+                $css[] = "#adminmenuback, #adminmenuwrap, #adminmenu { margin-top: 0 !important; padding-top: 0 !important; }";
+                $css[] = "#adminmenu > li#toplevel_page_cc-site-options, #adminmenu > li#toplevel_page_content-core { margin-top: 0 !important; }";
+                $css[] = "#adminmenu > li.wp-first-item { margin-top: 0 !important; }";
+                $css[] = "#adminmenu > li.wp-menu-separator:first-child { display: none !important; }";
             }
         }
 

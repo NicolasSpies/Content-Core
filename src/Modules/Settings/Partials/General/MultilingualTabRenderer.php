@@ -40,6 +40,7 @@ class MultilingualTabRenderer
                         <table class="cc-table cc-table-flush" id="cc-ml-languages-table">
                             <thead>
                                 <tr>
+                                    <th style="width: 44px; text-align: center;"></th>
                                     <th style="width: 60px; text-align: center;"><?php _e('Flag', 'content-core'); ?></th>
                                     <th style="width: 100px;"><?php _e('Code', 'content-core'); ?></th>
                                     <th><?php _e('Label', 'content-core'); ?></th>
@@ -50,6 +51,9 @@ class MultilingualTabRenderer
                             <tbody>
                                 <?php foreach ($ml_settings['languages'] as $index => $lang): ?>
                                     <tr data-index="<?php echo $index; ?>" data-code="<?php echo esc_attr($lang['code']); ?>">
+                                        <td style="text-align:center;">
+                                            <span class="dashicons dashicons-menu cc-drag-handle cc-ml-drag-handle" title="<?php esc_attr_e('Drag to reorder', 'content-core'); ?>"></span>
+                                        </td>
                                         <td class="flag-col" style="text-align: center;">
                                             <?php echo $ml_instance->get_flag_html($lang['code'], $lang['flag_id'] ?? 0); ?>
                                         </td>
@@ -351,6 +355,9 @@ class MultilingualTabRenderer
             <!-- Template Script -->
             <script type="text/template" id="cc-ml-row-template">
                         <tr data-index="{index}" data-code="{code}">
+                            <td style="text-align:center;">
+                                <span class="dashicons dashicons-menu cc-drag-handle cc-ml-drag-handle" title="<?php esc_attr_e('Drag to reorder', 'content-core'); ?>"></span>
+                            </td>
                             <td class="flag-col" style="text-align: center;">{flag}</td>
                             <td>
                                 <code>{code}</code>

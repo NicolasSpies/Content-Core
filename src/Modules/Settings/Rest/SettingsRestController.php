@@ -27,23 +27,35 @@ class SettingsRestController extends BaseRestController
             [
                 'methods' => \WP_REST_Server::READABLE,
                 'callback' => [$this, 'get_item'],
-                'permission_callback' => [$this, 'check_admin_permissions'],
+                'permission_callback' => [$this, 'check_permissions'],
             ],
             [
                 'methods' => \WP_REST_Server::CREATABLE . ', ' . \WP_REST_Server::EDITABLE, // Standardize on POST/PUT
                 'callback' => [$this, 'update_item'],
-                'permission_callback' => [$this, 'check_admin_permissions'],
+                'permission_callback' => [$this, 'check_permissions'],
             ],
         ]);
+    }
+
+    public function check_permissions(WP_REST_Request $request): bool
+    {
+        $module = (string) ($request['module'] ?? '');
+        if ($module === 'site-profile') {
+            return current_user_can('edit_posts');
+        }
+        return $this->check_admin_permissions($request);
     }
 
     public function get_item($request): WP_REST_Response
     {
         $module = $request['module'];
         if ($module === 'site') {
+            $images = $this->registry->get('cc_site_images');
+            $images = $this->hydrate_image_urls($images);
+
             return new WP_REST_Response([
                 'seo' => $this->registry->get(SettingsModule::SEO_KEY),
-                'images' => $this->registry->get('cc_site_images'),
+                'images' => $images,
                 'cookie' => $this->registry->get(SettingsModule::COOKIE_KEY),
                 'branding' => $this->registry->get('cc_branding_settings')
             ]);
@@ -54,6 +66,18 @@ class SettingsRestController extends BaseRestController
                 'menu' => $this->registry->get(SettingsModule::OPTION_KEY),
                 'admin_bar' => $this->registry->get(SettingsModule::ADMIN_BAR_KEY),
                 'order' => get_option(SettingsModule::ORDER_KEY, [])
+            ]);
+        }
+
+        if ($module === 'site-profile') {
+            $site_mod = \ContentCore\Plugin::get_instance()->get_module('site_options');
+            if (!($site_mod instanceof \ContentCore\Modules\SiteOptions\SiteOptionsModule)) {
+                return new WP_REST_Response(['message' => 'Site Profile module not active.'], 500);
+            }
+
+            return new WP_REST_Response([
+                'schema' => $site_mod->get_schema(),
+                'values' => $site_mod->get_options(),
             ]);
         }
 
@@ -157,9 +181,6 @@ class SettingsRestController extends BaseRestController
                     $menu_data['admin']['plugins.php'] = true;
                     $menu_data['admin']['content-core'] = true;
                 }
-                if (isset($menu_data['client']) && is_array($menu_data['client'])) {
-                    $menu_data['client']['content-core'] = true;
-                }
                 $saved = $this->registry->save(SettingsModule::OPTION_KEY, $menu_data);
                 if (!$saved) {
                     $success = false;
@@ -233,6 +254,21 @@ class SettingsRestController extends BaseRestController
             ]);
         }
 
+        if ($module === 'site-profile') {
+            $site_mod = \ContentCore\Plugin::get_instance()->get_module('site_options');
+            if (!($site_mod instanceof \ContentCore\Modules\SiteOptions\SiteOptionsModule)) {
+                return new WP_REST_Response(['message' => 'Site Profile module not active.'], 500);
+            }
+
+            $schema = $site_mod->get_schema();
+            $existing = $site_mod->get_options();
+            $incoming = isset($params['values']) && is_array($params['values']) ? $params['values'] : [];
+            $sanitized = $this->sanitize_site_profile_values($schema, $existing, $incoming);
+            update_option(\ContentCore\Modules\SiteOptions\SiteOptionsModule::DATA_OPTION, $sanitized);
+
+            return $this->get_item($request);
+        }
+
         $key = $this->get_option_key($module);
         if (!$key) {
             \ContentCore\Logger::error(sprintf('[CC Settings REST] Invalid module requested for save: %s', $module));
@@ -241,6 +277,9 @@ class SettingsRestController extends BaseRestController
 
         if ($is_reset) {
             update_option($key, $this->registry->get_defaults($key));
+            if ($key === 'cc_languages_settings') {
+                set_transient('cc_flush_multilingual_rewrites', 1, 300);
+            }
             return $this->get_item($request);
         }
 
@@ -253,6 +292,7 @@ class SettingsRestController extends BaseRestController
             $update_params = is_array($params) ? $params : [];
             // Shallow merge the new top-level keys to replace numeric arrays entirely
             $merged = array_merge((array) $defaults, (array) $current, (array) $update_params);
+            $merged = $this->normalize_languages_payload($merged);
             $sanitized = $this->registry->sanitize($key, $merged);
             $success = update_option($key, $sanitized);
             // Handle unchanged data
@@ -263,6 +303,7 @@ class SettingsRestController extends BaseRestController
                     'data' => ['status' => 500]
                 ], 500);
             }
+            set_transient('cc_flush_multilingual_rewrites', 1, 300);
         } else {
             $success = $this->registry->save($key, (array) $params);
             if (!$success) {
@@ -290,5 +331,115 @@ class SettingsRestController extends BaseRestController
         ];
 
         return $map[$module_slug] ?? null;
+    }
+
+    /**
+     * Enrich image-id settings with *_url helper keys for React preview rendering.
+     */
+    private function hydrate_image_urls(array $images): array
+    {
+        $hydrated = $images;
+        foreach ($images as $key => $value) {
+            if (!is_string($key) || substr($key, -3) !== '_id') {
+                continue;
+            }
+
+            $id = absint($value);
+            $url_key = $key . '_url';
+            $hydrated[$url_key] = $id ? (wp_get_attachment_image_url($id, 'full') ?: '') : '';
+        }
+
+        return $hydrated;
+    }
+
+    private function normalize_languages_payload(array $settings): array
+    {
+        if (!isset($settings['languages']) || !is_array($settings['languages'])) {
+            return $settings;
+        }
+
+        $languages = $settings['languages'];
+        $is_associative = array_keys($languages) !== range(0, count($languages) - 1);
+        if (!$is_associative) {
+            return $settings;
+        }
+
+        $normalized = [];
+        foreach ($languages as $code => $entry) {
+            $normalized_code = sanitize_key((string) $code);
+            if ($normalized_code === '') {
+                continue;
+            }
+
+            $row = [
+                'code' => $normalized_code,
+                'label' => strtoupper($normalized_code),
+                'flag_id' => 0,
+            ];
+
+            if (is_array($entry)) {
+                if (!empty($entry['code'])) {
+                    $row['code'] = sanitize_key((string) $entry['code']);
+                }
+                if (!empty($entry['label'])) {
+                    $row['label'] = sanitize_text_field((string) $entry['label']);
+                }
+                if (isset($entry['flag_id'])) {
+                    $row['flag_id'] = absint($entry['flag_id']);
+                }
+            } elseif (is_string($entry) && $entry !== '') {
+                $row['label'] = sanitize_text_field($entry);
+            }
+
+            $normalized[] = $row;
+        }
+
+        $settings['languages'] = $normalized;
+        return $settings;
+    }
+
+    private function sanitize_site_profile_values(array $schema, array $existing, array $incoming): array
+    {
+        $sanitized = [];
+        foreach ($schema as $section) {
+            $fields = isset($section['fields']) && is_array($section['fields']) ? $section['fields'] : [];
+            foreach ($fields as $id => $field) {
+                if (isset($field['client_editable']) && !$field['client_editable']) {
+                    if (isset($existing[$id])) {
+                        $sanitized[$id] = $existing[$id];
+                    }
+                    continue;
+                }
+
+                if (!array_key_exists($id, $incoming)) {
+                    if (isset($existing[$id])) {
+                        $sanitized[$id] = $existing[$id];
+                    }
+                    continue;
+                }
+
+                $val = $incoming[$id];
+                $type = isset($field['type']) ? (string) $field['type'] : 'text';
+                switch ($type) {
+                    case 'email':
+                        $sanitized[$id] = sanitize_email((string) $val);
+                        break;
+                    case 'url':
+                        $sanitized[$id] = esc_url_raw((string) $val);
+                        break;
+                    case 'textarea':
+                        $sanitized[$id] = sanitize_textarea_field((string) $val);
+                        break;
+                    case 'image':
+                        $sanitized[$id] = max(0, (int) $val);
+                        break;
+                    default:
+                        $sanitized[$id] = sanitize_text_field((string) $val);
+                        break;
+                }
+            }
+        }
+
+        return $sanitized;
     }
 }

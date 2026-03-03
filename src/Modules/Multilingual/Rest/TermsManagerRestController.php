@@ -107,7 +107,20 @@ class TermsManagerRestController extends BaseRestController
     public function get_all_taxonomy_groups(\WP_REST_Request $request): \WP_REST_Response
     {
         // Get all public taxonomies that have a UI
-        $taxonomies = get_taxonomies(['public' => true], 'objects');
+        $taxonomies = array_values(get_taxonomies(['public' => true], 'objects'));
+        usort($taxonomies, function ($a, $b): int {
+            $a_builtin = ($a instanceof \WP_Taxonomy) ? !empty($a->_builtin) : true;
+            $b_builtin = ($b instanceof \WP_Taxonomy) ? !empty($b->_builtin) : true;
+
+            // Custom taxonomies first, then WordPress core taxonomies.
+            if ($a_builtin !== $b_builtin) {
+                return $a_builtin ? 1 : -1;
+            }
+
+            $a_label = ($a instanceof \WP_Taxonomy) ? (string) ($a->label ?: $a->name) : '';
+            $b_label = ($b instanceof \WP_Taxonomy) ? (string) ($b->label ?: $b->name) : '';
+            return strcasecmp($a_label, $b_label);
+        });
         $response_data = [];
 
         foreach ($taxonomies as $tax) {

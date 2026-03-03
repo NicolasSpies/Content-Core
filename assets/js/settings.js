@@ -1,9 +1,27 @@
 jQuery(function ($) {
-    if ($('.cc-settings-single-page').length === 0 && $('.cc-settings-tabs').length === 0) return;
+    if (
+        $('.cc-settings-single-page').length === 0 &&
+        $('.cc-settings-tabs').length === 0 &&
+        $('.wrap.content-core-admin').length === 0
+    ) {
+        return;
+    }
 
     var $table = $('#cc-ml-languages-table tbody');
     var template = $('#cc-ml-row-template').html();
     var catalog = (typeof CC_SETTINGS !== 'undefined') ? CC_SETTINGS.catalog : {};
+    var query = new URLSearchParams(window.location.search);
+
+    function showToast(message, type) {
+        if (window.CCToast && typeof window.CCToast.show === 'function') {
+            window.CCToast.show(message, type);
+        }
+    }
+
+    // Keep existing PHP save flow and notices, add matching modern toast feedback on success.
+    if (query.get('cc_action') === 'settings_saved') {
+        showToast('Settings saved successfully.', 'success');
+    }
 
     function updateSelects() {
         var $defaultSelect = $('#cc-default-lang-select');
@@ -27,6 +45,17 @@ jQuery(function ($) {
         $fallbackSelect.val(currentFallback);
     }
 
+    function reindexLanguageRows() {
+        $table.find('tr').each(function (idx) {
+            $(this).attr('data-index', idx);
+            $(this).find('[name]').each(function () {
+                if (this.name) {
+                    this.name = this.name.replace(/cc_languages\[languages\]\[\d+\]/, 'cc_languages[languages][' + idx + ']');
+                }
+            });
+        });
+    }
+
     $('.add-language-row').on('click', function () {
         var $selector = $('#cc-ml-add-selector');
         var code = $selector.val();
@@ -46,21 +75,38 @@ jQuery(function ($) {
             .replace(/{flag}/g, langData.flag);
         $table.append(row);
         $selector.val('');
+        reindexLanguageRows();
         updateSelects();
     });
 
     $table.on('click', '.remove-row', function () {
         if (confirm(CC_SETTINGS.strings.confirmRemoveLang)) {
             $(this).closest('tr').remove();
-            $table.find('tr').each(function (idx) {
-                $(this).attr('data-index', idx);
-                $(this).find('[name]').each(function () {
-                    this.name = this.name.replace(/cc_languages\[languages\]\[\d+\]/, 'cc_languages[languages][' + idx + ']');
-                });
-            });
+            reindexLanguageRows();
             updateSelects();
         }
     });
+
+    if ($.fn.sortable && $table.length) {
+        $table.sortable({
+            handle: '.cc-ml-drag-handle',
+            items: 'tr',
+            axis: 'y',
+            helper: function (e, tr) {
+                var $originals = tr.children();
+                var $helper = tr.clone();
+                $helper.children().each(function (index) {
+                    $(this).width($originals.eq(index).outerWidth());
+                });
+                return $helper;
+            },
+            placeholder: 'ui-sortable-placeholder',
+            update: function () {
+                reindexLanguageRows();
+                updateSelects();
+            }
+        });
+    }
 
     $('#cc-ml-fallback-toggle').on('change', function () {
         $('#cc-fallback-lang-select').prop('disabled', !$(this).is(':checked'));
@@ -202,8 +248,18 @@ jQuery(function ($) {
     }
 
     // ── REST Saving Implementation ──
-    const $form = $('.cc-settings-tabs, .cc-settings-single-page form').last().closest('form');
+    const currentPage = new URLSearchParams(window.location.search).get('page');
+    const phpSettingsPages = ['cc-visibility', 'cc-media', 'cc-redirect', 'cc-multilingual', 'cc-branding'];
+    const isPhpSettingsPage = phpSettingsPages.indexOf(currentPage) !== -1;
+    const $form = isPhpSettingsPage
+        ? $('.wrap.content-core-admin form').first()
+        : $('.cc-settings-tabs, .cc-settings-single-page form').last().closest('form');
     if ($form.length && typeof CC_SETTINGS !== 'undefined') {
+        if (isPhpSettingsPage) {
+            // Keep native PHP submit path for these pages.
+            return;
+        }
+
         if (!CC_SETTINGS.restUrl || !CC_SETTINGS.nonce) {
             $form.before('<div class="notice notice-error" style="margin: 20px 0;"><p><strong>Content Core config missing.</strong> Assets not localized. Please check admin enqueue + caching plugins.</p></div>');
             return;
@@ -214,12 +270,15 @@ jQuery(function ($) {
 
             e.preventDefault();
 
-            const $submitBtn = isReset ? $btn : $form.find('button[type="submit"].button-primary');
+            let $submitBtn = isReset ? $btn : $form.find('button[type="submit"].button-primary, button[type="submit"].cc-button-primary').first();
+            if (!$submitBtn.length) {
+                $submitBtn = $btn.length ? $btn : $form.find('button[type="submit"]').first();
+            }
             const originalText = $submitBtn.text();
             $submitBtn.prop('disabled', true).text(isReset ? 'Resetting...' : 'Saving...');
 
             // Identify which module we are saving
-            const pageSlug = new URLSearchParams(window.location.search).get('page');
+            const pageSlug = currentPage;
             let moduleKey = '';
             if (pageSlug === 'cc-visibility') moduleKey = 'visibility';
             else if (pageSlug === 'cc-media') moduleKey = 'media';
@@ -353,22 +412,8 @@ jQuery(function ($) {
                 });
             }
 
-            // Prepare data for API fetch
-            let dataToSave = {};
-            if (moduleKey === 'visibility') {
-                dataToSave = data;
-            } else {
-                const prefixMap = {
-                    'media': 'cc_media_settings',
-                    'redirect': 'cc_redirect_settings',
-                    'multilingual': 'cc_languages'
-                };
-                const prefix = prefixMap[moduleKey];
-                dataToSave[prefix] = data;
-                if (moduleKey === 'redirect' && data.admin_bar) {
-                    dataToSave.cc_admin_bar_link = data.admin_bar;
-                }
-            }
+            // REST controller expects flat module payloads, not option-key wrapped payloads.
+            const dataToSave = data;
 
             wp.apiFetch({
                 path: `content-core/v1/settings/${moduleKey}`,
@@ -380,12 +425,19 @@ jQuery(function ($) {
                     window.location.reload();
                     return;
                 }
-                showNotice('Settings saved.', 'success');
+                if (isPhpSettingsPage) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('cc_action', 'settings_saved');
+                    window.location.href = url.toString();
+                    return;
+                }
+                showToast('Settings saved successfully.', 'success');
             }).catch((err) => {
                 console.error('Save error:', err);
-                showNotice('Error saving settings: ' + (err.message || 'Unknown error'), 'error');
+                showToast('Error saving settings: ' + (err.message || 'Unknown error'), 'error');
             }).finally(() => {
                 $submitBtn.prop('disabled', false).text(originalText);
             });
         });
     }
+});

@@ -11,6 +11,14 @@ class MediaTabRenderer
     public static function render(SettingsModule $settings_mod): void
     {
         $media_settings = $settings_mod->get_registry()->get(SettingsModule::MEDIA_KEY);
+        $media_settings = array_merge([
+            'enabled' => false,
+            'max_width_px' => 1920,
+            'quality' => 70,
+            'png_mode' => 'lossless',
+            'delete_original' => false,
+            'upload_limit_mb' => '',
+        ], is_array($media_settings) ? $media_settings : []);
         ?>
         <div id="cc-settings-media">
             <div class="cc-card">

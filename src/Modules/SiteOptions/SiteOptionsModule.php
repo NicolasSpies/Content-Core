@@ -7,6 +7,7 @@ use ContentCore\Modules\SiteOptions\Admin\SiteOptionsAdmin;
 class SiteOptionsModule implements ModuleInterface
 {
     private ?SiteOptionsAdmin $admin = null;
+    public const DATA_OPTION = 'cc_site_options';
 
     public function init(): void
     {
@@ -22,7 +23,6 @@ class SiteOptionsModule implements ModuleInterface
     }
 
     public const SCHEMA_OPTION = 'cc_site_options_schema';
-    public const GROUP_ID_OPTION = 'cc_site_options_translation_group';
 
     /**
      * Get the dynamic schema for site options
@@ -31,6 +31,10 @@ class SiteOptionsModule implements ModuleInterface
     {
         $schema = get_option(self::SCHEMA_OPTION);
         if (is_array($schema) && !empty($schema)) {
+            if (isset($schema['footer'])) {
+                unset($schema['footer']);
+                update_option(self::SCHEMA_OPTION, $schema);
+            }
             return $schema;
         }
 
@@ -47,22 +51,14 @@ class SiteOptionsModule implements ModuleInterface
                 'title' => __('Company Info', 'content-core'),
                 'fields' => [
                     'company_name' => [
-                        'label' => [
-                            'de' => __('Company Name', 'content-core'),
-                            'en' => 'Company Name',
-                            'fr' => 'Nom de l\'entreprise'
-                        ],
+                        'label' => __('Company Name', 'content-core'),
                         'type' => 'text',
                         'default' => '',
                         'client_visible' => true,
                         'client_editable' => true
                     ],
                     'contact_person' => [
-                        'label' => [
-                            'de' => __('Contact Person', 'content-core'),
-                            'en' => 'Contact Person',
-                            'fr' => 'Personne de contact'
-                        ],
+                        'label' => __('Contact Person', 'content-core'),
                         'type' => 'text',
                         'default' => '',
                         'client_visible' => true,
@@ -74,22 +70,14 @@ class SiteOptionsModule implements ModuleInterface
                 'title' => __('Contact Details', 'content-core'),
                 'fields' => [
                     'email' => [
-                        'label' => [
-                            'de' => __('Email Address', 'content-core'),
-                            'en' => 'Email Address',
-                            'fr' => 'Adresse e-mail'
-                        ],
+                        'label' => __('Email Address', 'content-core'),
                         'type' => 'email',
                         'default' => '',
                         'client_visible' => true,
                         'client_editable' => true
                     ],
                     'phone' => [
-                        'label' => [
-                            'de' => __('Phone Number', 'content-core'),
-                            'en' => 'Phone Number',
-                            'fr' => 'Numéro de téléphone'
-                        ],
+                        'label' => __('Phone Number', 'content-core'),
                         'type' => 'text',
                         'default' => '',
                         'client_visible' => true,
@@ -101,44 +89,28 @@ class SiteOptionsModule implements ModuleInterface
                 'title' => __('Address', 'content-core'),
                 'fields' => [
                     'street' => [
-                        'label' => [
-                            'de' => __('Street & Number', 'content-core'),
-                            'en' => 'Street & Number',
-                            'fr' => 'Rue et numéro'
-                        ],
+                        'label' => __('Street & Number', 'content-core'),
                         'type' => 'text',
                         'default' => '',
                         'client_visible' => true,
                         'client_editable' => true
                     ],
                     'zip' => [
-                        'label' => [
-                            'de' => __('ZIP Code', 'content-core'),
-                            'en' => 'ZIP Code',
-                            'fr' => 'Code postal'
-                        ],
+                        'label' => __('ZIP Code', 'content-core'),
                         'type' => 'text',
                         'default' => '',
                         'client_visible' => true,
                         'client_editable' => true
                     ],
                     'city' => [
-                        'label' => [
-                            'de' => __('City', 'content-core'),
-                            'en' => 'City',
-                            'fr' => 'Ville'
-                        ],
+                        'label' => __('City', 'content-core'),
                         'type' => 'text',
                         'default' => '',
                         'client_visible' => true,
                         'client_editable' => true
                     ],
                     'country' => [
-                        'label' => [
-                            'de' => __('Country', 'content-core'),
-                            'en' => 'Country',
-                            'fr' => 'Pays'
-                        ],
+                        'label' => __('Country', 'content-core'),
                         'type' => 'text',
                         'default' => '',
                         'client_visible' => true,
@@ -150,66 +122,27 @@ class SiteOptionsModule implements ModuleInterface
                 'title' => __('Social Media', 'content-core'),
                 'fields' => [
                     'instagram_url' => [
-                        'label' => [
-                            'de' => __('Instagram URL', 'content-core'),
-                            'en' => 'Instagram URL',
-                            'fr' => 'URL Instagram'
-                        ],
+                        'label' => __('Instagram URL', 'content-core'),
                         'type' => 'url',
                         'default' => '',
                         'client_visible' => true,
                         'client_editable' => true
                     ],
                     'facebook_url' => [
-                        'label' => [
-                            'de' => __('Facebook URL', 'content-core'),
-                            'en' => 'Facebook URL',
-                            'fr' => 'URL Facebook'
-                        ],
+                        'label' => __('Facebook URL', 'content-core'),
                         'type' => 'url',
                         'default' => '',
                         'client_visible' => true,
                         'client_editable' => true
                     ],
                     'linkedin_url' => [
-                        'label' => [
-                            'de' => __('LinkedIn URL', 'content-core'),
-                            'en' => 'LinkedIn URL',
-                            'fr' => 'URL LinkedIn'
-                        ],
+                        'label' => __('LinkedIn URL', 'content-core'),
                         'type' => 'url',
                         'default' => '',
                         'client_visible' => true,
                         'client_editable' => true
                     ],
-                ]
-            ],
-            'footer' => [
-                'title' => __('Footer Content', 'content-core'),
-                'fields' => [
-                    'footer_text' => [
-                        'label' => [
-                            'de' => __('Footer Text', 'content-core'),
-                            'en' => 'Footer Text',
-                            'fr' => 'Texte du pied de page'
-                        ],
-                        'type' => 'textarea',
-                        'default' => '',
-                        'client_visible' => true,
-                        'client_editable' => true
-                    ],
-                    'logo_id' => [
-                        'label' => [
-                            'de' => __('Site Logo', 'content-core'),
-                            'en' => 'Site Logo',
-                            'fr' => 'Logo du site'
-                        ],
-                        'type' => 'image',
-                        'default' => '',
-                        'client_visible' => true,
-                        'client_editable' => true
-                    ],
-                ]
+                ],
             ],
         ];
     }
@@ -219,15 +152,8 @@ class SiteOptionsModule implements ModuleInterface
      */
     public function get_localized_schema(string $lang): array
     {
-        $schema = $this->get_schema();
-        foreach ($schema as &$section) {
-            foreach ($section['fields'] as &$field) {
-                if (is_array($field['label'])) {
-                    $field['label'] = $field['label'][$lang] ?? reset($field['label']);
-                }
-            }
-        }
-        return $schema;
+        unset($lang);
+        return $this->get_schema();
     }
 
     /**
@@ -246,37 +172,31 @@ class SiteOptionsModule implements ModuleInterface
         delete_option(self::SCHEMA_OPTION);
     }
 
-    /**
-     * Get or generate a stable Translation Group ID for Site Options.
-     */
-    public function get_translation_group_id(): string
+    public function get_options(string $lang = ''): array
     {
-        $group_id = get_option(self::GROUP_ID_OPTION);
-        if (!$group_id) {
-            $group_id = wp_generate_uuid4();
-            update_option(self::GROUP_ID_OPTION, $group_id);
+        $options = get_option(self::DATA_OPTION, null);
+        if (is_array($options)) {
+            return $options;
         }
-        return (string) $group_id;
-    }
 
-    /**
-     * Duplicate options from one language to another.
-     */
-    public function duplicate_options(string $source_lang, string $target_lang): void
-    {
-        $source_options = $this->get_options($source_lang);
-        if (!empty($source_options)) {
-            update_option("cc_site_options_{$target_lang}", $source_options);
+        $candidates = [];
+        if ($lang !== '') {
+            $candidates[] = sanitize_key($lang);
         }
-    }
+        $candidates[] = 'de';
+        $candidates[] = 'en';
+        $candidates[] = 'fr';
+        $candidates[] = 'it';
+        $candidates = array_values(array_unique(array_filter($candidates)));
 
-    /**
-     * Get site options for a specific language
-     */
-    public function get_options(string $lang): array
-    {
-        $option_key = "cc_site_options_{$lang}";
-        $options = get_option($option_key, []);
-        return is_array($options) ? $options : [];
+        foreach ($candidates as $code) {
+            $legacy = get_option("cc_site_options_{$code}", []);
+            if (is_array($legacy) && !empty($legacy)) {
+                update_option(self::DATA_OPTION, $legacy);
+                return $legacy;
+            }
+        }
+
+        return [];
     }
 }

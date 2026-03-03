@@ -52,14 +52,34 @@ class VisibilitySettings
         $sanitized = ['admin' => [], 'client' => []];
         if (isset($settings['admin']) && is_array($settings['admin'])) {
             foreach ($settings['admin'] as $slug => $visible) {
-                $sanitized['admin'][sanitize_key($slug)] = !empty($visible);
+                $clean_slug = sanitize_text_field((string) $slug);
+                if ($clean_slug === '') {
+                    continue;
+                }
+                $sanitized['admin'][$clean_slug] = !empty($visible);
             }
         }
         if (isset($settings['client']) && is_array($settings['client'])) {
             foreach ($settings['client'] as $slug => $visible) {
-                $sanitized['client'][sanitize_key($slug)] = !empty($visible);
+                $clean_slug = sanitize_text_field((string) $slug);
+                if ($clean_slug === '') {
+                    continue;
+                }
+                $sanitized['client'][$clean_slug] = !empty($visible);
             }
         }
+
+        // Always keep critical menu entries visible for administrators.
+        foreach (SettingsModule::ADMIN_SAFETY_SLUGS as $slug) {
+            $sanitized['admin'][$slug] = true;
+        }
+
+        // Keep dynamic/content post type list screens visible for both roles.
+        foreach ($this->get_always_visible_post_type_menu_slugs() as $slug) {
+            $sanitized['admin'][$slug] = true;
+            $sanitized['client'][$slug] = true;
+        }
+
         return $sanitized;
     }
 
@@ -116,8 +136,21 @@ class VisibilitySettings
                 continue;
             }
 
+            // Keep dynamic/content post type list screens visible.
+            if (in_array($slug, $this->get_always_visible_post_type_menu_slugs(), true)) {
+                continue;
+            }
+
             remove_menu_page($slug);
         }
+
+        // Remove the top separator when Dashboard is hidden to avoid a visual gap.
+        if (!$this->menu_contains_slug('index.php')) {
+            remove_menu_page('separator1');
+        }
+
+        // Normalize sidebar spacing and remove separator gaps around core plugin entries.
+        $this->normalize_menu_separators();
     }
 
     /**
@@ -301,5 +334,119 @@ class VisibilitySettings
         }
 
         return $hidden;
+    }
+
+    /**
+     * Menu slugs for user-facing custom post types that remain visible.
+     */
+    private function get_always_visible_post_type_menu_slugs(): array
+    {
+        $slugs = [];
+        $post_types = get_post_types(['show_ui' => true], 'objects');
+        if (!is_array($post_types)) {
+            return $slugs;
+        }
+
+        foreach ($post_types as $post_type => $obj) {
+            $slug = sanitize_key((string) $post_type);
+            if ($slug === '' || in_array($slug, ['post', 'page', 'attachment', 'nav_menu_item'], true)) {
+                continue;
+            }
+            if (strpos($slug, 'cc_') === 0 || strpos($slug, 'wp_') === 0) {
+                continue;
+            }
+
+            $show_in_menu = isset($obj->show_in_menu) ? $obj->show_in_menu : true;
+            if ($show_in_menu === false) {
+                continue;
+            }
+
+            $slugs[] = 'edit.php?post_type=' . $slug;
+        }
+
+        return array_values(array_unique($slugs));
+    }
+
+    /**
+     * Check whether a menu slug exists in the current global menu.
+     */
+    private function menu_contains_slug(string $slug): bool
+    {
+        global $menu;
+        if (!is_array($menu)) {
+            return false;
+        }
+
+        foreach ($menu as $item) {
+            if (($item[2] ?? '') === $slug) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Remove unintended separator gaps in admin sidebar.
+     */
+    private function normalize_menu_separators(): void
+    {
+        global $menu;
+        if (!is_array($menu) || empty($menu)) {
+            return;
+        }
+
+        $items = array_values($menu);
+        $result = [];
+
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $slug = (string) ($item[2] ?? '');
+            $is_separator = $this->is_menu_separator($item);
+
+            // Remove separator directly before key plugin entries.
+            if (in_array($slug, ['content-core', 'cc-site-options'], true) && !empty($result)) {
+                $prev = $result[count($result) - 1];
+                if ($this->is_menu_separator($prev)) {
+                    array_pop($result);
+                }
+            }
+
+            // Skip leading separators and duplicate separators.
+            if ($is_separator) {
+                if (empty($result) || $this->is_menu_separator($result[count($result) - 1])) {
+                    continue;
+                }
+            }
+
+            $result[] = $item;
+        }
+
+        // Remove trailing separator if any.
+        if (!empty($result) && $this->is_menu_separator($result[count($result) - 1])) {
+            array_pop($result);
+        }
+
+        // Rebuild numeric positions to keep menu stable.
+        $rebuilt = [];
+        $pos = 1;
+        foreach ($result as $item) {
+            $rebuilt[$pos] = $item;
+            $pos++;
+        }
+        $menu = $rebuilt;
+    }
+
+    /**
+     * Detect WP admin separator entries.
+     */
+    private function is_menu_separator(array $item): bool
+    {
+        $slug = (string) ($item[2] ?? '');
+        $classes = (string) ($item[4] ?? '');
+        return strpos($slug, 'separator') === 0 || strpos($classes, 'wp-menu-separator') !== false;
     }
 }

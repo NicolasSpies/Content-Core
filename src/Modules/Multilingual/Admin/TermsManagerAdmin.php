@@ -71,7 +71,7 @@ class TermsManagerAdmin
         // Build taxonomy list
         $taxonomies = get_taxonomies(['public' => true], 'objects');
         ?>
-        <div class="wrap cc-terms-manager" id="cc-terms-manager">
+        <div class="wrap content-core-admin cc-terms-manager" id="cc-terms-manager">
             <h1><?php _e('Manage Multilingual Terms', 'content-core'); ?></h1>
 
             <div id="cc-tm-notice" class="cc-tm-notice" style="display:none;"></div>

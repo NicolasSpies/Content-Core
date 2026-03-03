@@ -144,6 +144,7 @@ class SettingsModule implements ModuleInterface
         $submit_id = $_POST['cc_submit_id'] ?? '';
         $redirect_to = remove_query_arg(['cc_action', 'cc_settings_error'], $_SERVER['REQUEST_URI']);
         $success = true;
+        $should_flush_multilingual_rewrites = false;
 
         // 1. Visibility Settings
         if (isset($_POST['cc_menu_admin']) || isset($_POST['cc_menu_client']) || isset($_POST['cc_admin_bar'])) {
@@ -160,8 +161,8 @@ class SettingsModule implements ModuleInterface
             // Order handling
             if (isset($_POST['cc_core_order_admin']) || isset($_POST['cc_core_order_client'])) {
                 $order = [
-                    'admin' => !empty($_POST['cc_core_order_admin']) ? explode(',', $_POST['cc_core_order_admin']) : [],
-                    'client' => !empty($_POST['cc_core_order_client']) ? explode(',', $_POST['cc_core_order_client']) : []
+                    'admin' => $this->parse_order_input($_POST['cc_core_order_admin'] ?? ''),
+                    'client' => $this->parse_order_input($_POST['cc_core_order_client'] ?? '')
                 ];
                 update_option(self::ORDER_KEY, $order);
             }
@@ -184,9 +185,18 @@ class SettingsModule implements ModuleInterface
         // 4. Multilingual Settings
         if (isset($_POST['cc_languages'])) {
             $success = $success && $this->registry->save('cc_languages_settings', $_POST['cc_languages']);
+            $should_flush_multilingual_rewrites = true;
+        }
+
+        // 5. Branding Settings (PHP page)
+        if (isset($_POST['cc_branding_settings']) && is_array($_POST['cc_branding_settings'])) {
+            $success = $success && $this->registry->save('cc_branding_settings', $_POST['cc_branding_settings']);
         }
 
         if ($success) {
+            if ($should_flush_multilingual_rewrites) {
+                set_transient('cc_flush_multilingual_rewrites', 1, 300);
+            }
             wp_safe_redirect(add_query_arg('cc_action', 'settings_saved', $redirect_to));
             exit;
         } else {
@@ -265,8 +275,32 @@ class SettingsModule implements ModuleInterface
             delete_transient('cc_settings_error');
         }
 
-        if (isset($_GET['cc_action']) && $_GET['cc_action'] === 'settings_saved') {
-            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Settings saved successfully.', 'content-core') . '</p></div>';
+        // Success feedback is handled via shared JS toast to keep UX consistent across React and PHP pages.
+    }
+
+    /**
+     * Parse visibility order input from either JSON array or comma-separated list.
+     */
+    private function parse_order_input($raw): array
+    {
+        if (!is_string($raw) || $raw === '') {
+            return [];
         }
+
+        $decoded = json_decode(wp_unslash($raw), true);
+        if (is_array($decoded)) {
+            return array_values(array_filter(array_map(function ($item) {
+                return sanitize_text_field((string) $item);
+            }, $decoded), function ($item) {
+                return $item !== '';
+            }));
+        }
+
+        $parts = explode(',', $raw);
+        return array_values(array_filter(array_map(function ($item) {
+            return sanitize_text_field(trim((string) $item));
+        }, $parts), function ($item) {
+            return $item !== '';
+        }));
     }
 }

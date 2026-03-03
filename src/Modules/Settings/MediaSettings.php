@@ -18,10 +18,12 @@ class MediaSettings
     {
         $this->module->get_registry()->register(SettingsModule::MEDIA_KEY, [
             'default' => [
+                'enabled' => false,
+                'max_width_px' => 2000,
+                'quality' => 70,
+                'png_mode' => 'lossless',
+                'delete_original' => false,
                 'upload_limit_mb' => 25,
-                'jpeg_quality' => 82,
-                'clean_filenames' => true,
-                'generate_webp' => false,
             ],
             'sanitize_callback' => [$this, 'sanitize_media_settings'],
         ]);
@@ -32,11 +34,20 @@ class MediaSettings
      */
     public function sanitize_media_settings(array $settings): array
     {
+        $quality = isset($settings['quality']) ? $settings['quality'] : ($settings['jpeg_quality'] ?? 70);
+        $max_width = isset($settings['max_width_px']) ? $settings['max_width_px'] : 2000;
+        $png_mode = $settings['png_mode'] ?? 'lossless';
+        if (!in_array($png_mode, ['lossless', 'lossy'], true)) {
+            $png_mode = 'lossless';
+        }
+
         return [
+            'enabled' => !empty($settings['enabled']) || !empty($settings['generate_webp']),
+            'max_width_px' => max(100, absint($max_width)),
+            'quality' => min(100, max(1, absint($quality))),
+            'png_mode' => $png_mode,
+            'delete_original' => !empty($settings['delete_original']),
             'upload_limit_mb' => absint($settings['upload_limit_mb'] ?? 25),
-            'jpeg_quality' => min(100, max(1, absint($settings['jpeg_quality'] ?? 82))),
-            'clean_filenames' => !empty($settings['clean_filenames']),
-            'generate_webp' => !empty($settings['generate_webp']),
         ];
     }
 

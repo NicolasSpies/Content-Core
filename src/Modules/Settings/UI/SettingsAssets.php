@@ -66,7 +66,6 @@ class SettingsAssets
             'cc-seo',
             'cc-site-images',
             'cc-cookie-banner',
-            'cc-branding',
             'cc-diagnostics',
             'cc-site-options',
             'cc-visibility',
@@ -96,6 +95,8 @@ class SettingsAssets
         wp_localize_script('cc-site-settings-app', 'CC_SITE_SETTINGS', [
             'nonce' => wp_create_nonce('wp_rest'),
             'restBase' => $rest_base . '/site',
+            'siteProfileRestBase' => $rest_base . '/site-profile',
+            'mode' => ($page_slug === 'cc-site-options') ? 'site-profile' : 'full',
             'diagnosticsRestBase' => rest_url('content-core/v1/diagnostics'),
             'siteUrl' => untrailingslashit(home_url()),
             'defaultTitle' => get_bloginfo('name'),

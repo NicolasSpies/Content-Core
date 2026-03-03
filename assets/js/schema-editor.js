@@ -5,6 +5,7 @@ jQuery(function ($) {
     var config = window.ccSchemaEditorConfig || { languages: [], strings: {} };
     var languages = config.languages;
     var i18n = config.strings;
+    var singleLabel = !!config.singleLabel;
 
     function generateId() {
         return 'cc_' + Math.random().toString(36).substr(2, 9);
@@ -66,12 +67,19 @@ jQuery(function ($) {
             '</div>' +
             '<div style="display: grid; grid-template-columns: repeat(' + (languages.length || 1) + ', 1fr); gap: 10px;">';
 
-        languages.forEach(function (lang) {
+        if (singleLabel || !languages.length) {
             html += '<div>' +
-                '<label style="display: block; font-size: 11px; margin-bottom: 3px;">' + lang.label + ' ' + i18n.label + '</label>' +
-                '<input type="text" name="cc_site_options_schema[' + sectionId + '][fields][' + fieldId + '][label][' + lang.code + ']" value="" style="width: 100%;">' +
+                '<label style="display: block; font-size: 11px; margin-bottom: 3px;">' + i18n.label + '</label>' +
+                '<input type="text" name="cc_site_options_schema[' + sectionId + '][fields][' + fieldId + '][label]" value="" style="width: 100%;">' +
                 '</div>';
-        });
+        } else {
+            languages.forEach(function (lang) {
+                html += '<div>' +
+                    '<label style="display: block; font-size: 11px; margin-bottom: 3px;">' + lang.label + ' ' + i18n.label + '</label>' +
+                    '<input type="text" name="cc_site_options_schema[' + sectionId + '][fields][' + fieldId + '][label][' + lang.code + ']" value="" style="width: 100%;">' +
+                    '</div>';
+            });
+        }
 
         html += '</div></div>' +
             '<button type="button" class="button button-link-delete cc-remove-field" style="margin-top: 5px;"><span class="dashicons dashicons-no-alt"></span></button>' +

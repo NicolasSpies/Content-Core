@@ -41,7 +41,6 @@ class VisibilityTabRenderer
             $ordered_items[$slug] = $title;
         }
 
-        $categories = $settings_mod->categorize_items($ordered_items);
         ?>
         <div id="cc-settings-visibility">
 
@@ -72,67 +71,57 @@ class VisibilityTabRenderer
                             <tbody>
                                 <input type="hidden" name="cc_core_order_admin" id="cc-core-order-admin-input" value="">
                                 <input type="hidden" name="cc_core_order_client" id="cc-core-order-client-input" value="">
-                                <?php foreach ($categories as $group_name => $group_items): ?>
-                                    <?php if (empty($group_items))
-                                        continue; ?>
-                                    <tr class="cc-category-header">
-                                        <td colspan="4"
-                                            style="background:var(--cc-bg-soft); font-weight:800; font-size:11px; text-transform:uppercase; letter-spacing:1px; padding:12px 20px;">
-                                            <?php echo esc_html($group_name); ?>
+                                <?php foreach ($ordered_items as $slug => $title):
+                                    $a_checked = true;
+                                    $c_checked = true;
+
+                                    if ($has_vis) {
+                                        $a_checked = $admin_vis[$slug] ?? true;
+                                        $c_checked = $client_vis[$slug] ?? true;
+                                    } else {
+                                        $a_locked = in_array($slug, SettingsModule::ADMIN_SAFETY_SLUGS, true);
+                                        $c_checked = !in_array($slug, SettingsModule::DEFAULT_HIDDEN, true);
+                                    }
+
+                                    $a_locked = in_array($slug, ['options-general.php', 'plugins.php', 'content-core'], true);
+                                    ?>
+                                    <tr data-slug="<?php echo esc_attr($slug); ?>">
+                                        <td style="text-align: center;">
+                                            <span class="dashicons dashicons-menu cc-drag-handle"
+                                                style="cursor:grab; color:var(--cc-text-muted);"></span>
+                                        </td>
+                                        <td>
+                                            <div style="font-weight:700; font-size:14px;"><?php echo esc_html($title); ?></div>
+                                            <code
+                                                style="font-size: 11px; opacity:0.6; display:inline-block; margin-top:2px;"><?php echo esc_html($slug); ?></code>
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <div class="cc-toggle-wrap" style="justify-content:center;">
+                                                <label class="cc-toggle">
+                                                    <input type="hidden" name="cc_menu_admin[<?php echo esc_attr($slug); ?>]"
+                                                        value="0">
+                                                    <input type="checkbox" name="cc_menu_admin[<?php echo esc_attr($slug); ?>]"
+                                                        value="1" <?php checked($a_checked || $a_locked); ?>                 <?php if ($a_locked)
+                                                                                 echo 'disabled'; ?>>
+                                                    <span class="cc-slider"></span>
+                                                </label>
+                                            </div>
+                                            <?php if ($a_locked): ?>
+                                                <input type="hidden" name="cc_menu_admin[<?php echo esc_attr($slug); ?>]" value="1">
+                                            <?php endif; ?>
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <div class="cc-toggle-wrap" style="justify-content:center;">
+                                                <label class="cc-toggle">
+                                                    <input type="hidden" name="cc_menu_client[<?php echo esc_attr($slug); ?>]"
+                                                        value="0">
+                                                    <input type="checkbox" name="cc_menu_client[<?php echo esc_attr($slug); ?>]"
+                                                        value="1" <?php checked($c_checked); ?>>
+                                                    <span class="cc-slider"></span>
+                                                </label>
+                                            </div>
                                         </td>
                                     </tr>
-                                    <?php foreach ($group_items as $slug => $title):
-                                        $a_checked = true;
-                                        $c_checked = true;
-
-                                        if ($has_vis) {
-                                            $a_checked = $admin_vis[$slug] ?? true;
-                                            $c_checked = $client_vis[$slug] ?? true;
-                                        } else {
-                                            $a_locked = in_array($slug, SettingsModule::ADMIN_SAFETY_SLUGS, true);
-                                            $c_checked = !in_array($slug, SettingsModule::DEFAULT_HIDDEN, true);
-                                        }
-
-                                        $a_locked = in_array($slug, ['options-general.php', 'plugins.php', 'content-core'], true);
-                                        ?>
-                                        <tr data-slug="<?php echo esc_attr($slug); ?>">
-                                            <td style="text-align: center;">
-                                                <span class="dashicons dashicons-menu cc-drag-handle"
-                                                    style="cursor:grab; color:var(--cc-text-muted);"></span>
-                                            </td>
-                                            <td>
-                                                <div style="font-weight:700; font-size:14px;"><?php echo esc_html($title); ?></div>
-                                                <code
-                                                    style="font-size: 11px; opacity:0.6; display:inline-block; margin-top:2px;"><?php echo esc_html($slug); ?></code>
-                                            </td>
-                                            <td style="text-align: center;">
-                                                <div class="cc-toggle-wrap" style="justify-content:center;">
-                                                    <label class="cc-toggle">
-                                                        <input type="hidden" name="cc_menu_admin[<?php echo esc_attr($slug); ?>]"
-                                                            value="0">
-                                                        <input type="checkbox" name="cc_menu_admin[<?php echo esc_attr($slug); ?>]"
-                                                            value="1" <?php checked($a_checked || $a_locked); ?>                 <?php if ($a_locked)
-                                                                                     echo 'disabled'; ?>>
-                                                        <span class="cc-slider"></span>
-                                                    </label>
-                                                </div>
-                                                <?php if ($a_locked): ?>
-                                                    <input type="hidden" name="cc_menu_admin[<?php echo esc_attr($slug); ?>]" value="1">
-                                                <?php endif; ?>
-                                            </td>
-                                            <td style="text-align: center;">
-                                                <div class="cc-toggle-wrap" style="justify-content:center;">
-                                                    <label class="cc-toggle">
-                                                        <input type="hidden" name="cc_menu_client[<?php echo esc_attr($slug); ?>]"
-                                                            value="0">
-                                                        <input type="checkbox" name="cc_menu_client[<?php echo esc_attr($slug); ?>]"
-                                                            value="1" <?php checked($c_checked); ?>>
-                                                        <span class="cc-slider"></span>
-                                                    </label>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>

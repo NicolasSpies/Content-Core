@@ -6,6 +6,129 @@ use ContentCore\Modules\ContentTypes\Data\TaxonomyDefinition;
 
 class ContentTypesAdmin
 {
+    private const DASHICON_GROUPS = [
+        'General Content' => [
+            'dashicons-media-document' => 'Variant A',
+            'dashicons-admin-post' => 'Variant B',
+            'dashicons-media-text' => 'Variant C',
+        ],
+        'News' => [
+            'dashicons-rss' => 'Variant A',
+            'dashicons-megaphone' => 'Variant B',
+            'dashicons-format-aside' => 'Variant C',
+        ],
+        'References' => [
+            'dashicons-format-image' => 'Variant A',
+            'dashicons-portfolio' => 'Variant B',
+            'dashicons-images-alt2' => 'Variant C',
+        ],
+        'Pages' => [
+            'dashicons-welcome-write-blog' => 'Variant A',
+            'dashicons-admin-page' => 'Variant B',
+            'dashicons-media-default' => 'Variant C',
+        ],
+        'Events' => [
+            'dashicons-clock' => 'Variant A',
+            'dashicons-calendar-alt' => 'Variant B',
+            'dashicons-calendar' => 'Variant C',
+        ],
+        'Team' => [
+            'dashicons-businessperson' => 'Variant A',
+            'dashicons-groups' => 'Variant B',
+            'dashicons-universal-access' => 'Variant C',
+        ],
+        'Testimonials' => [
+            'dashicons-testimonial' => 'Variant A',
+            'dashicons-format-quote' => 'Variant B',
+            'dashicons-thumbs-up' => 'Variant C',
+        ],
+        'FAQ' => [
+            'dashicons-editor-help' => 'Variant A',
+            'dashicons-editor-ul' => 'Variant B',
+            'dashicons-editor-ol' => 'Variant C',
+        ],
+        'Case Studies' => [
+            'dashicons-chart-line' => 'Variant A',
+            'dashicons-analytics' => 'Variant B',
+            'dashicons-chart-bar' => 'Variant C',
+        ],
+        'Downloads' => [
+            'dashicons-media-archive' => 'Variant A',
+            'dashicons-download' => 'Variant B',
+            'dashicons-backup' => 'Variant C',
+        ],
+        'Jobs' => [
+            'dashicons-id-alt' => 'Variant A',
+            'dashicons-id' => 'Variant B',
+            'dashicons-businesswoman' => 'Variant C',
+        ],
+        'Locations' => [
+            'dashicons-location-alt' => 'Variant A',
+            'dashicons-location' => 'Variant B',
+            'dashicons-admin-site' => 'Variant C',
+        ],
+        'Services' => [
+            'dashicons-admin-tools' => 'Variant A',
+            'dashicons-hammer' => 'Variant B',
+            'dashicons-admin-generic' => 'Variant C',
+        ],
+        'Products' => [
+            'dashicons-cart' => 'Variant A',
+            'dashicons-products' => 'Variant B',
+            'dashicons-store' => 'Variant C',
+        ],
+        'Legal' => [
+            'dashicons-media-text' => 'Variant A',
+            'dashicons-yes-alt' => 'Variant B',
+            'dashicons-shield' => 'Variant C',
+        ],
+        'Support' => [
+            'dashicons-sos' => 'Variant A',
+            'dashicons-editor-help' => 'Variant B',
+            'dashicons-phone' => 'Variant C',
+        ],
+        'Marketing' => [
+            'dashicons-megaphone' => 'Variant A',
+            'dashicons-chart-area' => 'Variant B',
+            'dashicons-share' => 'Variant C',
+        ],
+        'Media Library' => [
+            'dashicons-format-gallery' => 'Variant A',
+            'dashicons-video-alt3' => 'Variant B',
+            'dashicons-camera' => 'Variant C',
+        ],
+        'Commerce' => [
+            'dashicons-cart' => 'Variant A',
+            'dashicons-money-alt' => 'Variant B',
+            'dashicons-tickets-alt' => 'Variant C',
+        ],
+        'Education' => [
+            'dashicons-welcome-learn-more' => 'Variant A',
+            'dashicons-book-alt' => 'Variant B',
+            'dashicons-welcome-write-blog' => 'Variant C',
+        ],
+        'Data' => [
+            'dashicons-database' => 'Variant A',
+            'dashicons-chart-pie' => 'Variant B',
+            'dashicons-clipboard' => 'Variant C',
+        ],
+        'Integrations' => [
+            'dashicons-admin-plugins' => 'Variant A',
+            'dashicons-randomize' => 'Variant B',
+            'dashicons-cloud' => 'Variant C',
+        ],
+        'System' => [
+            'dashicons-admin-settings' => 'Variant A',
+            'dashicons-performance' => 'Variant B',
+            'dashicons-update' => 'Variant C',
+        ],
+        'People' => [
+            'dashicons-admin-users' => 'Variant A',
+            'dashicons-groups' => 'Variant B',
+            'dashicons-businessperson' => 'Variant C',
+        ],
+    ];
+
     /**
      * Register hooks
      */
@@ -55,8 +178,12 @@ class ContentTypesAdmin
         $public = get_post_meta($post->ID, '_cc_pt_public', true) !== '0';
         $has_archive = get_post_meta($post->ID, '_cc_pt_has_archive', true) === '1';
         $supports = get_post_meta($post->ID, '_cc_pt_supports', true);
+        $menu_icon = get_post_meta($post->ID, '_cc_pt_menu_icon', true);
         if (!is_array($supports)) {
             $supports = ['title', 'editor', 'thumbnail'];
+        }
+        if (!$this->is_allowed_dashicon($menu_icon)) {
+            $menu_icon = 'dashicons-media-document';
         }
 
         $all_supports = [
@@ -136,7 +263,107 @@ class ContentTypesAdmin
                     <p class="description"><?php _e('Select which features the editor should support.', 'content-core'); ?></p>
                 </div>
             </div>
+
+            <div class="cc-field-row">
+                <div class="cc-field-label">
+                    <label><?php _e('Menu Icon', 'content-core'); ?></label>
+                </div>
+                <div class="cc-field-input">
+                    <div class="cc-dashicon-groups" role="radiogroup" aria-label="<?php echo esc_attr__('Choose menu icon', 'content-core'); ?>">
+                        <?php foreach (self::DASHICON_GROUPS as $group_label => $group_icons): ?>
+                            <div class="cc-dashicon-group">
+                                <div class="cc-dashicon-group-title"><?php echo esc_html__($group_label, 'content-core'); ?></div>
+                                <div class="cc-dashicon-picker">
+                                    <?php foreach ($group_icons as $icon_class => $_variant_label): ?>
+                                        <?php $input_id = 'cc_pt_menu_icon_' . esc_attr($icon_class); ?>
+                                        <label class="cc-dashicon-option" for="<?php echo $input_id; ?>">
+                                            <input
+                                                type="radio"
+                                                id="<?php echo $input_id; ?>"
+                                                name="cc_pt_menu_icon"
+                                                value="<?php echo esc_attr($icon_class); ?>"
+                                                <?php checked($menu_icon, $icon_class); ?>
+                                            >
+                                            <span class="cc-dashicon-swatch dashicons <?php echo esc_attr($icon_class); ?>" aria-hidden="true"></span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <p class="description"><?php _e('Choose the sidebar icon for this post type.', 'content-core'); ?></p>
+                </div>
+            </div>
         </div>
+        <style>
+            .cc-dashicon-groups {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+                gap: 14px;
+                width: 100%;
+            }
+            .cc-dashicon-group {
+                border: 1px solid #dcdcde;
+                border-radius: 10px;
+                padding: 10px;
+                background: #fff;
+            }
+            .cc-dashicon-group-title {
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .06em;
+                color: #646970;
+                margin: 0 0 10px 0;
+            }
+            .cc-dashicon-picker {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(90px, 1fr));
+                gap: 8px;
+                width: 100%;
+            }
+            .cc-dashicon-option {
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 52px;
+                border: 1px solid #dcdcde;
+                border-radius: 8px;
+                background: #fff;
+                cursor: pointer;
+                transition: border-color .15s ease, background .15s ease, transform .1s ease;
+            }
+            .cc-dashicon-option:hover {
+                border-color: #8c8f94;
+                background: #f6f7f7;
+            }
+            .cc-dashicon-option input {
+                position: absolute;
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+            .cc-dashicon-option .cc-dashicon-swatch {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                font-size: 20px;
+                color: #50575e;
+            }
+            .cc-dashicon-option input:checked + .cc-dashicon-swatch {
+                color: #008a20;
+            }
+            .cc-dashicon-option:focus-within {
+                box-shadow: 0 0 0 2px #8ccf9f inset;
+            }
+            @media (max-width: 900px) {
+                .cc-dashicon-groups {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
         <?php
     }
 
@@ -226,13 +453,33 @@ class ContentTypesAdmin
             }
         }
 
-        update_post_meta($post_id, '_cc_pt_singular', sanitize_text_field($_POST['cc_pt_singular'] ?? ''));
-        update_post_meta($post_id, '_cc_pt_plural', sanitize_text_field($_POST['cc_pt_plural'] ?? ''));
+        $singular = sanitize_text_field($_POST['cc_pt_singular'] ?? '');
+        $plural = sanitize_text_field($_POST['cc_pt_plural'] ?? '');
+
+        update_post_meta($post_id, '_cc_pt_singular', $singular);
+        update_post_meta($post_id, '_cc_pt_plural', $plural);
+
+        // Keep the definition post title aligned with the singular label
+        // so admin headings and internal references never fall back to "post".
+        if ($singular !== '' && $post->post_title !== $singular) {
+            remove_action('save_post_' . PostTypeDefinition::POST_TYPE, [$this, 'save_post_type_definition'], 10);
+            wp_update_post([
+                'ID' => $post_id,
+                'post_title' => $singular,
+            ]);
+            add_action('save_post_' . PostTypeDefinition::POST_TYPE, [$this, 'save_post_type_definition'], 10, 2);
+        }
         update_post_meta($post_id, '_cc_pt_public', isset($_POST['cc_pt_public']) ? '1' : '0');
         update_post_meta($post_id, '_cc_pt_has_archive', isset($_POST['cc_pt_has_archive']) ? '1' : '0');
         
         $supports = isset($_POST['cc_pt_supports']) ? (array)$_POST['cc_pt_supports'] : [];
         update_post_meta($post_id, '_cc_pt_supports', array_map('sanitize_text_field', $supports));
+
+        $menu_icon = sanitize_text_field($_POST['cc_pt_menu_icon'] ?? 'dashicons-media-document');
+        if (!$this->is_allowed_dashicon($menu_icon)) {
+            $menu_icon = 'dashicons-media-document';
+        }
+        update_post_meta($post_id, '_cc_pt_menu_icon', $menu_icon);
 
         // Flush rewrite rules on next load if definition changes
         update_option('cc_flush_rewrite_rules', 1);
@@ -273,5 +520,20 @@ class ContentTypesAdmin
     {
         $reserved = ['post', 'page', 'attachment', 'revision', 'nav_menu_item', 'custom_css', 'customize_changeset', 'oembed_cache', 'user_request', 'wp_block', 'action', 'author', 'order', 'theme', 'attachment_id', 'author_name', 'calendar', 'cat', 'category_name', 'comments_popup', 'customize_messenger_channel', 'customized', 'error', 'm', 'more', 'name', 'order', 'orderby', 'p', 'page_id', 'paged', 'pagename', 'pb', 'posts', 'preview', 'published', 'robots', 's', 'search', 'second', 'sentence', 'static', 'subpost', 'subpost_id', 'taxonomy', 'tag', 'tag_id', 'tb', 'term', 'type', 'w', 'year'];
         return in_array($slug, $reserved, true);
+    }
+
+    private function is_allowed_dashicon($icon): bool
+    {
+        if (!is_string($icon)) {
+            return false;
+        }
+
+        foreach (self::DASHICON_GROUPS as $group_icons) {
+            if (isset($group_icons[$icon])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

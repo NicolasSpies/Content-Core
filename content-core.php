@@ -205,15 +205,33 @@ function cc_content_core_sanitize_svg(string $svg): ?string
 
 function cc_get_site_image_id($key): int
 {
+	$normalized = (string) $key;
+	if ($normalized === 'social_id') {
+		$normalized = 'social_icon_id';
+	}
+
+	$candidates = [$normalized];
+	if ($normalized === 'social_icon_id') {
+		$candidates[] = 'social_id';
+	}
+
 	// Primary source: unified cc_site_settings option (new React-driven storage)
 	$settings = get_option('cc_site_settings', []);
 	$images = isset($settings['images']) && is_array($settings['images']) ? $settings['images'] : [];
-	if (isset($images[$key]) && $images[$key]) {
-		return absint($images[$key]);
+	foreach ($candidates as $candidate) {
+		if (!empty($images[$candidate])) {
+			return absint($images[$candidate]);
+		}
 	}
+
 	// Fallback: legacy cc_site_images option (backward compatibility)
 	$legacy = get_option('cc_site_images', []);
-	return isset($legacy[$key]) ? absint($legacy[$key]) : 0;
+	foreach ($candidates as $candidate) {
+		if (!empty($legacy[$candidate])) {
+			return absint($legacy[$candidate]);
+		}
+	}
+	return 0;
 }
 
 function cc_get_site_image_url($key): string
@@ -227,17 +245,22 @@ function cc_get_site_image_url($key): string
 
 function cc_get_default_og_image_url(): string
 {
-	// social_id is the OG / social preview image in both old and new schemas
-	return cc_get_site_image_url('social_id');
+	return cc_get_site_image_url('og_default_id');
 }
 
 add_action('wp_head', function () {
-	// social_id = 64×64 social icon (stored in cc_site_settings.images.social_id)
-	$icon_url = cc_get_site_image_url('social_id');
+	// social_icon_id = 64x64 social icon
+	$icon_url = cc_get_site_image_url('social_icon_id');
+	$apple_touch_url = cc_get_site_image_url('apple_touch_id');
+	if (!$apple_touch_url) {
+		$apple_touch_url = $icon_url;
+	}
 	if ($icon_url) {
 		echo '<link rel="icon" href="' . esc_url($icon_url) . '" sizes="64x64">' . "\n";
 		echo '<link rel="shortcut icon" href="' . esc_url($icon_url) . '">' . "\n";
-		echo '<link rel="apple-touch-icon" href="' . esc_url($icon_url) . '">' . "\n";
+	}
+	if ($apple_touch_url) {
+		echo '<link rel="apple-touch-icon" href="' . esc_url($apple_touch_url) . '">' . "\n";
 	}
 
 	// og_default_id = 1200×630 social preview (OG image)

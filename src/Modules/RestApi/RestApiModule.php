@@ -845,57 +845,15 @@ class RestApiModule implements ModuleInterface
     public function get_v1_site_options(\WP_REST_Request $request): \WP_REST_Response
     {
         $plugin = \ContentCore\Plugin::get_instance();
-        $ml = $plugin->get_module('multilingual');
         $site_mod = $plugin->get_module('site_options');
 
         if (!($site_mod instanceof \ContentCore\Modules\SiteOptions\SiteOptionsModule)) {
             return new \WP_REST_Response(['message' => 'Site Options module not active.'], 500);
         }
 
-        $requested_lang = $request->get_param('lang');
-        $default_lang = 'de';
-        $fallback_lang = '';
-        $headless_fallback_enabled = false;
-
-        if ($ml instanceof \ContentCore\Modules\Multilingual\MultilingualModule) {
-            $ml_settings = $ml->get_settings();
-            $default_lang = $ml_settings['default_lang'] ?? 'de';
-            $fallback_lang = $ml_settings['fallback_lang'] ?? '';
-            $headless_fallback_enabled = !empty($ml_settings['enable_headless_fallback']);
-        }
-
-        if (empty($requested_lang)) {
-            $requested_lang = $default_lang;
-        }
-
-        // 1. Initial attempt: Requested Language
-        $lang_to_check = $requested_lang;
-        $options = $site_mod ? $site_mod->get_options($lang_to_check) : [];
-        $resolved_lang = $lang_to_check;
-
-        // 2. Fallback attempt if enabled
-        if ($headless_fallback_enabled && empty($options)) {
-            // Try Fallback Language
-            if (!empty($fallback_lang) && $fallback_lang !== $requested_lang) {
-                $lang_to_check = $fallback_lang;
-                $options = $site_mod ? $site_mod->get_options($lang_to_check) : [];
-                if (!empty($options)) {
-                    $resolved_lang = $lang_to_check;
-                }
-            }
-
-            // Try Default Language if still empty
-            if (empty($options) && $default_lang !== $requested_lang && $default_lang !== $fallback_lang) {
-                $lang_to_check = $default_lang;
-                $options = $site_mod ? $site_mod->get_options($lang_to_check) : [];
-                if (!empty($options)) {
-                    $resolved_lang = $lang_to_check;
-                }
-            }
-        }
-
-        $schema = $site_mod ? $site_mod->get_localized_schema($resolved_lang) : [];
-        $is_fallback = $resolved_lang !== $requested_lang;
+        $options = $site_mod->get_options();
+        $schema = $site_mod->get_schema();
+        $requested_lang = sanitize_key((string) $request->get_param('lang'));
 
         // Filter options and format schema based on client_visible
         $filtered_options = [];
@@ -938,10 +896,10 @@ class RestApiModule implements ModuleInterface
         }
 
         return new \WP_REST_Response([
-            'language' => $resolved_lang, // Backward compatibility
+            'language' => 'site-profile',
             'requestedLanguage' => $requested_lang,
-            'resolvedLanguage' => $resolved_lang,
-            'isFallback' => $is_fallback,
+            'resolvedLanguage' => 'site-profile',
+            'isFallback' => false,
             'schema' => (object) $filtered_schema,
             'data' => (object) $filtered_options,
         ], 200);

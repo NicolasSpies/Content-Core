@@ -31,9 +31,10 @@ class Assets
         $this->register_style('cc-metabox-ui', 'assets/css/metabox-ui.css');
 
         // 2. JS Assets
+        $this->register_script('cc-toast-js', 'assets/js/toast.js', []);
         $this->register_script('cc-admin-js', 'assets/js/admin.js', ['jquery', 'media-views']);
-        $this->register_script('cc-settings-js', 'assets/js/settings.js', ['jquery', 'jquery-ui-sortable']);
-        $this->register_script('cc-site-settings-app', 'assets/js/site-settings-app.js', ['wp-element', 'wp-api-fetch', 'wp-i18n']);
+        $this->register_script('cc-settings-js', 'assets/js/settings.js', ['jquery', 'jquery-ui-sortable', 'cc-toast-js']);
+        $this->register_script('cc-site-settings-app', 'assets/js/site-settings-app.js', ['wp-element', 'wp-api-fetch', 'wp-i18n', 'cc-toast-js']);
         $this->register_script('cc-schema-editor', 'assets/js/schema-editor.js', ['jquery', 'jquery-ui-sortable']);
     }
 

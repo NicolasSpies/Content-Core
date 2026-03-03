@@ -25,6 +25,8 @@
     const restBase = config.restBase; // Full URL from wp_localize_script (e.g., .../settings/site)
     const siteUrl = config.siteUrl || '';
     const siteOptionsUrl = config.siteOptionsUrl || '';
+    const siteProfileRestBase = config.siteProfileRestBase || '';
+    const appMode = config.mode || 'full';
 
     // ─── Utility ────────────────────────────────────────────────────────────
 
@@ -37,6 +39,22 @@
         });
     }
 
+    function loadSiteProfile() {
+        return apiFetch({
+            url: siteProfileRestBase,
+            headers: { 'X-WP-Nonce': nonce },
+        });
+    }
+
+    function saveSiteProfile(values) {
+        return apiFetch({
+            url: siteProfileRestBase,
+            method: 'POST',
+            headers: { 'X-WP-Nonce': nonce },
+            data: { values: values },
+        });
+    }
+
     function useSettings() {
         const [settings, setSettings] = useState(null);
         const [loading, setLoading] = useState(true);
@@ -45,6 +63,12 @@
         const load = useCallback(function () {
             setLoading(true);
             setError(null);
+            if (appMode === 'site-profile') {
+                setSettings({});
+                setLoading(false);
+                return;
+            }
+
             apiFetch({ url: restBase, headers: { 'X-WP-Nonce': nonce } })
                 .then(function (data) {
                     setSettings(data);
@@ -59,41 +83,6 @@
         useEffect(load, [load]);
 
         return { settings, setSettings, loading, error, reload: load };
-    }
-
-    // ─── Toast Notification ─────────────────────────────────────────────────
-
-    function Toast({ message, type, onDismiss }) {
-        const bg = type === 'success' ? '#00a32a' : '#d63638';
-        return el('div', {
-            style: {
-                position: 'fixed',
-                top: '60px',
-                right: '20px',
-                zIndex: 99999,
-                background: bg,
-                color: '#fff',
-                padding: '12px 20px',
-                borderRadius: '6px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
-                fontSize: '14px',
-                fontWeight: 500,
-                maxWidth: '400px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-            }
-        },
-            el('span', null, message),
-            el('button', {
-                onClick: onDismiss,
-                style: {
-                    background: 'none', border: 'none', color: '#fff',
-                    cursor: 'pointer', fontSize: '18px', lineHeight: 1,
-                    padding: 0, marginLeft: 'auto',
-                }
-            }, '×')
-        );
     }
 
     // ─── Image Picker ───────────────────────────────────────────────────────
@@ -444,18 +433,68 @@
 
     // ─── Site Options Tab ────────────────────────────────────────────────────
 
-    function SiteOptionsTab() {
-        return el('div', { className: 'cc-card' },
-            el('div', { className: 'cc-card-body' },
-                el('p', { className: 'cc-help', style: { marginBottom: '20px', fontSize: '14px', lineHeight: '1.6' } },
-                    __('Site Options contain structured content fields (address, phone, email, social links, etc.) that are managed per language. Use the dedicated Site Options page to edit these values.', 'content-core')
-                ),
-                el('a', {
-                    href: siteOptionsUrl,
-                    className: 'cc-button-primary',
-                    style: { textDecoration: 'none', display: 'inline-flex' },
-                }, __('Go to Site Options →', 'content-core'))
-            )
+    function SiteOptionsTab({ profileState, onProfileChange }) {
+        if (!profileState || profileState.loading) {
+            return el('div', { style: { padding: '24px' } },
+                el('span', { className: 'spinner is-active', style: { float: 'none', marginRight: '8px' } }),
+                __('Loading site profile…', 'content-core')
+            );
+        }
+
+        if (profileState.error) {
+            return el('div', { className: 'notice notice-error', style: { padding: '12px 16px' } },
+                el('p', null, profileState.error)
+            );
+        }
+
+        const schema = profileState.schema || {};
+        const values = profileState.values || {};
+        const sections = Object.keys(schema);
+
+        return el('div', {
+            className: 'cc-site-profile-sections'
+        },
+            sections.map(function (sectionId) {
+                const section = schema[sectionId] || {};
+                const fields = section.fields || {};
+                const fieldIds = Object.keys(fields);
+
+                return el('div', { key: sectionId, className: 'cc-card' },
+                    el('div', { className: 'cc-card-header' },
+                        el('h2', null, section.title || sectionId)
+                    ),
+                    el('div', { className: 'cc-card-body' },
+                        el('div', {
+                            className: 'cc-options-grid'
+                        },
+                            fieldIds.map(function (fieldId) {
+                                const field = fields[fieldId] || {};
+                                const type = field.type || 'text';
+                                const label = field.label || fieldId;
+                                const current = values[fieldId] || '';
+                                const editable = field.client_editable !== false;
+                                const commonProps = {
+                                    value: current,
+                                    disabled: !editable,
+                                    onChange: function (e) {
+                                        onProfileChange(fieldId, e.target.value);
+                                    }
+                                };
+
+                                return el('div', {
+                                    key: fieldId,
+                                    className: 'cc-option-row' + (type === 'textarea' ? ' cc-option-row-full' : '')
+                                },
+                                    el('label', null, label),
+                                    type === 'textarea'
+                                        ? el('textarea', Object.assign({ rows: 4 }, commonProps))
+                                        : el('input', Object.assign({ type: (type === 'email' || type === 'url') ? type : 'text' }, commonProps))
+                                );
+                            })
+                        )
+                    )
+                );
+            })
         );
     }
 
@@ -605,8 +644,8 @@
         const { settings, setSettings, loading, error } = useSettings();
         const [localSettings, setLocalSettings] = useState(null);
         const [saving, setSaving] = useState(false);
-        const [toast, setToast] = useState(null);
-        const [activeTab, setActiveTab] = useState(config.activeTab || 'seo');
+        const [activeTab, setActiveTab] = useState(appMode === 'site-profile' ? 'site-options' : (config.activeTab || 'seo'));
+        const [profileState, setProfileState] = useState({ loading: true, error: null, schema: {}, values: {} });
 
         // Sync local state when settings load
         useEffect(function () {
@@ -614,6 +653,38 @@
                 setLocalSettings(settings);
             }
         }, [settings]);
+
+        useEffect(function () {
+            if (!siteProfileRestBase) {
+                setProfileState({ loading: false, error: __('Site Profile REST route missing.', 'content-core'), schema: {}, values: {} });
+                return;
+            }
+            loadSiteProfile()
+                .then(function (data) {
+                    setProfileState({
+                        loading: false,
+                        error: null,
+                        schema: data.schema || {},
+                        values: data.values || {}
+                    });
+                })
+                .catch(function (err) {
+                    setProfileState({
+                        loading: false,
+                        error: err && err.message ? err.message : __('Failed to load Site Profile.', 'content-core'),
+                        schema: {},
+                        values: {}
+                    });
+                });
+        }, []);
+
+        function handleProfileChange(fieldId, value) {
+            setProfileState(function (prev) {
+                return Object.assign({}, prev, {
+                    values: Object.assign({}, prev.values || {}, { [fieldId]: value })
+                });
+            });
+        }
 
         function handleChange(partial) {
             setLocalSettings(function (prev) {
@@ -644,8 +715,9 @@
                         setSettings(newData);
                         setLocalSettings(newData);
                     }
-                    setToast({ message: __('Settings saved.', 'content-core'), type: 'success' });
-                    setTimeout(function () { setToast(null); }, 4000);
+                    if (window.CCToast && typeof window.CCToast.show === 'function') {
+                        window.CCToast.show(__('Settings saved successfully.', 'content-core'), 'success');
+                    }
                 })
                 .catch(function (err) {
                     setSaving(false);
@@ -654,21 +726,21 @@
                         errMsg = err.message;
                         if (err.code) errMsg += ' (' + err.code + ')';
                     }
-                    setToast({
-                        message: errMsg,
-                        type: 'error'
-                    });
-                    setTimeout(function () { setToast(null); }, 8000);
+                    if (window.CCToast && typeof window.CCToast.show === 'function') {
+                        window.CCToast.show(errMsg, 'error');
+                    }
                 });
         }
 
-        const tabs = [
-            { id: 'seo', label: __('SEO', 'content-core') },
-            { id: 'images', label: __('Site Images', 'content-core') },
-            { id: 'cookie', label: __('Cookie Banner', 'content-core') },
-            { id: 'branding', label: __('Branding', 'content-core') },
-            { id: 'site-options', label: __('Site Options', 'content-core') },
-        ];
+        const tabs = appMode === 'site-profile'
+            ? [{ id: 'site-options', label: __('Site Profile', 'content-core') }]
+            : [
+                { id: 'seo', label: __('SEO', 'content-core') },
+                { id: 'images', label: __('Site Images', 'content-core') },
+                { id: 'cookie', label: __('Cookie Banner', 'content-core') },
+                { id: 'branding', label: __('Branding', 'content-core') },
+                { id: 'site-options', label: __('Site Profile', 'content-core') },
+            ];
 
         if (loading) {
             return el('div', { style: { padding: '40px', textAlign: 'center', color: '#646970' } },
@@ -683,25 +755,18 @@
             );
         }
 
-        if (!localSettings) return null;
+        if (!localSettings && appMode !== 'site-profile') return null;
 
         return el(Fragment, null,
-            // Toast
-            toast && el(Toast, {
-                message: toast.message,
-                type: toast.type,
-                onDismiss: function () { setToast(null); }
-            }),
-
             // Content
             activeTab === 'seo' && el(SeoTab, { settings: localSettings, onChange: handleChange }),
             activeTab === 'images' && el(SiteImagesTab, { settings: localSettings, onChange: handleChange }),
             activeTab === 'cookie' && el(CookieTab, { settings: localSettings, onChange: handleChange }),
             activeTab === 'branding' && el(BrandingTab, { settings: localSettings, onChange: handleChange }),
-            activeTab === 'site-options' && el(SiteOptionsTab),
+            activeTab === 'site-options' && el(SiteOptionsTab, { profileState: profileState, onProfileChange: handleProfileChange }),
 
             // Footer / Actions
-            activeTab !== 'site-options' && el('div', {
+            activeTab !== 'site-options' && appMode !== 'site-profile' && el('div', {
                 className: 'cc-form-actions',
                 style: {
                     display: 'flex',
@@ -722,6 +787,52 @@
                 },
                     el('span', { className: 'dashicons dashicons-saved', style: { fontSize: '18px', width: '18px', height: '18px' } }),
                     saving ? __('Saving...', 'content-core') : __('Save Settings', 'content-core')
+                ),
+                saving && el('span', { className: 'spinner is-active', style: { float: 'none', marginLeft: '10px' } })
+            ),
+
+            activeTab === 'site-options' && el('div', {
+                className: 'cc-form-actions',
+                style: {
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    marginTop: '24px',
+                    padding: '20px',
+                    background: 'var(--cc-bg-card)',
+                    border: '1px solid var(--cc-border)',
+                    borderRadius: 'var(--cc-radius)',
+                    boxShadow: 'var(--cc-shadow)'
+                }
+            },
+                el('button', {
+                    className: 'cc-button-primary',
+                    disabled: saving,
+                    onClick: function () {
+                        setSaving(true);
+                        saveSiteProfile(profileState.values || {})
+                            .then(function (data) {
+                                setSaving(false);
+                                setProfileState({
+                                    loading: false,
+                                    error: null,
+                                    schema: data.schema || {},
+                                    values: data.values || {}
+                                });
+                                if (window.CCToast && typeof window.CCToast.show === 'function') {
+                                    window.CCToast.show(__('Settings saved successfully.', 'content-core'), 'success');
+                                }
+                            })
+                            .catch(function (err) {
+                                setSaving(false);
+                                if (window.CCToast && typeof window.CCToast.show === 'function') {
+                                    window.CCToast.show((err && err.message) ? err.message : __('Save failed.', 'content-core'), 'error');
+                                }
+                            });
+                    },
+                },
+                    el('span', { className: 'dashicons dashicons-saved', style: { fontSize: '18px', width: '18px', height: '18px' } }),
+                    saving ? __('Saving...', 'content-core') : __('Save Site Profile', 'content-core')
                 ),
                 saving && el('span', { className: 'spinner is-active', style: { float: 'none', marginLeft: '10px' } })
             )

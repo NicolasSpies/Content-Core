@@ -22,6 +22,7 @@ class SettingsRenderer
     public function render_site_settings_page(): void
     {
         $title = get_admin_page_title();
+        $page_slug = sanitize_text_field($_GET['page'] ?? '');
         ?>
         <div class="wrap content-core-admin cc-settings-single-page">
             <div class="cc-header">
@@ -35,10 +36,12 @@ class SettingsRenderer
             <!-- ── React Shell (SEO, Site Images, Cookie Banner, Site Options tab nav) ── -->
             <div id="cc-site-settings-react-root" style="margin-top: 24px;"></div>
 
-            <!-- ── Site Options Schema — PHP form, shown/hidden by React tab ── -->
-            <div id="cc-site-options-schema-section" style="display:none; margin-top: 0;">
-                <?php \ContentCore\Modules\Settings\Partials\SiteOptionsSchemaRenderer::render(); ?>
-            </div>
+            <?php if ($page_slug !== 'cc-site-options'): ?>
+                <!-- ── Site Options Schema — PHP form, shown/hidden by React tab ── -->
+                <div id="cc-site-options-schema-section" style="display:none; margin-top: 0;">
+                    <?php \ContentCore\Modules\Settings\Partials\SiteOptionsSchemaRenderer::render(); ?>
+                </div>
+            <?php endif; ?>
 
         </div>
         <?php
@@ -80,6 +83,8 @@ class SettingsRenderer
                         \ContentCore\Modules\Settings\Partials\General\RedirectTabRenderer::render($this->module);
                     } elseif ($page_slug === 'cc-multilingual') {
                         \ContentCore\Modules\Settings\Partials\General\MultilingualTabRenderer::render($this->module);
+                    } elseif ($page_slug === 'cc-branding') {
+                        \ContentCore\Modules\Settings\Partials\General\BrandingTabRenderer::render($this->module);
                     }
                     ?>
                 </div>

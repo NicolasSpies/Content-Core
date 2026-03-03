@@ -1,6 +1,7 @@
 <?php
 namespace ContentCore\Modules\Diagnostics\Rest;
 
+use ContentCore\Admin\CacheService;
 use ContentCore\Modules\RestApi\BaseRestController;
 use ContentCore\Modules\Diagnostics\Engine\HealthCheckRegistry;
 use WP_REST_Request;
@@ -88,6 +89,12 @@ class DiagnosticsRestController extends BaseRestController
                     'type' => 'object',
                 ]
             ]
+        ]);
+
+        register_rest_route($this->namespace, '/cache/rebuild', [
+            'methods' => 'POST',
+            'callback' => [$this, 'rebuild_runtime_cache'],
+            'permission_callback' => [$this, 'check_admin_permissions'],
         ]);
     }
 
@@ -185,6 +192,25 @@ class DiagnosticsRestController extends BaseRestController
             return new WP_REST_Response([
                 'success' => false,
                 'message' => 'Fix execution failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function rebuild_runtime_cache(WP_REST_Request $request): WP_REST_Response
+    {
+        try {
+            $service = new CacheService();
+            $result = $service->rebuild_runtime_cache();
+
+            return new WP_REST_Response([
+                'success' => true,
+                'result' => $result,
+            ]);
+        } catch (\Throwable $e) {
+            \ContentCore\Logger::error('Runtime cache rebuild failed: ' . $e->getMessage());
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

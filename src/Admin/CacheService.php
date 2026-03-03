@@ -222,41 +222,57 @@ class CacheService
     public function clear_content_core_caches(): array
     {
         global $wpdb;
-        $start_snapshot = $this->get_snapshot();
-
         $count = 0;
         $deleted_bytes = 0;
 
         while (true) {
-            $before_bytes = $wpdb->get_var("
-                SELECT SUM(LENGTH(option_value)) FROM {$wpdb->options} 
+            $rows = $wpdb->get_results($wpdb->prepare("
+                SELECT option_name, LENGTH(option_value) AS bytes
+                FROM {$wpdb->options}
                 WHERE (option_name LIKE '_transient_cc_%' OR option_name LIKE '_transient_content_core_%')
                 OR (option_name LIKE '_transient_timeout_cc_%' OR option_name LIKE '_transient_timeout_content_core_%')
                 OR (option_name LIKE 'cc_cache_%' OR option_name LIKE 'cc_rest_cache_%' OR option_name LIKE 'cc_schema_cache_%')
-            ");
-
-            $deleted = $wpdb->query($wpdb->prepare("
-                DELETE FROM {$wpdb->options} 
-                WHERE (option_name LIKE '_transient_cc_%%' OR option_name LIKE '_transient_content_core_%%')
-                OR (option_name LIKE '_transient_timeout_cc_%%' OR option_name LIKE '_transient_timeout_content_core_%%')
-                OR (option_name LIKE 'cc_cache_%%' OR option_name LIKE 'cc_rest_cache_%%' OR option_name LIKE 'cc_schema_cache_%%')
                 LIMIT %d
-            ", self::BATCH_SIZE));
+            ", self::BATCH_SIZE), ARRAY_A);
 
-            $count += $deleted;
-
-            if ($before_bytes) {
-                $after_bytes = $wpdb->get_var("
-                    SELECT SUM(LENGTH(option_value)) FROM {$wpdb->options} 
-                    WHERE (option_name LIKE '_transient_cc_%' OR option_name LIKE '_transient_content_core_%')
-                    OR (option_name LIKE '_transient_timeout_cc_%' OR option_name LIKE '_transient_timeout_content_core_%')
-                    OR (option_name LIKE 'cc_cache_%' OR option_name LIKE 'cc_rest_cache_%' OR option_name LIKE 'cc_schema_cache_%')
-                ");
-                $deleted_bytes += max(0, (int) $before_bytes - (int) $after_bytes);
+            if (empty($rows)) {
+                break;
             }
 
-            if ($deleted < self::BATCH_SIZE) {
-                break;
+            $transient_keys = [];
+            $option_keys = [];
+
+            foreach ($rows as $row) {
+                $name = (string) ($row['option_name'] ?? '');
+                $deleted_bytes += (int) ($row['bytes'] ?? 0);
+
+                if (strpos($name, '_transient_timeout_') === 0) {
+                    $transient_keys[substr($name, strlen('_transient_timeout_'))] = true;
+                    continue;
+                }
+
+                if (strpos($name, '_transient_') === 0) {
+                    $transient_keys[substr($name, strlen('_transient_'))] = true;
+                    continue;
+                }
+
+                if (
+                    strpos($name, 'cc_cache_') === 0 ||
+                    strpos($name, 'cc_rest_cache_') === 0 ||
+                    strpos($name, 'cc_schema_cache_') === 0
+                ) {
+                    $option_keys[$name] = true;
+                }
+            }
+
+            foreach (array_keys($transient_keys) as $transient_key) {
+                delete_transient($transient_key);
+                $count++;
+            }
+
+            foreach (array_keys($option_keys) as $option_key) {
+                delete_option($option_key);
+                $count++;
             }
         }
 
@@ -339,6 +355,9 @@ class CacheService
             'default_lang' => '',
             'enabled_languages' => [],
             'fallback_enabled' => false,
+            'coverage_by_language' => [],
+            'tracked_post_types' => [],
+            'default_published_total' => 0,
             'missing_lang_meta_count' => 0,
             'orphan_groups_count' => 0,
             'duplicate_collisions_count' => 0,
@@ -365,13 +384,18 @@ class CacheService
         }
 
         $result['default_lang'] = $default_lang;
-        $result['enabled_languages'] = array_column($settings['languages'] ?? [], 'code');
+        $result['enabled_languages'] = $this->extract_language_codes($settings['languages'] ?? []);
         $result['fallback_enabled'] = !empty($settings['fallback_enabled']);
 
         $langs = $result['enabled_languages'];
         if (empty($langs)) {
             return $result;
         }
+
+        $coverage = $this->calculate_multilingual_coverage($result['default_lang'], $langs);
+        $result['coverage_by_language'] = $coverage['by_language'];
+        $result['tracked_post_types'] = $coverage['post_types'];
+        $result['default_published_total'] = $coverage['default_total'];
 
         $result['missing_lang_meta_count'] = (int) $wpdb->get_var("
             SELECT COUNT(*) FROM {$wpdb->posts} p
@@ -412,16 +436,14 @@ class CacheService
 
     public function get_site_options_health(): array
     {
-        global $wpdb;
-
         $plugin = Plugin::get_instance();
         $site_options_module = $plugin->get_module('site_options');
 
         $result = [
             'is_active' => false,
-            'languages_with_options' => [],
+            'languages_with_options' => ['site-profile'],
             'languages_missing_options' => [],
-            'translation_group_id_present' => false,
+            'translation_group_id_present' => true,
             'fallback_lang' => '',
         ];
 
@@ -430,38 +452,11 @@ class CacheService
         }
 
         $result['is_active'] = true;
-
-        if (method_exists($site_options_module, 'get_translation_group_id')) {
-            $group_id = $site_options_module->get_translation_group_id();
-            $result['translation_group_id_present'] = !empty($group_id);
-        }
-
-        $ml_module = $plugin->get_module('multilingual');
-        $languages = ['de'];
-        $fallback_lang = '';
-
-        if ($ml_module && method_exists($ml_module, 'is_active') && method_exists($ml_module, 'get_settings')) {
-            if ($ml_module->is_active()) {
-                $settings = $ml_module->get_settings();
-                $languages = array_column($settings['languages'] ?? [], 'code');
-                $fallback_lang = $settings['fallback_lang'] ?? '';
-            }
-        }
-
-        $result['fallback_lang'] = $fallback_lang;
-
-        if (empty($languages)) {
-            $languages = ['de'];
-        }
-
-        foreach ($languages as $lang) {
-            if (method_exists($site_options_module, 'get_options')) {
-                $options = $site_options_module->get_options($lang);
-                if (!empty($options)) {
-                    $result['languages_with_options'][] = $lang;
-                } else {
-                    $result['languages_missing_options'][] = $lang;
-                }
+        if (method_exists($site_options_module, 'get_options')) {
+            $options = $site_options_module->get_options();
+            if (empty($options)) {
+                $result['languages_with_options'] = [];
+                $result['languages_missing_options'] = ['site-profile'];
             }
         }
 
@@ -504,7 +499,7 @@ class CacheService
         if ($ml_module && method_exists($ml_module, 'is_active') && $ml_module->is_active() && method_exists($ml_module, 'get_settings')) {
             $settings = $ml_module->get_settings();
             $default_lang = $settings['default_lang'] ?? 'de';
-            $enabled_languages = array_column($settings['languages'] ?? [], 'code');
+            $enabled_languages = $this->extract_language_codes($settings['languages'] ?? []);
             $is_ml_active = true;
         }
 
@@ -631,6 +626,8 @@ class CacheService
 
         $status = 'healthy';
         $issues = [];
+        $enabled_langs = array_values(array_filter((array) ($health['enabled_languages'] ?? [])));
+        $langs_label = !empty($enabled_langs) ? strtoupper(implode(', ', $enabled_langs)) : strtoupper((string) ($health['default_lang'] ?? 'DE'));
 
         if ($health['missing_lang_meta_count'] > 0) {
             $status = 'warning';
@@ -641,7 +638,7 @@ class CacheService
             'id' => 'multilingual',
             'label' => __('Multilingual', 'content-core'),
             'status' => $status,
-            'short_label' => strtoupper($health['default_lang']),
+            'short_label' => $langs_label,
             'message' => $status === 'healthy' ? __('Multilingual system is operational.', 'content-core') : $issues[0],
             'action_id' => ($health['missing_lang_meta_count'] > 0) ? 'cc_fix_missing_languages' : null,
             'issues' => $issues,
@@ -942,5 +939,222 @@ class CacheService
         }
 
         return $count;
+    }
+
+    /**
+     * Build translation coverage per enabled language for pages, posts and custom post types.
+     */
+    private function calculate_multilingual_coverage(string $default_lang, array $enabled_languages): array
+    {
+        global $wpdb;
+
+        $post_types = $this->get_multilingual_target_post_types();
+        if (empty($post_types)) {
+            return [
+                'post_types' => [],
+                'default_total' => 0,
+                'by_language' => [],
+            ];
+        }
+
+        $default_lang = sanitize_key($default_lang ?: 'de');
+        $enabled = array_values(array_filter(array_map('sanitize_key', $enabled_languages)));
+        if (!in_array($default_lang, $enabled, true)) {
+            $enabled[] = $default_lang;
+        }
+
+        $type_placeholders = implode(',', array_fill(0, count($post_types), '%s'));
+        $base_sql = "
+            SELECT p.post_type, mg.meta_value AS group_id
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} ml ON p.ID = ml.post_id
+                AND ml.meta_key = '_cc_language'
+                AND ml.meta_value = %s
+            INNER JOIN {$wpdb->postmeta} mg ON p.ID = mg.post_id
+                AND mg.meta_key = '_cc_translation_group'
+            WHERE p.post_status = 'publish'
+                AND p.post_type IN ($type_placeholders)
+        ";
+        $base_rows = $wpdb->get_results($wpdb->prepare($base_sql, ...array_merge([$default_lang], $post_types)), ARRAY_A);
+
+        $default_groups_by_type = [];
+        foreach ((array) $base_rows as $row) {
+            $post_type = sanitize_key((string) ($row['post_type'] ?? ''));
+            $group_id = (string) ($row['group_id'] ?? '');
+            if ($post_type === '' || $group_id === '') {
+                continue;
+            }
+            if (!isset($default_groups_by_type[$post_type])) {
+                $default_groups_by_type[$post_type] = [];
+            }
+            $default_groups_by_type[$post_type][$group_id] = true;
+        }
+
+        $default_totals_by_type = [];
+        $default_total = 0;
+        foreach ($post_types as $post_type) {
+            $count = isset($default_groups_by_type[$post_type]) ? count($default_groups_by_type[$post_type]) : 0;
+            $default_totals_by_type[$post_type] = $count;
+            $default_total += $count;
+        }
+
+        $translation_rows = [];
+        $target_langs = array_values(array_diff($enabled, [$default_lang]));
+        if (!empty($target_langs)) {
+            $lang_placeholders = implode(',', array_fill(0, count($target_langs), '%s'));
+            $translation_sql = "
+                SELECT p.post_type, mg.meta_value AS group_id, ml.meta_value AS lang_code
+                FROM {$wpdb->posts} p
+                INNER JOIN {$wpdb->postmeta} ml ON p.ID = ml.post_id
+                    AND ml.meta_key = '_cc_language'
+                    AND ml.meta_value IN ($lang_placeholders)
+                INNER JOIN {$wpdb->postmeta} mg ON p.ID = mg.post_id
+                    AND mg.meta_key = '_cc_translation_group'
+                WHERE p.post_status = 'publish'
+                    AND p.post_type IN ($type_placeholders)
+            ";
+            $translation_rows = $wpdb->get_results(
+                $wpdb->prepare($translation_sql, ...array_merge($target_langs, $post_types)),
+                ARRAY_A
+            );
+        }
+
+        $translated_groups = [];
+        foreach ((array) $translation_rows as $row) {
+            $post_type = sanitize_key((string) ($row['post_type'] ?? ''));
+            $group_id = (string) ($row['group_id'] ?? '');
+            $lang_code = sanitize_key((string) ($row['lang_code'] ?? ''));
+            if ($post_type === '' || $group_id === '' || $lang_code === '') {
+                continue;
+            }
+            if (empty($default_groups_by_type[$post_type][$group_id])) {
+                continue;
+            }
+            if (!isset($translated_groups[$lang_code])) {
+                $translated_groups[$lang_code] = [];
+            }
+            if (!isset($translated_groups[$lang_code][$post_type])) {
+                $translated_groups[$lang_code][$post_type] = [];
+            }
+            $translated_groups[$lang_code][$post_type][$group_id] = true;
+        }
+
+        $by_language = [];
+        foreach ($enabled as $lang) {
+            $lang_total_translated = 0;
+            $by_type = [];
+
+            foreach ($post_types as $post_type) {
+                $type_total = (int) ($default_totals_by_type[$post_type] ?? 0);
+                $type_translated = ($lang === $default_lang)
+                    ? $type_total
+                    : (isset($translated_groups[$lang][$post_type]) ? count($translated_groups[$lang][$post_type]) : 0);
+
+                $lang_total_translated += $type_translated;
+                $by_type[$post_type] = [
+                    'translated' => $type_translated,
+                    'total' => $type_total,
+                    'ratio' => $type_total > 0 ? round($type_translated / $type_total, 4) : 1.0,
+                ];
+            }
+
+            $ratio = $default_total > 0 ? $lang_total_translated / $default_total : 1.0;
+            $status = 'healthy';
+            if ($default_total > 0) {
+                if ($lang_total_translated === 0) {
+                    $status = 'critical';
+                } elseif ($ratio < 1) {
+                    $status = 'warning';
+                }
+            }
+
+            $by_language[$lang] = [
+                'status' => $status,
+                'translated' => $lang_total_translated,
+                'total' => $default_total,
+                'ratio' => round($ratio, 4),
+                'by_type' => $by_type,
+            ];
+        }
+
+        return [
+            'post_types' => $post_types,
+            'default_total' => $default_total,
+            'by_language' => $by_language,
+        ];
+    }
+
+    /**
+     * Include pages, posts and public custom post types. Exclude internal/system types.
+     */
+    private function get_multilingual_target_post_types(): array
+    {
+        $post_type_objects = get_post_types(['show_ui' => true], 'objects');
+        if (!is_array($post_type_objects)) {
+            return [];
+        }
+
+        $types = [];
+        foreach ($post_type_objects as $name => $obj) {
+            $post_type = sanitize_key((string) $name);
+            if ($post_type === '') {
+                continue;
+            }
+
+            if (!post_type_supports($post_type, 'cc-multilingual')) {
+                continue;
+            }
+
+            if (strpos($post_type, 'cc_') === 0) {
+                continue;
+            }
+
+            if ($post_type === 'attachment' || $post_type === 'revision' || $post_type === 'nav_menu_item') {
+                continue;
+            }
+
+            $is_core = in_array($post_type, ['post', 'page'], true);
+            $is_custom = !empty($obj) && is_object($obj) && empty($obj->_builtin);
+            if (!$is_core && !$is_custom) {
+                continue;
+            }
+
+            $types[] = $post_type;
+        }
+
+        $types = array_values(array_unique($types));
+        sort($types);
+        return $types;
+    }
+
+    /**
+     * Normalize language list from multilingual settings.
+     * Supports list and keyed map formats.
+     */
+    private function extract_language_codes($languages): array
+    {
+        if (!is_array($languages)) {
+            return [];
+        }
+
+        $codes = [];
+
+        foreach ($languages as $key => $language) {
+            if (is_array($language) && !empty($language['code'])) {
+                $codes[] = sanitize_key((string) $language['code']);
+                continue;
+            }
+
+            if (is_string($language) && $language !== '') {
+                $codes[] = sanitize_key($language);
+                continue;
+            }
+
+            if (is_string($key) && $key !== '') {
+                $codes[] = sanitize_key($key);
+            }
+        }
+
+        return array_values(array_filter(array_unique($codes)));
     }
 }
