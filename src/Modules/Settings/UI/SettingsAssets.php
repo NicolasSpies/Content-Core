@@ -49,7 +49,7 @@ class SettingsAssets
         ]);
 
         // Determine if we should load the React Application
-        if ($this->should_load_react($hook)) {
+        if ($this->should_load_react($hook, $screen)) {
             $this->enqueue_react_app($rest_base, $ml);
         }
     }
@@ -57,14 +57,13 @@ class SettingsAssets
     /**
      * Check if React app should be loaded based on the current hook
      */
-    private function should_load_react(string $hook): bool
+    private function should_load_react(string $hook, $screen = null): bool
     {
         $react_pages = [
             'cc_site_settings', // Standard WP hooks often use underscores for slugs
             'cc-site-settings',
             'cc-multilingual',
             'cc-seo',
-            'cc-site-images',
             'cc-cookie-banner',
             'cc-diagnostics',
             'cc-site-options',
@@ -74,8 +73,21 @@ class SettingsAssets
             'cc-manage-terms'
         ];
 
+        $page_slug = sanitize_key((string) ($_GET['page'] ?? ''));
+        if ($page_slug !== '' && in_array($page_slug, $react_pages, true)) {
+            return true;
+        }
+
+        $screen_id = '';
+        if (is_object($screen) && isset($screen->id)) {
+            $screen_id = (string) $screen->id;
+        }
+
         foreach ($react_pages as $page) {
             if (strpos($hook, $page) !== false) {
+                return true;
+            }
+            if ($screen_id !== '' && strpos($screen_id, $page) !== false) {
                 return true;
             }
         }
@@ -132,7 +144,6 @@ class SettingsAssets
     private function get_active_tab(string $page_slug): string
     {
         $tabs = [
-            'cc-site-images' => 'images',
             'cc-cookie-banner' => 'cookie',
             'cc-multilingual' => 'multilingual',
             'cc-site-options' => 'site-options',

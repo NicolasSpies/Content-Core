@@ -118,6 +118,8 @@ class MenuRegistry
             $site_profile_callback = $site_options_admin ? [$site_options_admin, 'render_page'] : '__return_null';
             if ($settings_module && method_exists($settings_module, 'render_site_settings_page')) {
                 $site_profile_callback = [$settings_module, 'render_site_settings_page'];
+            } elseif ($settings_module && method_exists($settings_module, 'render_settings_page')) {
+                $site_profile_callback = [$settings_module, 'render_settings_page'];
             }
 
             add_menu_page(
@@ -147,12 +149,18 @@ class MenuRegistry
                 'cc-media' => __('Media', 'content-core'),
                 'cc-redirect' => __('Redirect', 'content-core'),
                 'cc-seo' => __('SEO', 'content-core'),
-                'cc-site-images' => __('Site Images', 'content-core'),
                 'cc-branding' => __('Branding', 'content-core'),
                 'cc-cookie-banner' => __('Cookie Banner', 'content-core'),
             ];
             foreach ($pages as $slug => $label) {
-                $callback = (in_array($slug, ['cc-seo', 'cc-cookie-banner', 'cc-site-images'])) ? [$settings_module, 'render_site_settings_page'] : [$settings_module, 'render_settings_page'];
+                $react_like = in_array($slug, ['cc-seo', 'cc-cookie-banner'], true);
+                if ($react_like && method_exists($settings_module, 'render_site_settings_page')) {
+                    $callback = [$settings_module, 'render_site_settings_page'];
+                } elseif (method_exists($settings_module, 'render_settings_page')) {
+                    $callback = [$settings_module, 'render_settings_page'];
+                } else {
+                    $callback = '__return_null';
+                }
                 add_submenu_page('content-core', $label, $label, 'manage_options', $slug, $callback);
             }
         }

@@ -48,6 +48,8 @@ class BrandingSettings
             } elseif (is_string($val) && !empty($val)) {
                 $id = attachment_url_to_postid($val);
                 $clean['login_logo'] = $id ? $id : $val; // Store ID if found, else keep URL for now
+            } else {
+                $clean['login_logo'] = '';
             }
         }
         if (isset($data['login_bg_color'])) {
@@ -69,6 +71,8 @@ class BrandingSettings
             } elseif (is_string($val) && !empty($val)) {
                 $id = attachment_url_to_postid($val);
                 $clean['admin_bar_logo'] = $id ? $id : $val;
+            } else {
+                $clean['admin_bar_logo'] = '';
             }
         }
         if (isset($data['admin_bar_logo_url'])) {
@@ -81,10 +85,32 @@ class BrandingSettings
             $clean['use_site_icon_for_admin_bar'] = (bool) $data['use_site_icon_for_admin_bar'];
         }
         if (isset($data['custom_primary_color'])) {
-            $clean['custom_primary_color'] = sanitize_hex_color($data['custom_primary_color']);
+            $primary = sanitize_hex_color($data['custom_primary_color']);
+            if ($primary) {
+                $clean['custom_primary_color'] = $primary;
+                $clean['login_bg_color'] = $primary;
+            }
         }
         if (isset($data['custom_accent_color'])) {
-            $clean['custom_accent_color'] = sanitize_hex_color($data['custom_accent_color']);
+            $accent = sanitize_hex_color($data['custom_accent_color']);
+            if ($accent) {
+                $clean['custom_accent_color'] = $accent;
+                $clean['login_btn_color'] = $accent;
+            }
+        }
+        if (isset($data['login_bg_color']) && !isset($data['custom_primary_color'])) {
+            $primary = sanitize_hex_color($data['login_bg_color']);
+            if ($primary) {
+                $clean['custom_primary_color'] = $primary;
+                $clean['login_bg_color'] = $primary;
+            }
+        }
+        if (isset($data['login_btn_color']) && !isset($data['custom_accent_color'])) {
+            $accent = sanitize_hex_color($data['login_btn_color']);
+            if ($accent) {
+                $clean['custom_accent_color'] = $accent;
+                $clean['login_btn_color'] = $accent;
+            }
         }
         if (isset($data['remove_wp_mentions'])) {
             $clean['remove_wp_mentions'] = (bool) $data['remove_wp_mentions'];

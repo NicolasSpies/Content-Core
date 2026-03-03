@@ -26,6 +26,11 @@ class DashboardRenderer
         $snapshot = $cache_service->get_snapshot();
         $health_report = $cache_service->get_consolidated_health_report();
         $subsystems = $health_report['subsystems'];
+        $rest_api_status = (is_array($subsystems['rest_api'] ?? null)) ? $subsystems['rest_api'] : [];
+        $rest_api_data = is_array($rest_api_status['data'] ?? null) ? $rest_api_status['data'] : [];
+        $rest_api_base_url = (string) ($rest_api_data['base_url'] ?? '');
+        $rest_api_route_count = (int) ($rest_api_data['route_count'] ?? 0);
+        $rest_api_namespace = (string) parse_url($rest_api_base_url, PHP_URL_PATH);
         $plugin_version = $plugin->get_version();
         $settings_scan = $this->build_settings_completeness_scan();
         ?>
@@ -77,6 +82,25 @@ class DashboardRenderer
                         <div class="cc-data-group">
                             <span class="cc-field-label"><?php _e('Last Health Check', 'content-core'); ?></span>
                             <div class="cc-data-value"><?php echo esc_html($health_report['checked_at']); ?></div>
+                        </div>
+                    </div>
+                    <div class="cc-health-rest-status">
+                        <span class="cc-field-label"><?php _e('REST API Status', 'content-core'); ?></span>
+                        <div class="cc-health-rest-status-row">
+                            <span
+                                class="cc-status-pill cc-status-<?php echo esc_attr((string) ($rest_api_status['status'] ?? 'warning')); ?>">
+                                <?php echo esc_html((string) ($rest_api_status['short_label'] ?? __('Unknown', 'content-core'))); ?>
+                            </span>
+                            <span class="cc-health-rest-meta">
+                                <?php echo esc_html(sprintf(__('%d routes', 'content-core'), $rest_api_route_count)); ?>
+                            </span>
+                            <?php if ($rest_api_namespace !== ''): ?>
+                                <code class="cc-health-rest-namespace"><?php echo esc_html($rest_api_namespace); ?></code>
+                            <?php endif; ?>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=cc-api-info')); ?>"
+                                class="cc-button-secondary cc-health-rest-link">
+                                <?php _e('Open REST API Reference', 'content-core'); ?>
+                            </a>
                         </div>
                     </div>
 
@@ -389,14 +413,6 @@ class DashboardRenderer
                 ]),
             ],
             [
-                'label' => __('Site Images', 'content-core'),
-                'url' => admin_url('admin.php?page=cc-site-images'),
-                'missing' => $this->collect_missing($images, [
-                    'social_icon_id' => 'favicon',
-                    'og_default_id' => 'social image',
-                ], true),
-            ],
-            [
                 'label' => __('Cookie Banner', 'content-core'),
                 'url' => admin_url('admin.php?page=cc-cookie-banner'),
                 'missing' => !empty($cookie['enabled']) ? $this->collect_missing($cookie, [
@@ -421,6 +437,11 @@ class DashboardRenderer
 
         foreach ($scan as &$row) {
             $row['status'] = empty($row['missing']) ? 'success' : 'missing';
+        }
+
+        if ((int) ($images['social_icon_id'] ?? 0) <= 0 && isset($scan[0])) {
+            $scan[0]['missing'][] = 'favicon';
+            $scan[0]['status'] = 'missing';
         }
 
         return $scan;

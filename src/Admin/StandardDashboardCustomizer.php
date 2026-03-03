@@ -138,21 +138,12 @@ class StandardDashboardCustomizer
                     <?php if ($can_edit_header): ?>
                         <details class="cc-wp-profile-edit cc-wp-profile-edit-icon">
                             <summary aria-label="<?php echo esc_attr($this->t('edit_header')); ?>" title="<?php echo esc_attr($this->t('edit_header')); ?>">
-                                <span class="dashicons dashicons-edit"></span>
+                                <span class="dashicons dashicons-edit cc-wp-edit-icon-open"></span>
+                                <span class="dashicons dashicons-no-alt cc-wp-edit-icon-close"></span>
                             </summary>
                             <form method="post">
                                 <input type="hidden" name="cc_dashboard_action" value="save_header">
                                 <?php wp_nonce_field('cc_dashboard_save_header', 'cc_dashboard_nonce'); ?>
-                                <label>
-                                    <?php echo esc_html($this->t('header_title')); ?>
-                                    <input type="text" name="cc_dashboard_header_title"
-                                        value="<?php echo esc_attr($header['title']); ?>" maxlength="80">
-                                </label>
-                                <label>
-                                    <?php echo esc_html($this->t('header_subtitle')); ?>
-                                    <input type="text" name="cc_dashboard_header_subtitle"
-                                        value="<?php echo esc_attr($header['subtitle']); ?>" maxlength="120">
-                                </label>
                                 <input type="hidden" name="cc_dashboard_header_cover" value="<?php echo esc_attr($header['cover_url']); ?>" class="js-cc-cover-url">
                                 <input type="hidden" name="cc_dashboard_header_cover_id" value="<?php echo (int) $header['cover_id']; ?>" class="js-cc-cover-id">
                                 <label>
@@ -660,11 +651,6 @@ class StandardDashboardCustomizer
                 'missing' => $this->collect_missing($seo, ['title' => 'title', 'description' => 'description']),
             ],
             [
-                'label' => $this->t('site_images'),
-                'url' => admin_url('admin.php?page=cc-site-images'),
-                'missing' => $this->collect_missing($images, ['social_icon_id' => 'favicon', 'og_default_id' => 'social image'], true),
-            ],
-            [
                 'label' => $this->t('cookie_banner'),
                 'url' => admin_url('admin.php?page=cc-cookie-banner'),
                 'missing' => !empty($cookie['enabled']) ? $this->collect_missing($cookie, [
@@ -681,6 +667,10 @@ class StandardDashboardCustomizer
 
         foreach ($scan as &$row) {
             $row['status'] = empty($row['missing']) ? 'success' : 'missing';
+        }
+        if ((int) ($images['social_icon_id'] ?? 0) <= 0 && isset($scan[0])) {
+            $scan[0]['missing'][] = 'favicon';
+            $scan[0]['status'] = 'missing';
         }
         return $scan;
     }
@@ -752,8 +742,8 @@ class StandardDashboardCustomizer
         check_admin_referer('cc_dashboard_save_header', 'cc_dashboard_nonce');
 
         $current = $this->get_header_settings();
-        $title = isset($_POST['cc_dashboard_header_title']) ? sanitize_text_field(wp_unslash((string) $_POST['cc_dashboard_header_title'])) : $current['title'];
-        $subtitle = isset($_POST['cc_dashboard_header_subtitle']) ? sanitize_text_field(wp_unslash((string) $_POST['cc_dashboard_header_subtitle'])) : '';
+        $title = (string) ($current['title'] ?? $this->get_default_header_title());
+        $subtitle = (string) ($current['subtitle'] ?? '');
         $cover_url = isset($_POST['cc_dashboard_header_cover']) ? esc_url_raw(wp_unslash((string) $_POST['cc_dashboard_header_cover'])) : '';
         $cover_id = isset($_POST['cc_dashboard_header_cover_id']) ? absint(wp_unslash((string) $_POST['cc_dashboard_header_cover_id'])) : 0;
 
@@ -981,21 +971,55 @@ class StandardDashboardCustomizer
     {
         return "
         (function($){
+            var ccCoverFrame = null;
+
             $(document).on('click', '.js-cc-cover-select', function(e){
                 e.preventDefault();
-                var frame = wp.media({
+
+                if (typeof wp === 'undefined' || !wp.media) {
+                    return;
+                }
+
+                if (ccCoverFrame) {
+                    ccCoverFrame.open();
+                    return;
+                }
+
+                ccCoverFrame = wp.media({
                     title: '" . esc_js($this->t('choose_from_library')) . "',
                     button: { text: '" . esc_js($this->t('use_image')) . "' },
                     library: { type: 'image' },
                     multiple: false
                 });
-                frame.on('select', function(){
-                    var attachment = frame.state().get('selection').first().toJSON();
-                    var wrap = $('.cc-wp-profile-edit');
+
+                ccCoverFrame.on('select', function(){
+                    var selection = ccCoverFrame.state().get('selection').first();
+                    if (!selection) {
+                        return;
+                    }
+
+                    var attachment = selection.toJSON();
+                    var wrap = $('.cc-wp-profile-edit').first();
                     wrap.find('.js-cc-cover-url').val(attachment.url || '');
                     wrap.find('.js-cc-cover-id').val(attachment.id || 0);
+
+                    // Apply preview immediately so the change is visible before refresh.
+                    if (attachment.url) {
+                        var cover = $('.cc-wp-profile-cover').first();
+                        cover.css('background-image', 'url(' + attachment.url + ')');
+                        cover.removeClass('cc-wp-profile-cover-fallback');
+                    }
+
+                    // Persist immediately after selection for reliable behavior on all installs.
+                    var form = wrap.find('form').first();
+                    if (form.length && form.get(0) && typeof form.get(0).requestSubmit === 'function') {
+                        form.get(0).requestSubmit();
+                    } else if (form.length) {
+                        form.trigger('submit');
+                    }
                 });
-                frame.open();
+
+                ccCoverFrame.open();
             });
         })(jQuery);
         ";
@@ -1041,11 +1065,15 @@ class StandardDashboardCustomizer
         .cc-wp-profile-edit-icon{position:absolute;top:12px;right:12px;z-index:5;}
         .cc-wp-profile-edit-icon summary{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;background:rgba(255,255,255,.9);border:1px solid var(--cc-border);box-shadow:0 1px 4px rgba(0,0,0,.08);color:var(--cc-text);}
         .cc-wp-profile-edit-icon summary .dashicons{font-size:16px;width:16px;height:16px;}
-        .cc-wp-profile-edit-icon[open]{background:var(--cc-bg-card);border:1px solid var(--cc-border-light);border-radius:10px;padding:10px;width:min(360px,calc(100vw - 48px));}
-        .cc-wp-profile-edit form{display:grid;gap:8px;margin-top:8px;}
+        .cc-wp-profile-edit-icon .cc-wp-edit-icon-close{display:none;}
+        .cc-wp-profile-edit-icon[open] .cc-wp-edit-icon-open{display:none;}
+        .cc-wp-profile-edit-icon[open] .cc-wp-edit-icon-close{display:block;}
+        .cc-wp-profile-edit-icon[open]{background:var(--cc-bg-card);border:1px solid var(--cc-border-light);border-radius:10px;padding:8px;max-width:calc(100vw - 48px);width:max-content;}
+        .cc-wp-profile-edit form{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:6px;}
         .cc-wp-profile-edit label{display:grid;gap:4px;font-size:12px;font-weight:600;color:var(--cc-text-muted);}
         .cc-wp-profile-edit input{width:100%;}
-        .cc-wp-cover-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+        .cc-wp-cover-actions{display:flex;gap:8px;align-items:center;flex-wrap:nowrap;width:max-content;}
+        .cc-wp-profile-edit form .button{width:auto;min-width:0;align-self:flex-start;}
         .cc-wp-dashboard-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;align-items:start;}
         .cc-wp-card{background:var(--cc-bg-card);border:1px solid var(--cc-border);border-radius:var(--cc-radius);box-shadow:var(--cc-shadow);padding:18px;}
         .cc-wp-card h3{margin:0 0 14px 0;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}

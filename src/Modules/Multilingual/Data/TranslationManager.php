@@ -84,6 +84,7 @@ class TranslationManager
         // Set multilingual meta
         update_post_meta($new_post_id, '_cc_language', $target_lang);
         update_post_meta($new_post_id, '_cc_translation_group', $group_id);
+        update_post_meta($new_post_id, '_cc_allow_custom_slug', '0');
 
         // Clear cache for this group
         unset($this->group_cache[$group_id]);

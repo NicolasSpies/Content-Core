@@ -2,6 +2,7 @@
 namespace ContentCore\Modules\Settings\Rest;
 
 use ContentCore\Modules\Settings\SettingsModule;
+use ContentCore\Modules\CustomFields\Data\FieldRegistry;
 use ContentCore\Modules\RestApi\BaseRestController;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -52,12 +53,19 @@ class SettingsRestController extends BaseRestController
         if ($module === 'site') {
             $images = $this->registry->get('cc_site_images');
             $images = $this->hydrate_image_urls($images);
+            $seo = $this->hydrate_seo_images($this->registry->get(SettingsModule::SEO_KEY));
+            $multilingual = $this->registry->get('cc_languages_settings');
+            if (!is_array($multilingual)) {
+                $multilingual = [];
+            }
 
             return new WP_REST_Response([
-                'seo' => $this->registry->get(SettingsModule::SEO_KEY),
+                'seo' => $seo,
+                'seo_context' => $this->build_seo_context(),
                 'images' => $images,
                 'cookie' => $this->registry->get(SettingsModule::COOKIE_KEY),
-                'branding' => $this->registry->get('cc_branding_settings')
+                'branding' => $this->registry->get('cc_branding_settings'),
+                'multilingual' => $multilingual,
             ]);
         }
 
@@ -396,6 +404,355 @@ class SettingsRestController extends BaseRestController
 
         $settings['languages'] = $normalized;
         return $settings;
+    }
+
+    private function hydrate_seo_images(array $seo): array
+    {
+        $hydrated = $seo;
+
+        $global = isset($hydrated['global']) && is_array($hydrated['global']) ? $hydrated['global'] : [];
+        $global_og_id = absint($global['og_image_id'] ?? 0);
+        $global['og_image_url'] = $global_og_id > 0 ? (wp_get_attachment_image_url($global_og_id, 'large') ?: wp_get_attachment_url($global_og_id) ?: '') : '';
+        $hydrated['global'] = $global;
+
+        $page_overrides = isset($hydrated['page_overrides']) && is_array($hydrated['page_overrides']) ? $hydrated['page_overrides'] : [];
+        foreach ($page_overrides as $post_id => $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+            $id = absint($entry['og_image_id'] ?? 0);
+            $entry['og_image_url'] = $id > 0 ? (wp_get_attachment_image_url($id, 'large') ?: wp_get_attachment_url($id) ?: '') : '';
+            $page_overrides[$post_id] = $entry;
+        }
+        $hydrated['page_overrides'] = $page_overrides;
+
+        $templates = isset($hydrated['post_type_templates']) && is_array($hydrated['post_type_templates']) ? $hydrated['post_type_templates'] : [];
+        foreach ($templates as $slug => $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+            $id = absint($entry['og_image_id'] ?? 0);
+            $entry['og_image_url'] = $id > 0 ? (wp_get_attachment_image_url($id, 'large') ?: wp_get_attachment_url($id) ?: '') : '';
+            $templates[$slug] = $entry;
+        }
+        $hydrated['post_type_templates'] = $templates;
+
+        $global_by_lang = isset($hydrated['global_by_lang']) && is_array($hydrated['global_by_lang']) ? $hydrated['global_by_lang'] : [];
+        foreach ($global_by_lang as $lang => $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+            $id = absint($entry['og_image_id'] ?? 0);
+            $entry['og_image_url'] = $id > 0 ? (wp_get_attachment_image_url($id, 'large') ?: wp_get_attachment_url($id) ?: '') : '';
+            $global_by_lang[$lang] = $entry;
+        }
+        $hydrated['global_by_lang'] = $global_by_lang;
+
+        $page_overrides_by_lang = isset($hydrated['page_overrides_by_lang']) && is_array($hydrated['page_overrides_by_lang']) ? $hydrated['page_overrides_by_lang'] : [];
+        foreach ($page_overrides_by_lang as $lang => $rows) {
+            if (!is_array($rows)) {
+                continue;
+            }
+            foreach ($rows as $post_id => $entry) {
+                if (!is_array($entry)) {
+                    continue;
+                }
+                $id = absint($entry['og_image_id'] ?? 0);
+                $entry['og_image_url'] = $id > 0 ? (wp_get_attachment_image_url($id, 'large') ?: wp_get_attachment_url($id) ?: '') : '';
+                $rows[$post_id] = $entry;
+            }
+            $page_overrides_by_lang[$lang] = $rows;
+        }
+        $hydrated['page_overrides_by_lang'] = $page_overrides_by_lang;
+
+        $post_type_templates_by_lang = isset($hydrated['post_type_templates_by_lang']) && is_array($hydrated['post_type_templates_by_lang']) ? $hydrated['post_type_templates_by_lang'] : [];
+        foreach ($post_type_templates_by_lang as $lang => $rows) {
+            if (!is_array($rows)) {
+                continue;
+            }
+            foreach ($rows as $slug => $entry) {
+                if (!is_array($entry)) {
+                    continue;
+                }
+                $id = absint($entry['og_image_id'] ?? 0);
+                $entry['og_image_url'] = $id > 0 ? (wp_get_attachment_image_url($id, 'large') ?: wp_get_attachment_url($id) ?: '') : '';
+                $rows[$slug] = $entry;
+            }
+            $post_type_templates_by_lang[$lang] = $rows;
+        }
+        $hydrated['post_type_templates_by_lang'] = $post_type_templates_by_lang;
+
+        return $hydrated;
+    }
+
+    private function build_seo_context(): array
+    {
+        $pages = [];
+        $show_on_front = (string) get_option('show_on_front', 'posts');
+        $page_on_front = absint(get_option('page_on_front', 0));
+        $ml_settings = get_option('cc_languages_settings', []);
+        $default_lang = 'de';
+        if (is_array($ml_settings) && !empty($ml_settings['default_lang'])) {
+            $default_lang = sanitize_key((string) $ml_settings['default_lang']);
+        }
+        $page_query = get_posts([
+            'post_type' => 'page',
+            'post_status' => ['publish', 'draft', 'pending', 'private', 'future'],
+            'orderby' => 'title',
+            'order' => 'ASC',
+            'numberposts' => -1,
+            'fields' => 'ids',
+            'suppress_filters' => true,
+        ]);
+
+        foreach ($page_query as $page_id) {
+            $post = get_post((int) $page_id);
+            if (!$post instanceof \WP_Post) {
+                continue;
+            }
+
+            $pages[] = [
+                'id' => (int) $post->ID,
+                'title' => $this->normalize_display_text(get_the_title($post) ?: sprintf(__('Page #%d', 'content-core'), (int) $post->ID)),
+                'slug' => (string) $post->post_name,
+                'language' => sanitize_key((string) (get_post_meta((int) $post->ID, '_cc_language', true) ?: $default_lang)),
+                'translation_group' => sanitize_text_field((string) get_post_meta((int) $post->ID, '_cc_translation_group', true)),
+                'status' => (string) $post->post_status,
+                'is_front_page' => ($show_on_front === 'page' && $page_on_front > 0 && (int) $post->ID === $page_on_front),
+                'permalink' => (string) get_permalink((int) $post->ID),
+                'edit_url' => get_edit_post_link((int) $post->ID, 'raw') ?: '',
+            ];
+        }
+
+        $post_types = [];
+        $field_tokens_by_type = [];
+        $post_type_slugs = [];
+        $objects = get_post_types(['show_ui' => true], 'objects');
+        if (is_array($objects)) {
+            foreach ($objects as $slug => $obj) {
+                $pt = sanitize_key((string) $slug);
+                if ($pt === '') {
+                    continue;
+                }
+
+                // Keep only real frontend content types for SEO templates.
+                if (
+                    in_array($pt, ['post', 'page', 'attachment', 'revision', 'nav_menu_item', 'wp_navigation', 'wp_template', 'wp_template_part', 'wp_block'], true) ||
+                    strpos($pt, 'cc_') === 0 ||
+                    strpos($pt, 'wp_') === 0
+                ) {
+                    continue;
+                }
+
+                if (!isset($obj->public) || !$obj->public) {
+                    continue;
+                }
+
+                $single = '';
+                if (isset($obj->labels) && is_object($obj->labels) && !empty($obj->labels->singular_name)) {
+                    $single = (string) $obj->labels->singular_name;
+                }
+                if ($single === '') {
+                    $single = !empty($obj->label) ? (string) $obj->label : strtoupper($pt);
+                }
+                $single = $this->normalize_display_text($single);
+
+                $fields = [];
+                $tokens_for_type = [];
+                $field_schemas = FieldRegistry::get_fields_for_context(['post_type' => $pt]);
+                foreach ($field_schemas as $field_name => $schema) {
+                    $name = sanitize_key((string) $field_name);
+                    if ($name === '') {
+                        continue;
+                    }
+                    $token = 'field.' . $name;
+                    $fields[] = [
+                        'token' => $token,
+                        'label' => !empty($schema['label']) ? (string) $schema['label'] : $name,
+                        'name' => $name,
+                        'type' => sanitize_key((string) ($schema['type'] ?? 'text')),
+                    ];
+                    $tokens_for_type[$token] = $name;
+                }
+                $field_tokens_by_type[$pt] = $tokens_for_type;
+
+                $post_types[] = [
+                    'slug' => $pt,
+                    'label' => $this->normalize_display_text(!empty($obj->labels->name) ? (string) $obj->labels->name : $single),
+                    'singular' => $single,
+                    'fields' => $fields,
+                    'edit_url' => admin_url('edit.php?post_type=' . $pt),
+                ];
+                $post_type_slugs[] = $pt;
+            }
+        }
+
+        $posts_by_type = [];
+        foreach ($post_type_slugs as $pt) {
+            $posts_by_type[$pt] = [];
+            $ids = get_posts([
+                'post_type' => $pt,
+                'post_status' => ['publish', 'draft', 'pending', 'private', 'future'],
+                'orderby' => 'date',
+                'order' => 'DESC',
+                'numberposts' => -1,
+                'fields' => 'ids',
+                'suppress_filters' => true,
+            ]);
+            foreach ($ids as $post_id) {
+                $post = get_post((int) $post_id);
+                if (!$post instanceof \WP_Post) {
+                    continue;
+                }
+                $excerpt = has_excerpt($post) ? (string) get_the_excerpt($post) : '';
+                if ($excerpt === '') {
+                    $excerpt = wp_strip_all_tags((string) $post->post_content);
+                    $excerpt = wp_trim_words($excerpt, 30, '…');
+                }
+                $author_name = '';
+                if ((int) $post->post_author > 0) {
+                    $author_name = (string) get_the_author_meta('display_name', (int) $post->post_author);
+                }
+                $posts_by_type[$pt][] = [
+                    'id' => (int) $post->ID,
+                    'title' => $this->normalize_display_text(get_the_title($post) ?: sprintf(__('Post #%d', 'content-core'), (int) $post->ID)),
+                    'slug' => (string) $post->post_name,
+                    'language' => sanitize_key((string) (get_post_meta((int) $post->ID, '_cc_language', true) ?: $default_lang)),
+                    'translation_group' => sanitize_text_field((string) get_post_meta((int) $post->ID, '_cc_translation_group', true)),
+                    'status' => (string) $post->post_status,
+                    'permalink' => (string) get_permalink((int) $post->ID),
+                    'excerpt' => $excerpt,
+                    'date' => mysql2date('Y-m-d', (string) $post->post_date),
+                    'author' => $author_name,
+                    'token_values' => $this->build_post_token_values((int) $post->ID, $field_tokens_by_type[$pt] ?? []),
+                    'token_image_urls' => $this->build_post_token_image_urls((int) $post->ID, $field_tokens_by_type[$pt] ?? []),
+                ];
+            }
+        }
+
+        return [
+            'tokens' => [
+                ['token' => 'title', 'label' => __('Title', 'content-core')],
+                ['token' => 'excerpt', 'label' => __('Excerpt', 'content-core')],
+                ['token' => 'slug', 'label' => __('Slug', 'content-core')],
+                ['token' => 'date', 'label' => __('Date', 'content-core')],
+                ['token' => 'author', 'label' => __('Author', 'content-core')],
+                ['token' => 'site', 'label' => __('Site Title', 'content-core')],
+            ],
+            'site_image_tokens' => $this->build_site_image_tokens(),
+            'pages' => $pages,
+            'post_types' => $post_types,
+            'posts_by_type' => $posts_by_type,
+        ];
+    }
+
+    private function normalize_display_text(string $text): string
+    {
+        $value = trim(wp_strip_all_tags($text));
+        if ($value === '') {
+            return '';
+        }
+
+        // Decode nested entities like &amp;#8211; into real characters.
+        for ($i = 0; $i < 3; $i++) {
+            $decoded = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if ($decoded === $value) {
+                break;
+            }
+            $value = $decoded;
+        }
+
+        // Normalize NBSP to normal space.
+        $value = str_replace("\xc2\xa0", ' ', $value);
+        return trim($value);
+    }
+
+    private function build_site_image_tokens(): array
+    {
+        $tokens = [];
+        $images = get_option('cc_site_images', []);
+        if (!is_array($images)) {
+            return $tokens;
+        }
+
+        foreach ($images as $key => $value) {
+            if (!is_string($key) || substr($key, -3) !== '_id') {
+                continue;
+            }
+            $id = absint($value);
+            if ($id <= 0) {
+                continue;
+            }
+
+            $label = str_replace('_', ' ', preg_replace('/_id$/', '', $key));
+            $label = ucwords(trim($label));
+            $tokens[] = [
+                'token' => 'site_image.' . $key,
+                'label' => sprintf(__('Site Image: %s', 'content-core'), $label),
+                'name' => $key,
+            ];
+        }
+
+        return $tokens;
+    }
+
+    private function build_post_token_values(int $post_id, array $tokens_for_type): array
+    {
+        $values = [];
+        foreach ($tokens_for_type as $token => $meta_key) {
+            $raw = get_post_meta($post_id, (string) $meta_key, true);
+            if (is_scalar($raw)) {
+                $values[(string) $token] = (string) $raw;
+                continue;
+            }
+            if (is_array($raw)) {
+                $values[(string) $token] = wp_json_encode($raw);
+            }
+        }
+        return $values;
+    }
+
+    private function build_post_token_image_urls(int $post_id, array $tokens_for_type): array
+    {
+        $urls = [];
+        foreach ($tokens_for_type as $token => $meta_key) {
+            $raw = get_post_meta($post_id, (string) $meta_key, true);
+            $attachment_id = $this->extract_attachment_id($raw);
+            if ($attachment_id <= 0) {
+                continue;
+            }
+            $url = wp_get_attachment_image_url($attachment_id, 'full');
+            if (!$url) {
+                $url = wp_get_attachment_url($attachment_id);
+            }
+            if ($url) {
+                $urls[(string) $token] = (string) $url;
+            }
+        }
+        return $urls;
+    }
+
+    private function extract_attachment_id($value): int
+    {
+        if (is_numeric($value)) {
+            return absint($value);
+        }
+        if (is_string($value) && preg_match('/^\s*\d+\s*$/', $value)) {
+            return absint(trim($value));
+        }
+        if (!is_array($value)) {
+            return 0;
+        }
+        if (isset($value['id']) && is_numeric($value['id'])) {
+            return absint($value['id']);
+        }
+        if (isset($value['ID']) && is_numeric($value['ID'])) {
+            return absint($value['ID']);
+        }
+        if (isset($value[0]) && is_numeric($value[0])) {
+            return absint($value[0]);
+        }
+        return 0;
     }
 
     private function sanitize_site_profile_values(array $schema, array $existing, array $incoming): array

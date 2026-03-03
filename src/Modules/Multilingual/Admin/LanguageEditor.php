@@ -79,6 +79,7 @@ class LanguageEditor
         if (!$current_lang) {
             $current_lang = $default_lang;
         }
+        $allow_custom_slug = (bool) get_post_meta($post->ID, '_cc_allow_custom_slug', true);
 
         $group_id = get_post_meta($post->ID, '_cc_translation_group', true);
 
@@ -90,6 +91,19 @@ class LanguageEditor
         }
         echo '</select>';
         echo '</div>';
+
+        if ($current_lang !== $default_lang) {
+            echo '<div class="cc-language-selector" style="margin-bottom: 20px;">';
+            echo '<label style="display:flex; align-items:center; gap:8px; font-weight:600;">';
+            echo '<input type="hidden" name="cc_allow_custom_slug" value="0">';
+            echo '<input type="checkbox" name="cc_allow_custom_slug" value="1" ' . checked($allow_custom_slug, true, false) . '>';
+            echo esc_html__('Allow custom slug for this translation', 'content-core');
+            echo '</label>';
+            echo '<p style="margin:6px 0 0; color:#646970; font-size:12px;">';
+            echo esc_html__('Disabled by default. When disabled, slug is auto-synced from this translation title on save.', 'content-core');
+            echo '</p>';
+            echo '</div>';
+        }
 
         if ($group_id) {
             echo '<div style="margin-bottom: 20px; padding: 10px; background: #f0f0f1; border: 1px solid #ccd0d4; border-radius: 4px;">';
@@ -162,6 +176,20 @@ class LanguageEditor
 
         if (isset($_POST['cc_language'])) {
             update_post_meta($post_id, '_cc_language', sanitize_text_field($_POST['cc_language']));
+        }
+
+        $settings = $this->module->get_settings();
+        $default_lang = sanitize_key((string) ($settings['default_lang'] ?? 'de'));
+        $current_lang = sanitize_key((string) get_post_meta($post_id, '_cc_language', true));
+        if ($current_lang === '') {
+            $current_lang = $default_lang;
+        }
+
+        if ($current_lang !== $default_lang) {
+            $allow_custom_slug = !empty($_POST['cc_allow_custom_slug']) && (string) $_POST['cc_allow_custom_slug'] === '1';
+            update_post_meta($post_id, '_cc_allow_custom_slug', $allow_custom_slug ? '1' : '0');
+        } else {
+            delete_post_meta($post_id, '_cc_allow_custom_slug');
         }
     }
 

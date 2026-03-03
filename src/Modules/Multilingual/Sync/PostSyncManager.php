@@ -31,6 +31,84 @@ class PostSyncManager
         add_action('admin_action_cc_create_translation', [$this, 'handle_create_translation']);
         add_action('wp_insert_post', [$this, 'force_default_language_on_insert'], 10, 3);
         add_action('save_post', [$this, 'handle_post_save'], 10, 2);
+        add_filter('wp_insert_post_data', [$this, 'enforce_slug_policy'], 20, 2);
+    }
+
+    /**
+     * Enforce slug lock for non-default languages unless explicit override is enabled.
+     *
+     * Rule:
+     * - Default language: unchanged.
+     * - Non-default language + no custom override: slug is derived from current title.
+     * - Non-default language + custom override enabled: keep user slug.
+     */
+    public function enforce_slug_policy(array $data, array $postarr): array
+    {
+        if (!$this->is_active()) {
+            return $data;
+        }
+
+        $post_type = sanitize_key((string) ($data['post_type'] ?? $postarr['post_type'] ?? ''));
+        if ($post_type === '' || !post_type_supports($post_type, 'cc-multilingual')) {
+            return $data;
+        }
+
+        $post_status = (string) ($data['post_status'] ?? '');
+        if ($post_status === 'auto-draft' || $post_type === 'revision') {
+            return $data;
+        }
+
+        $settings = call_user_func($this->settings_getter);
+        $default_lang = sanitize_key((string) ($settings['default_lang'] ?? 'de'));
+        $post_id = absint($postarr['ID'] ?? 0);
+
+        $lang = '';
+        if (!empty($_POST['cc_language'])) {
+            $lang = sanitize_key((string) $_POST['cc_language']);
+        }
+        if ($lang === '' && $post_id > 0) {
+            $lang = sanitize_key((string) get_post_meta($post_id, '_cc_language', true));
+        }
+        if ($lang === '') {
+            $lang = $default_lang;
+        }
+
+        if ($lang === $default_lang) {
+            return $data;
+        }
+
+        $allow_custom = false;
+        if (isset($_POST['cc_allow_custom_slug']) && (string) $_POST['cc_allow_custom_slug'] === '1') {
+            $allow_custom = true;
+        } elseif ($post_id > 0) {
+            $allow_custom = (bool) get_post_meta($post_id, '_cc_allow_custom_slug', true);
+        }
+
+        if ($allow_custom) {
+            return $data;
+        }
+
+        $title = (string) ($data['post_title'] ?? $postarr['post_title'] ?? '');
+        if ($title === '') {
+            return $data;
+        }
+
+        $desired_slug = sanitize_title($title);
+        if ($desired_slug === '') {
+            return $data;
+        }
+
+        $parent_id = absint($postarr['post_parent'] ?? 0);
+        $unique_slug = wp_unique_post_slug(
+            $desired_slug,
+            $post_id,
+            $post_status !== '' ? $post_status : 'draft',
+            $post_type,
+            $parent_id
+        );
+
+        $data['post_name'] = $unique_slug;
+        return $data;
     }
 
     /**
@@ -131,6 +209,40 @@ class PostSyncManager
         // Ensure translation group ID
         if (!get_post_meta($post_id, '_cc_translation_group', true)) {
             update_post_meta($post_id, '_cc_translation_group', wp_generate_uuid4());
+        }
+
+        // Enforce slug lock on non-default language posts unless explicit custom override is enabled.
+        $settings = call_user_func($this->settings_getter);
+        $default_lang = sanitize_key((string) ($settings['default_lang'] ?? 'de'));
+        $current_lang = sanitize_key((string) get_post_meta($post_id, '_cc_language', true));
+        if ($current_lang === '') {
+            $current_lang = $default_lang;
+        }
+
+        if ($current_lang !== $default_lang) {
+            $allow_custom_slug = (bool) get_post_meta($post_id, '_cc_allow_custom_slug', true);
+            if (!$allow_custom_slug) {
+                $desired_slug = sanitize_title((string) $post->post_title);
+                if ($desired_slug !== '') {
+                    $unique_slug = wp_unique_post_slug(
+                        $desired_slug,
+                        $post_id,
+                        $post->post_status,
+                        $post->post_type,
+                        $post->post_parent
+                    );
+
+                    if ($unique_slug !== (string) $post->post_name) {
+                        // Prevent recursion for this forced slug sync update.
+                        remove_action('save_post', [$this, 'handle_post_save'], 10, 2);
+                        wp_update_post([
+                            'ID' => $post_id,
+                            'post_name' => $unique_slug,
+                        ]);
+                        add_action('save_post', [$this, 'handle_post_save'], 10, 2);
+                    }
+                }
+            }
         }
 
         // Auto-generate slug if empty and title exists

@@ -215,7 +215,10 @@ class DiagnosticsRenderer
                         </div>
                         <div class="cc-card-body">
                             <div class="cc-data-list">
-                                <?php foreach ($this->build_fresh_install_checks($subsystems) as $check): ?>
+                                <?php
+                                $fresh_checks = $this->build_fresh_install_checks($subsystems);
+                                foreach ($fresh_checks as $check):
+                                    ?>
                                     <div class="cc-data-item">
                                         <span class="cc-data-label-sm"><?php echo esc_html($check['label']); ?></span>
                                         <span class="cc-status-pill cc-status-<?php echo esc_attr($check['status']); ?>">
@@ -357,79 +360,100 @@ class DiagnosticsRenderer
 
     private function build_fresh_install_checks(array $subsystems): array
     {
-        $checks = [];
-        $settings_module = \ContentCore\Plugin::get_instance()->get_module('settings');
-        $rest_ok = !empty($subsystems['rest_api']['data']['namespace_registered']);
-        $routes = (int) ($subsystems['rest_api']['data']['route_count'] ?? 0);
+        try {
+            $checks = [];
+            $settings_module = \ContentCore\Plugin::get_instance()->get_module('settings');
+            $rest_data = is_array($subsystems['rest_api']['data'] ?? null) ? $subsystems['rest_api']['data'] : [];
+            $rest_ok = !empty($rest_data['namespace_registered']);
+            $routes = (int) ($rest_data['route_count'] ?? 0);
 
-        $checks[] = [
-            'label' => __('REST namespace', 'content-core'),
-            'status' => $rest_ok ? 'healthy' : 'critical',
-            'detail' => $rest_ok ? sprintf(__('%d routes registered', 'content-core'), $routes) : __('Namespace missing', 'content-core'),
-        ];
+            $checks[] = [
+                'label' => __('REST namespace', 'content-core'),
+                'status' => $rest_ok ? 'healthy' : 'critical',
+                'detail' => $rest_ok ? sprintf(__('%d routes registered', 'content-core'), $routes) : __('Namespace missing', 'content-core'),
+            ];
 
-        $keys = [
-            \ContentCore\Modules\Settings\SettingsModule::SEO_KEY,
-            \ContentCore\Modules\Settings\SettingsModule::COOKIE_KEY,
-            'cc_site_images',
-            'cc_languages_settings',
-        ];
+            $keys = [
+                \ContentCore\Modules\Settings\SettingsModule::SEO_KEY,
+                \ContentCore\Modules\Settings\SettingsModule::COOKIE_KEY,
+                'cc_site_images',
+                'cc_languages_settings',
+            ];
 
-        $schema_ok = true;
-        foreach ($keys as $key) {
-            if (!($settings_module instanceof \ContentCore\Modules\Settings\SettingsModule)) {
-                $schema_ok = false;
-                break;
+            $schema_ok = true;
+            foreach ($keys as $key) {
+                if (!($settings_module instanceof \ContentCore\Modules\Settings\SettingsModule)) {
+                    $schema_ok = false;
+                    break;
+                }
+                $schema = $settings_module->get_registry()->get_schema($key);
+                if (!is_array($schema) || !isset($schema['default']) || !is_array($schema['default'])) {
+                    $schema_ok = false;
+                    break;
+                }
             }
-            $schema = $settings_module->get_registry()->get_schema($key);
-            if (!is_array($schema) || !isset($schema['default']) || !is_array($schema['default'])) {
-                $schema_ok = false;
-                break;
+
+            $checks[] = [
+                'label' => __('Settings defaults', 'content-core'),
+                'status' => $schema_ok ? 'healthy' : 'critical',
+                'detail' => $schema_ok ? __('All core settings have defaults', 'content-core') : __('Missing schema/defaults', 'content-core'),
+            ];
+
+            $plugin_dir = '';
+            if (defined('CONTENT_CORE_PLUGIN_DIR')) {
+                $plugin_dir = (string) constant('CONTENT_CORE_PLUGIN_DIR');
+            } elseif (defined('CONTENT_CORE_PLUGIN_FILE')) {
+                $plugin_dir = plugin_dir_path((string) constant('CONTENT_CORE_PLUGIN_FILE'));
             }
-        }
-
-        $checks[] = [
-            'label' => __('Settings defaults', 'content-core'),
-            'status' => $schema_ok ? 'healthy' : 'critical',
-            'detail' => $schema_ok ? __('All core settings have defaults', 'content-core') : __('Missing schema/defaults', 'content-core'),
-        ];
-
-        $asset_paths = [
-            \CONTENT_CORE_PATH . 'assets/js/toast.js',
-            \CONTENT_CORE_PATH . 'assets/js/settings.js',
-            \CONTENT_CORE_PATH . 'assets/css/admin.css',
-        ];
-        $assets_ok = true;
-        foreach ($asset_paths as $path) {
-            if (!file_exists($path)) {
-                $assets_ok = false;
-                break;
+            if ($plugin_dir === '') {
+                $plugin_dir = trailingslashit(dirname(__DIR__, 2));
             }
+
+            $asset_paths = [
+                $plugin_dir . 'assets/js/toast.js',
+                $plugin_dir . 'assets/js/settings.js',
+                $plugin_dir . 'assets/css/admin.css',
+            ];
+            $assets_ok = true;
+            foreach ($asset_paths as $path) {
+                if (!file_exists($path)) {
+                    $assets_ok = false;
+                    break;
+                }
+            }
+
+            $checks[] = [
+                'label' => __('Required assets', 'content-core'),
+                'status' => $assets_ok ? 'healthy' : 'critical',
+                'detail' => $assets_ok ? __('All required files found', 'content-core') : __('One or more files missing', 'content-core'),
+            ];
+
+            $languages = get_option('cc_languages_settings', []);
+            $language_format_ok = true;
+            if (is_array($languages) && isset($languages['languages'])) {
+                $language_format_ok = is_array($languages['languages']);
+            }
+            $checks[] = [
+                'label' => __('Legacy language format', 'content-core'),
+                'status' => $language_format_ok ? 'healthy' : 'warning',
+                'detail' => $language_format_ok ? __('No legacy mismatch detected', 'content-core') : __('Languages payload requires normalization', 'content-core'),
+            ];
+
+            $checks[] = [
+                'label' => __('Permissions', 'content-core'),
+                'status' => current_user_can('manage_options') ? 'healthy' : 'critical',
+                'detail' => current_user_can('manage_options') ? __('Current user can manage plugin settings', 'content-core') : __('Missing manage_options capability', 'content-core'),
+            ];
+
+            return $checks;
+        } catch (\Throwable $e) {
+            return [
+                [
+                    'label' => __('Fresh install check error', 'content-core'),
+                    'status' => 'critical',
+                    'detail' => $e->getMessage(),
+                ],
+            ];
         }
-
-        $checks[] = [
-            'label' => __('Required assets', 'content-core'),
-            'status' => $assets_ok ? 'healthy' : 'critical',
-            'detail' => $assets_ok ? __('All required files found', 'content-core') : __('One or more files missing', 'content-core'),
-        ];
-
-        $languages = get_option('cc_languages_settings', []);
-        $language_format_ok = true;
-        if (is_array($languages) && isset($languages['languages'])) {
-            $language_format_ok = is_array($languages['languages']);
-        }
-        $checks[] = [
-            'label' => __('Legacy language format', 'content-core'),
-            'status' => $language_format_ok ? 'healthy' : 'warning',
-            'detail' => $language_format_ok ? __('No legacy mismatch detected', 'content-core') : __('Languages payload requires normalization', 'content-core'),
-        ];
-
-        $checks[] = [
-            'label' => __('Permissions', 'content-core'),
-            'status' => current_user_can('manage_options') ? 'healthy' : 'critical',
-            'detail' => current_user_can('manage_options') ? __('Current user can manage plugin settings', 'content-core') : __('Missing manage_options capability', 'content-core'),
-        ];
-
-        return $checks;
     }
 }

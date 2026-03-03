@@ -10,9 +10,8 @@ class SeoModule implements ModuleInterface
      */
     public function init(): void
     {
-        add_action('add_meta_boxes', [$this, 'add_seo_meta_box']);
-        add_action('save_post', [$this, 'save_seo_meta'], 10, 2);
-        add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
+        // Post edit SEO meta box is intentionally disabled.
+        // SEO is managed centrally on the SEO settings page.
     }
 
     /**

@@ -31,7 +31,7 @@ class LegacyRedirector
                 '#redirect': 'cc-redirect',
                 '#multilingual': 'cc-multilingual',
                 '#seo': 'cc-seo',
-                '#site_images': 'cc-site-images',
+                '#site_images': 'cc-seo',
                 '#site_options': 'cc-site-options',
                 '#cookie': 'cc-cookie-banner'
             };

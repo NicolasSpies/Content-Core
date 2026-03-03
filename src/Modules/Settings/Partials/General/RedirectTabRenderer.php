@@ -2,6 +2,7 @@
 namespace ContentCore\Modules\Settings\Partials\General;
 
 use ContentCore\Modules\Settings\SettingsModule;
+use ContentCore\Modules\Settings\RedirectSettings;
 
 /**
  * Renders the Redirect Tab in General Settings.
@@ -11,6 +12,15 @@ class RedirectTabRenderer
     public static function render(SettingsModule $settings_mod): void
     {
         $red_settings = $settings_mod->get_registry()->get(SettingsModule::REDIRECT_KEY);
+        $red_defaults = RedirectSettings::get_defaults();
+        if (!is_array($red_settings)) {
+            $red_settings = [];
+        }
+        $red_settings = wp_parse_args($red_settings, $red_defaults);
+        $red_settings['exclusions'] = wp_parse_args(
+            is_array($red_settings['exclusions'] ?? null) ? $red_settings['exclusions'] : [],
+            is_array($red_defaults['exclusions'] ?? null) ? $red_defaults['exclusions'] : []
+        );
         ?>
         <div id="cc-settings-redirect">
             <!-- Card: Root Redirection -->

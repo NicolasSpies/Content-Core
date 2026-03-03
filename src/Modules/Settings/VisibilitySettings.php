@@ -271,22 +271,12 @@ class VisibilitySettings
         $args = [
             'id' => 'site-name',
             'href' => $settings['url'],
+            'meta' => [],
         ];
 
         if (!empty($settings['new_tab'])) {
-            add_action('admin_footer', function () {
-                ?>
-                <script>
-                    (function () {
-                        var el = document.querySelector('#wp-admin-bar-site-name > a');
-                        if (el) {
-                            el.setAttribute('target', '_blank');
-                            el.setAttribute('rel', 'noopener');
-                        }
-                    })();
-                </script>
-                <?php
-            });
+            $args['meta']['target'] = '_blank';
+            $args['meta']['rel'] = 'noopener noreferrer';
         }
 
         $wp_admin_bar->add_node($args);

@@ -43,6 +43,7 @@ class MenuCategorizer
                 continue;
 
             $clean = wp_strip_all_tags($title);
+            $clean = $this->normalize_display_text($clean);
             if (empty($clean))
                 continue;
 
@@ -55,6 +56,23 @@ class MenuCategorizer
         }
 
         return $items;
+    }
+
+    private function normalize_display_text(string $text): string
+    {
+        $value = trim((string) $text);
+        if ($value === '') {
+            return '';
+        }
+        for ($i = 0; $i < 3; $i++) {
+            $decoded = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if ($decoded === $value) {
+                break;
+            }
+            $value = $decoded;
+        }
+        $value = str_replace("\xc2\xa0", ' ', $value);
+        return trim($value);
     }
 
     /**

@@ -320,12 +320,16 @@ class RestApiModule implements ModuleInterface
      */
     public function get_v1_seo(\WP_REST_Request $request): \WP_REST_Response
     {
-        $seo_settings = get_option(\ContentCore\Modules\Settings\SettingsModule::SEO_KEY, []);
-
-        $title = $seo_settings['site_title'] ?? '';
-        $description = $seo_settings['default_description'] ?? '';
+        $seo_settings = $this->get_normalized_seo_settings();
+        $global = $seo_settings['global'] ?? [];
+        $title = (string) ($global['title'] ?? '');
+        $description = (string) ($global['description'] ?? '');
 
         $image_url = function_exists('cc_get_default_og_image_url') ? cc_get_default_og_image_url() : null;
+        $global_og_id = absint($global['og_image_id'] ?? 0);
+        if ($global_og_id > 0) {
+            $image_url = wp_get_attachment_image_url($global_og_id, 'full') ?: wp_get_attachment_url($global_og_id) ?: $image_url;
+        }
 
         $data = [
             'site_title' => $title,
@@ -388,11 +392,15 @@ class RestApiModule implements ModuleInterface
     private function prepare_post_v1_data(\WP_Post $post, \WP_REST_Request $request): array
     {
         $post_id = $post->ID;
-
-        // ── Fetch Global SEO Defaults ──
-        $site_seo = get_option(\ContentCore\Modules\Settings\SettingsModule::SEO_KEY, []);
-        $global_title = $site_seo['site_title'] ?? get_bloginfo('name');
-        $global_desc = $site_seo['default_description'] ?? '';
+        $site_seo = $this->get_normalized_seo_settings();
+        $global = is_array($site_seo['global'] ?? null) ? $site_seo['global'] : [];
+        $global_title = (string) ($global['title'] ?? get_bloginfo('name'));
+        $global_desc = (string) ($global['description'] ?? '');
+        $global_separator = '';
+        $global_title_template = (string) ($global['title_template'] ?? '{page} {site}');
+        $global_robots = (string) ($global['robots'] ?? 'index,follow');
+        $global_canonical = (string) ($global['canonical_url'] ?? '');
+        $global_og_id = absint($global['og_image_id'] ?? 0);
 
         // ── Fetch Post-level Meta ──
         $meta_title = get_post_meta($post_id, 'cc_seo_title', true);
@@ -400,22 +408,75 @@ class RestApiModule implements ModuleInterface
         $meta_img_id = get_post_meta($post_id, 'cc_seo_og_image_id', true);
         $noindex = get_post_meta($post_id, 'cc_seo_noindex', true);
 
-        // ── Compute Title ──
-        $seo_title = !empty($meta_title) ? $meta_title : $post->post_title . ' | ' . $global_title;
+        $page_overrides = is_array($site_seo['page_overrides'] ?? null) ? $site_seo['page_overrides'] : [];
+        $page_override = is_array($page_overrides[(string) $post_id] ?? null) ? $page_overrides[(string) $post_id] : [];
 
-        // ── Compute Description ──
-        $seo_desc = !empty($meta_desc) ? $meta_desc : $global_desc;
+        $templates = is_array($site_seo['post_type_templates'] ?? null) ? $site_seo['post_type_templates'] : [];
+        $template = is_array($templates[$post->post_type] ?? null) ? $templates[$post->post_type] : [];
+
+        $template_title = $this->render_seo_template((string) ($template['title_template'] ?? ''), $post, $global_separator, $global_title);
+        $template_desc = $this->render_seo_template((string) ($template['description_template'] ?? ''), $post, $global_separator, $global_title);
+        $template_canonical = $this->render_seo_template((string) ($template['canonical_template'] ?? ''), $post, $global_separator, $global_title);
+        $template_og_id = absint($template['og_image_id'] ?? 0);
+        $template_og_token = (string) ($template['og_image_token'] ?? '');
+        $template_robots = (string) ($template['robots'] ?? '');
+
+        $global_computed_title = $this->render_seo_template($global_title_template, $post, $global_separator, $global_title);
+        if ($global_computed_title === '') {
+            $global_computed_title = $post->post_title . ' | ' . $global_title;
+        }
+
+        // Priority: page override > post meta > post type template > global
+        $seo_title = $this->first_non_empty([
+            (string) ($page_override['title'] ?? ''),
+            (string) $meta_title,
+            $template_title,
+            $global_computed_title,
+        ]);
+
+        $seo_desc = $this->first_non_empty([
+            (string) ($page_override['description'] ?? ''),
+            (string) $meta_desc,
+            $template_desc,
+            $global_desc,
+        ]);
 
         // ── Compute OG Image URL ──
         $og_image_url = null;
-        if (!empty($meta_img_id)) {
-            $og_image_url = wp_get_attachment_url(absint($meta_img_id)) ?: null;
+        $selected_og_id = absint($page_override['og_image_id'] ?? 0);
+        if ($selected_og_id <= 0) {
+            $selected_og_id = absint($meta_img_id);
+        }
+        if ($selected_og_id <= 0) {
+            $selected_og_id = $this->resolve_seo_image_id_from_token($template_og_token, $post);
+        }
+        if ($selected_og_id <= 0) {
+            $selected_og_id = $template_og_id;
+        }
+        if ($selected_og_id <= 0) {
+            $selected_og_id = $global_og_id;
+        }
+
+        if ($selected_og_id > 0) {
+            $og_image_url = wp_get_attachment_url($selected_og_id) ?: null;
         } elseif (function_exists('cc_get_default_og_image_url')) {
             $og_image_url = cc_get_default_og_image_url() ?: null;
         }
 
-        // ── Compute Robots ──
-        $robots = !empty($noindex) ? 'noindex,nofollow' : 'index,follow';
+        $robots = $this->first_non_empty([
+            !empty($page_override['robots']) ? (string) $page_override['robots'] : '',
+            !empty($noindex) ? 'noindex,nofollow' : '',
+            $template_robots,
+            $global_robots,
+            'index,follow',
+        ]);
+
+        $canonical = $this->first_non_empty([
+            (string) ($page_override['canonical_url'] ?? ''),
+            $template_canonical,
+            $global_canonical,
+            get_permalink($post_id) ?: '',
+        ]);
 
         return [
             'id' => $post_id,
@@ -429,9 +490,156 @@ class RestApiModule implements ModuleInterface
                 'description' => $seo_desc,
                 'og_image_url' => $og_image_url,
                 'robots' => $robots,
+                'canonical' => $canonical,
             ],
             'customFields' => $this->get_custom_fields_value_internal($post, $request),
         ];
+    }
+
+    private function get_normalized_seo_settings(): array
+    {
+        $seo = get_option(\ContentCore\Modules\Settings\SettingsModule::SEO_KEY, []);
+        if (!is_array($seo)) {
+            $seo = [];
+        }
+
+        $global = isset($seo['global']) && is_array($seo['global']) ? $seo['global'] : [];
+        if (empty($global)) {
+            $global = [
+                'title' => $seo['title'] ?? ($seo['site_title'] ?? get_bloginfo('name')),
+                'description' => $seo['description'] ?? ($seo['default_description'] ?? ''),
+                'title_separator' => $seo['title_separator'] ?? '—',
+                'title_template' => $seo['title_template'] ?? '{page} {site}',
+                'robots' => 'index,follow',
+                'canonical_url' => '',
+                'og_image_id' => 0,
+            ];
+        }
+
+        $seo['global'] = $global;
+        $seo['page_overrides'] = isset($seo['page_overrides']) && is_array($seo['page_overrides']) ? $seo['page_overrides'] : [];
+        $seo['post_type_templates'] = isset($seo['post_type_templates']) && is_array($seo['post_type_templates']) ? $seo['post_type_templates'] : [];
+        return $seo;
+    }
+
+    private function first_non_empty(array $values): string
+    {
+        foreach ($values as $value) {
+            $value = is_string($value) ? trim($value) : '';
+            if ($value !== '') {
+                return $value;
+            }
+        }
+        return '';
+    }
+
+    private function render_seo_template(string $template, \WP_Post $post, string $separator, string $site_title): string
+    {
+        $template = trim($template);
+        if ($template === '') {
+            return '';
+        }
+
+        $author_name = '';
+        if ((int) $post->post_author > 0) {
+            $author_name = (string) get_the_author_meta('display_name', (int) $post->post_author);
+        }
+
+        $excerpt = has_excerpt($post) ? (string) get_the_excerpt($post) : '';
+        if ($excerpt === '') {
+            $excerpt = wp_strip_all_tags((string) $post->post_content);
+            $excerpt = wp_trim_words($excerpt, 30, '…');
+        }
+
+        $featured_image = '';
+        $thumb_id = (int) get_post_thumbnail_id((int) $post->ID);
+        if ($thumb_id > 0) {
+            $featured_image = (string) (wp_get_attachment_image_url($thumb_id, 'full') ?: wp_get_attachment_url($thumb_id) ?: '');
+        }
+
+        $replacements = [
+            'title' => (string) $post->post_title,
+            'page' => (string) $post->post_title,
+            'excerpt' => $excerpt,
+            'slug' => (string) $post->post_name,
+            'date' => mysql2date(get_option('date_format') ?: 'Y-m-d', (string) $post->post_date),
+            'author' => $author_name,
+            'site' => $site_title,
+            'separator' => $separator,
+            'featured_image' => $featured_image,
+        ];
+
+        $custom_fields = \ContentCore\Modules\CustomFields\Data\FieldRegistry::get_fields_for_context(['post_type' => $post->post_type]);
+        foreach ($custom_fields as $field_name => $schema) {
+            $name = sanitize_key((string) $field_name);
+            if ($name === '') {
+                continue;
+            }
+            $value = get_post_meta((int) $post->ID, $name, true);
+            if (is_scalar($value)) {
+                $replacements['field.' . $name] = (string) $value;
+            } else {
+                $replacements['field.' . $name] = '';
+            }
+        }
+
+        $out = preg_replace_callback('/\{([a-zA-Z0-9._-]+)\}/', function (array $m) use ($replacements) {
+            $key = strtolower((string) ($m[1] ?? ''));
+            return $replacements[$key] ?? '';
+        }, $template);
+
+        return trim((string) $out);
+    }
+
+    private function resolve_seo_image_id_from_token(string $token, \WP_Post $post): int
+    {
+        $token = trim($token);
+        if ($token === '') {
+            return 0;
+        }
+        if (strlen($token) > 2 && $token[0] === '{' && substr($token, -1) === '}') {
+            $token = substr($token, 1, -1);
+        }
+
+        if (strpos($token, 'field.') === 0) {
+            $field_name = sanitize_key((string) substr($token, strlen('field.')));
+            if ($field_name === '') {
+                return 0;
+            }
+            $value = get_post_meta((int) $post->ID, $field_name, true);
+            if (is_numeric($value)) {
+                return absint($value);
+            }
+            if (is_array($value)) {
+                if (isset($value['id']) && is_numeric($value['id'])) {
+                    return absint($value['id']);
+                }
+                if (isset($value['ID']) && is_numeric($value['ID'])) {
+                    return absint($value['ID']);
+                }
+                if (isset($value[0]) && is_numeric($value[0])) {
+                    return absint($value[0]);
+                }
+            }
+            if (is_string($value) && preg_match('/^\s*\d+\s*$/', $value)) {
+                return absint(trim($value));
+            }
+            return 0;
+        }
+
+        if (strpos($token, 'site_image.') === 0) {
+            $image_key = sanitize_key((string) substr($token, strlen('site_image.')));
+            if ($image_key === '' || substr($image_key, -3) !== '_id') {
+                return 0;
+            }
+            $images = get_option('cc_site_images', []);
+            if (!is_array($images)) {
+                return 0;
+            }
+            return absint($images[$image_key] ?? 0);
+        }
+
+        return 0;
     }
 
     /**

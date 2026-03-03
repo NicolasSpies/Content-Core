@@ -7,6 +7,8 @@ class BrandingTabRenderer
 {
     public static function render(SettingsModule $settings_mod): void
     {
+        wp_enqueue_media();
+
         $settings = $settings_mod->get_registry()->get('cc_branding_settings');
         if (!is_array($settings)) {
             $settings = [];
@@ -15,18 +17,17 @@ class BrandingTabRenderer
         $enabled = !empty($settings['enabled']);
         $exclude_admins = !empty($settings['exclude_admins']);
         $remove_wp_mentions = !empty($settings['remove_wp_mentions']);
-        $primary = (string) ($settings['custom_primary_color'] ?? '#1e1e1e');
-        $accent = (string) ($settings['custom_accent_color'] ?? '#2271b1');
-        $login_bg = (string) ($settings['login_bg_color'] ?? '#0A0A0A');
-        $login_btn = (string) ($settings['login_btn_color'] ?? '#2271b1');
-        $use_site_icon_for_admin_bar = !empty($settings['use_site_icon_for_admin_bar']);
+        $primary = (string) ($settings['custom_primary_color'] ?? $settings['login_bg_color'] ?? '#1e1e1e');
+        $accent = (string) ($settings['custom_accent_color'] ?? $settings['login_btn_color'] ?? '#2271b1');
         $footer = (string) ($settings['custom_footer_text'] ?? '');
         $login_logo = $settings['login_logo'] ?? '';
         $login_logo_url = (string) ($settings['login_logo_url'] ?? '');
-        $login_logo_link_url = (string) ($settings['login_logo_link_url'] ?? '');
-        $admin_bar_logo = $settings['admin_bar_logo'] ?? '';
-        $admin_bar_logo_url = (string) ($settings['admin_bar_logo_url'] ?? '');
-        $admin_bar_logo_link_url = (string) ($settings['admin_bar_logo_link_url'] ?? '');
+        if ($login_logo_url === '' && is_numeric($login_logo) && (int) $login_logo > 0) {
+            $resolved = wp_get_attachment_image_url((int) $login_logo, 'full');
+            if ($resolved) {
+                $login_logo_url = (string) $resolved;
+            }
+        }
         ?>
         <div id="cc-settings-branding">
             <div class="cc-card">
@@ -69,77 +70,34 @@ class BrandingTabRenderer
                         </div>
 
                         <div class="cc-field">
-                            <label class="cc-field-label"><?php _e('Admin Bar Background', 'content-core'); ?></label>
-                            <input type="color" name="cc_branding_settings[custom_primary_color]" value="<?php echo esc_attr($primary); ?>">
+                            <label class="cc-field-label"><?php _e('Background Color', 'content-core'); ?></label>
+                            <input type="color" name="cc_branding_settings[custom_primary_color]" value="<?php echo esc_attr($primary); ?>" class="cc-branding-background-color">
+                            <input type="hidden" name="cc_branding_settings[login_bg_color]" value="<?php echo esc_attr($primary); ?>" class="cc-branding-login-bg-sync">
                         </div>
 
                         <div class="cc-field">
                             <label class="cc-field-label"><?php _e('Accent Color', 'content-core'); ?></label>
-                            <input type="color" name="cc_branding_settings[custom_accent_color]" value="<?php echo esc_attr($accent); ?>">
-                        </div>
-
-                        <div class="cc-field">
-                            <label class="cc-field-label"><?php _e('Login Button Color', 'content-core'); ?></label>
-                            <input type="color" name="cc_branding_settings[login_btn_color]" value="<?php echo esc_attr($login_btn); ?>">
-                        </div>
-
-                        <div class="cc-field">
-                            <label class="cc-field-label"><?php _e('Login Background Color', 'content-core'); ?></label>
-                            <input type="color" name="cc_branding_settings[login_bg_color]" value="<?php echo esc_attr($login_bg); ?>">
+                            <input type="color" name="cc_branding_settings[custom_accent_color]" value="<?php echo esc_attr($accent); ?>" class="cc-branding-accent-color">
+                            <input type="hidden" name="cc_branding_settings[login_btn_color]" value="<?php echo esc_attr($accent); ?>" class="cc-branding-login-btn-sync">
                         </div>
 
                         <div class="cc-field" style="grid-column:1 / -1;">
                             <label class="cc-field-label"><?php _e('Login Logo', 'content-core'); ?></label>
+                            <input type="hidden" name="cc_branding_settings[login_logo_link_url]" value="">
+                            <input type="hidden" name="cc_branding_settings[use_site_icon_for_admin_bar]" value="1">
+                            <input type="hidden" name="cc_branding_settings[admin_bar_logo]" value="">
+                            <input type="hidden" name="cc_branding_settings[admin_bar_logo_url]" value="">
+                            <input type="hidden" name="cc_branding_settings[admin_bar_logo_link_url]" value="">
                             <div class="cc-field-input">
                                 <input type="hidden" name="cc_branding_settings[login_logo]" value="<?php echo esc_attr((string) $login_logo); ?>" class="cc-media-target-id">
-                                <input type="url" name="cc_branding_settings[login_logo_url]" value="<?php echo esc_attr($login_logo_url); ?>" class="cc-media-target-url" placeholder="https://">
+                                <input type="hidden" name="cc_branding_settings[login_logo_url]" value="<?php echo esc_attr($login_logo_url); ?>" class="cc-media-target-url">
                             </div>
-                            <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
-                                <button type="button" class="cc-button-secondary cc-open-media"><?php _e('Select Logo', 'content-core'); ?></button>
+                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
+                                <button type="button" class="cc-button-secondary cc-open-media"><?php echo $login_logo_url !== '' ? esc_html__('Replace Logo', 'content-core') : esc_html__('Select Logo', 'content-core'); ?></button>
                                 <button type="button" class="cc-button-secondary cc-clear-media"><?php _e('Remove Logo', 'content-core'); ?></button>
                             </div>
-                            <div class="cc-media-preview-wrap" style="margin-top:10px;">
-                                <img class="cc-media-preview" src="<?php echo esc_url($login_logo_url); ?>" alt="" style="<?php echo $login_logo_url !== '' ? 'max-height:48px;display:block;' : 'display:none;'; ?>">
-                            </div>
-                        </div>
-
-                        <div class="cc-field" style="grid-column:1 / -1;">
-                            <label class="cc-field-label"><?php _e('Login Logo Link URL', 'content-core'); ?></label>
-                            <div class="cc-field-input">
-                                <input type="url" name="cc_branding_settings[login_logo_link_url]" value="<?php echo esc_attr($login_logo_link_url); ?>" placeholder="https://">
-                            </div>
-                        </div>
-
-                        <div class="cc-field">
-                            <label class="cc-field-label"><?php _e('Use Site Icon For Admin Bar', 'content-core'); ?></label>
-                            <div class="cc-toggle-wrap">
-                                <label class="cc-toggle">
-                                    <input type="hidden" name="cc_branding_settings[use_site_icon_for_admin_bar]" value="0">
-                                    <input type="checkbox" name="cc_branding_settings[use_site_icon_for_admin_bar]" value="1" <?php checked($use_site_icon_for_admin_bar); ?>>
-                                    <span class="cc-slider"></span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="cc-field" style="grid-column:1 / -1;">
-                            <label class="cc-field-label"><?php _e('Admin Bar Logo', 'content-core'); ?></label>
-                            <div class="cc-field-input">
-                                <input type="hidden" name="cc_branding_settings[admin_bar_logo]" value="<?php echo esc_attr((string) $admin_bar_logo); ?>" class="cc-media-target-id">
-                                <input type="url" name="cc_branding_settings[admin_bar_logo_url]" value="<?php echo esc_attr($admin_bar_logo_url); ?>" class="cc-media-target-url" placeholder="https://">
-                            </div>
-                            <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
-                                <button type="button" class="cc-button-secondary cc-open-media"><?php _e('Select Logo', 'content-core'); ?></button>
-                                <button type="button" class="cc-button-secondary cc-clear-media"><?php _e('Remove Logo', 'content-core'); ?></button>
-                            </div>
-                            <div class="cc-media-preview-wrap" style="margin-top:10px;">
-                                <img class="cc-media-preview" src="<?php echo esc_url($admin_bar_logo_url); ?>" alt="" style="<?php echo $admin_bar_logo_url !== '' ? 'max-height:36px;display:block;' : 'display:none;'; ?>">
-                            </div>
-                        </div>
-
-                        <div class="cc-field" style="grid-column:1 / -1;">
-                            <label class="cc-field-label"><?php _e('Admin Bar Logo Link URL', 'content-core'); ?></label>
-                            <div class="cc-field-input">
-                                <input type="url" name="cc_branding_settings[admin_bar_logo_link_url]" value="<?php echo esc_attr($admin_bar_logo_link_url); ?>" placeholder="https://">
+                            <div class="cc-media-preview-wrap" style="margin-top:10px;min-height:56px;">
+                                <img class="cc-media-preview" src="<?php echo esc_url($login_logo_url); ?>" alt="" style="<?php echo $login_logo_url !== '' ? 'max-height:56px;max-width:220px;display:block;' : 'display:none;'; ?>">
                             </div>
                         </div>
 
@@ -171,8 +129,7 @@ class BrandingTabRenderer
                         var frame = wp.media({
                             title: '<?php echo esc_js(__('Select Image', 'content-core')); ?>',
                             button: {text: '<?php echo esc_js(__('Use this image', 'content-core')); ?>'},
-                            multiple: false,
-                            library: {type: 'image'}
+                            multiple: false
                         });
 
                         frame.on('select', function () {
@@ -185,6 +142,7 @@ class BrandingTabRenderer
                             } else {
                                 $preview.hide();
                             }
+                            $group.find('.cc-open-media').text('<?php echo esc_js(__('Replace Logo', 'content-core')); ?>');
                         });
 
                         frame.open();
@@ -196,6 +154,16 @@ class BrandingTabRenderer
                         $group.find('.cc-media-target-id').val('');
                         $group.find('.cc-media-target-url').val('');
                         $group.find('.cc-media-preview').attr('src', '').hide();
+                        $group.find('.cc-open-media').text('<?php echo esc_js(__('Select Logo', 'content-core')); ?>');
+                    });
+
+                $(document)
+                    .off('change.ccBrandingColors', '#cc-settings-branding .cc-branding-background-color, #cc-settings-branding .cc-branding-accent-color')
+                    .on('change.ccBrandingColors', '#cc-settings-branding .cc-branding-background-color, #cc-settings-branding .cc-branding-accent-color', function () {
+                        var bg = $('#cc-settings-branding .cc-branding-background-color').val() || '#1e1e1e';
+                        var accent = $('#cc-settings-branding .cc-branding-accent-color').val() || '#2271b1';
+                        $('#cc-settings-branding .cc-branding-login-bg-sync').val(bg);
+                        $('#cc-settings-branding .cc-branding-login-btn-sync').val(accent);
                     });
             })(jQuery);
         </script>

@@ -54,8 +54,12 @@ class BrandingInjector
             return;
         }
 
-        $accent = !empty($settings['login_btn_color']) ? sanitize_hex_color($settings['login_btn_color']) : '#2271b1';
-        $bg = !empty($settings['login_bg_color']) ? sanitize_hex_color($settings['login_bg_color']) : '#0f172a';
+        $accent = !empty($settings['custom_accent_color'])
+            ? sanitize_hex_color($settings['custom_accent_color'])
+            : (!empty($settings['login_btn_color']) ? sanitize_hex_color($settings['login_btn_color']) : '#2271b1');
+        $bg = !empty($settings['custom_primary_color'])
+            ? sanitize_hex_color($settings['custom_primary_color'])
+            : (!empty($settings['login_bg_color']) ? sanitize_hex_color($settings['login_bg_color']) : '#0f172a');
 
         // 1. Branding Module Logo (Attachment ID or URL)
         $logo_url = '';
@@ -319,7 +323,15 @@ class BrandingInjector
                 $logo_img_url = wp_get_attachment_image_url($site_icon_id, 'full');
             }
         } elseif ($custom_logo) {
-            $logo_img_url = wp_get_attachment_image_url($settings['admin_bar_logo'], 'full');
+            $admin_logo = $settings['admin_bar_logo'];
+            if (is_numeric($admin_logo) && (int) $admin_logo > 0) {
+                $logo_img_url = wp_get_attachment_image_url((int) $admin_logo, 'full') ?: wp_get_attachment_url((int) $admin_logo);
+            } elseif (is_string($admin_logo) && $admin_logo !== '') {
+                $logo_img_url = $admin_logo;
+            }
+            if (!$logo_img_url && !empty($settings['admin_bar_logo_url'])) {
+                $logo_img_url = esc_url_raw((string) $settings['admin_bar_logo_url']);
+            }
         }
 
         if ($logo_img_url) {

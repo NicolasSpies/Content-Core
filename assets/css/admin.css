@@ -22,9 +22,9 @@
     --cc-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.05);
 
     /* Spacing (Unified) */
-    --cc-spacing-card: 32px;
-    --cc-spacing-header: 20px;
-    --cc-spacing-field: 24px;
+    --cc-spacing-card: 20px;
+    --cc-spacing-header: 14px;
+    --cc-spacing-field: 16px;
 
     /* Success/Error colors */
     --cc-success: #008a20;
@@ -39,7 +39,7 @@
 .content-core-admin {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
     color: var(--cc-text);
-    margin: 24px 20px 60px 0;
+    margin: 16px 20px 30px 0;
     /* Align with WP side menu offset */
     width: auto;
     max-width: none;
@@ -57,7 +57,7 @@
 .cc-page-description {
     font-size: 14px;
     color: var(--cc-text-muted);
-    margin: 0 0 32px 0;
+    margin: 0 0 18px 0;
     max-width: 800px;
     line-height: 1.5;
 }
@@ -68,7 +68,7 @@
     border: 1px solid var(--cc-border);
     border-radius: var(--cc-radius);
     box-shadow: var(--cc-shadow);
-    margin-bottom: 32px;
+    margin-bottom: 18px;
     overflow: hidden;
     width: 100%;
 }
@@ -94,6 +94,15 @@
     gap: 10px;
 }
 
+.cc-seo-card-title {
+    margin: 0 !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    line-height: 1.2 !important;
+}
+
 .cc-card-header h2 span.dashicons {
     color: var(--cc-accent-color);
     font-size: 18px;
@@ -106,7 +115,7 @@
 }
 
 .cc-card-footer {
-    padding: 20px var(--cc-spacing-card);
+    padding: 12px var(--cc-spacing-card);
     background: var(--cc-bg-soft);
     border-top: 1px solid var(--cc-border-header);
     display: flex;
@@ -135,11 +144,41 @@
     align-items: center;
 }
 
+.cc-health-rest-status {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--cc-border-header);
+}
+
+.cc-health-rest-status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.cc-health-rest-meta {
+    font-size: 13px;
+    color: var(--cc-text-muted);
+}
+
+.cc-health-rest-namespace {
+    padding: 5px 10px;
+    border: 1px solid var(--cc-border);
+    border-radius: 6px;
+    background: var(--cc-bg-soft);
+    font-size: 12px;
+}
+
+.cc-health-rest-link {
+    margin-left: auto;
+}
+
 /* --- Grid System --- */
 .cc-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-    gap: 32px;
+    gap: 16px;
     width: 100%;
 }
 
@@ -180,6 +219,10 @@
         width: 100%;
         justify-content: flex-start;
         margin-top: 10px;
+    }
+
+    .cc-health-rest-link {
+        margin-left: 0;
     }
 }
 
@@ -531,7 +574,7 @@ input:checked+.cc-slider:before {
 .cc-tabs {
     display: flex;
     gap: 8px;
-    margin-bottom: 32px;
+    margin-bottom: 14px;
     border-bottom: 1px solid var(--cc-border);
     padding-bottom: 0;
 }
@@ -662,7 +705,17 @@ input:checked+.cc-slider:before {
     gap: 14px 16px;
 }
 
+.cc-card-body .cc-options-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 16px;
+}
+
 .cc-site-profile-sections .cc-option-row {
+    min-width: 0;
+}
+
+.cc-card-body .cc-option-row {
     min-width: 0;
 }
 
@@ -670,7 +723,19 @@ input:checked+.cc-slider:before {
     grid-column: 1 / -1;
 }
 
+.cc-card-body .cc-option-row-full {
+    grid-column: 1 / -1;
+}
+
 .cc-site-profile-sections .cc-option-row label {
+    display: block;
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--cc-text);
+}
+
+.cc-card-body .cc-option-row label {
     display: block;
     margin: 0 0 8px 0;
     font-size: 13px;
@@ -693,10 +758,36 @@ input:checked+.cc-slider:before {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.cc-card-body .cc-option-row input[type="text"],
+.cc-card-body .cc-option-row input[type="email"],
+.cc-card-body .cc-option-row input[type="url"],
+.cc-card-body .cc-option-row textarea,
+.cc-card-body .cc-option-row select {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--cc-border);
+    padding: 10px 12px;
+    background: #fff;
+    font-size: 14px;
+    line-height: 1.45;
+    box-shadow: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
 .cc-site-profile-sections .cc-option-row input[type="text"]:focus,
 .cc-site-profile-sections .cc-option-row input[type="email"]:focus,
 .cc-site-profile-sections .cc-option-row input[type="url"]:focus,
 .cc-site-profile-sections .cc-option-row textarea:focus {
+    border-color: var(--cc-accent-color);
+    box-shadow: 0 0 0 3px rgba(var(--cc-accent-rgb), 0.12);
+    outline: none;
+}
+
+.cc-card-body .cc-option-row input[type="text"]:focus,
+.cc-card-body .cc-option-row input[type="email"]:focus,
+.cc-card-body .cc-option-row input[type="url"]:focus,
+.cc-card-body .cc-option-row textarea:focus,
+.cc-card-body .cc-option-row select:focus {
     border-color: var(--cc-accent-color);
     box-shadow: 0 0 0 3px rgba(var(--cc-accent-rgb), 0.12);
     outline: none;
@@ -714,8 +805,231 @@ input:checked+.cc-slider:before {
     resize: vertical;
 }
 
+.cc-card-body .cc-option-row textarea {
+    min-height: 96px;
+    resize: vertical;
+}
+
+.cc-settings-panel {
+    border-radius: 10px;
+}
+
+.cc-seo-compact-panel .cc-options-grid {
+    gap: 10px 12px;
+}
+
+.cc-seo-compact-panel .cc-option-row label {
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.cc-seo-compact-panel .cc-option-row input[type="text"],
+.cc-seo-compact-panel .cc-option-row input[type="email"],
+.cc-seo-compact-panel .cc-option-row input[type="url"],
+.cc-seo-compact-panel .cc-option-row textarea,
+.cc-seo-compact-panel .cc-option-row select {
+    padding: 8px 10px;
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.cc-seo-compact-panel .cc-option-row textarea {
+    min-height: 78px;
+}
+
+.cc-seo-token-button {
+    padding: 2px 7px !important;
+    min-height: 24px !important;
+    font-size: 11px !important;
+    line-height: 1.15 !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+}
+
+.cc-seo-compact-body .cc-help {
+    margin: 0 0 6px 0;
+    font-size: 12px;
+}
+
+.cc-seo-compact-panel .cc-card {
+    margin-bottom: 10px;
+}
+
+.cc-seo-list-body {
+    background: transparent;
+    padding: 16px var(--cc-spacing-card) 16px var(--cc-spacing-card);
+    display: grid;
+    gap: 16px;
+}
+
+.cc-seo-section-block {
+    margin: 0;
+    border: 1px solid var(--cc-border-light);
+    border-radius: 10px;
+    background: var(--cc-bg-soft);
+    overflow: hidden;
+}
+
+.cc-seo-section-summary {
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 12px 14px;
+    background: var(--cc-bg-soft);
+    border-bottom: 1px solid var(--cc-border-light);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    list-style: none;
+}
+
+.cc-seo-section-summary::-webkit-details-marker {
+    display: none;
+}
+
+.cc-seo-section-summary::before {
+    content: '▸';
+    color: var(--cc-text-muted);
+    font-size: 12px;
+    line-height: 1;
+    margin-right: 8px;
+    flex: 0 0 auto;
+}
+
+.cc-seo-section-block[open] > .cc-seo-section-summary::before {
+    content: '▾';
+}
+
+.cc-seo-section-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.cc-seo-compact-body {
+    padding: 14px;
+}
+
+.cc-seo-edit-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 12px;
+    align-items: start;
+}
+
+.cc-seo-preview-col .cc-seo-page-preview-split {
+    margin-top: 0 !important;
+}
+
+.cc-seo-overview-groups {
+    display: grid;
+    gap: 10px;
+}
+
+.cc-seo-overview-group-card {
+    border: 1px solid var(--cc-border-light);
+    border-radius: 10px;
+    background: var(--cc-bg-soft);
+    padding: 10px;
+}
+
+.cc-seo-overview-group-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--cc-text);
+    margin-bottom: 8px;
+}
+
+.cc-seo-overview-entry {
+    border: 1px solid var(--cc-border-light);
+    border-radius: 8px;
+    background: #fff;
+    padding: 8px;
+}
+
+.cc-seo-overview-entry-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--cc-text);
+    margin-bottom: 8px;
+}
+
+.cc-seo-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 8px;
+}
+
+.cc-seo-overview-preview-card {
+    border: 1px solid var(--cc-border-light);
+    border-radius: 8px;
+    background: #fff;
+    padding: 8px 10px;
+}
+
+.cc-seo-overview-lang {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--cc-text-muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+.cc-seo-overview-title {
+    color: #1a0dab;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.3;
+    margin-bottom: 3px;
+}
+
+.cc-seo-overview-desc {
+    color: #4d5156;
+    font-size: 12px;
+    line-height: 1.35;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.cc-seo-overview-url {
+    color: #202124;
+    font-size: 11px;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+@media (max-width: 960px) {
+    .cc-seo-edit-layout {
+        grid-template-columns: 1fr;
+    }
+    .cc-seo-page-preview-split {
+        grid-template-columns: 1fr !important;
+    }
+    .cc-seo-overview-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 #cc-site-settings-react-root .cc-form-actions {
-    margin-top: 18px !important;
+    margin-top: 40px !important;
+}
+
+#cc-site-settings-react-root .cc-grid {
+    align-items: start;
+}
+
+#cc-site-settings-react-root .cc-card {
+    height: auto;
 }
 
 @media (max-width: 1200px) {
@@ -726,6 +1040,9 @@ input:checked+.cc-slider:before {
 
 @media (max-width: 782px) {
     .cc-site-profile-sections .cc-options-grid {
+        grid-template-columns: 1fr;
+    }
+    .cc-card-body .cc-options-grid {
         grid-template-columns: 1fr;
     }
 }

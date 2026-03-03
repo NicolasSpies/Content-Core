@@ -27,7 +27,17 @@ class TermsManagerAdmin
     public function enqueue_assets(string $hook): void
     {
         $screen = get_current_screen();
-        if (!$screen || strpos($screen->id, 'cc-manage-terms') === false) {
+        $page_slug = sanitize_key((string) ($_GET['page'] ?? ''));
+        $is_terms_page = ($page_slug === 'cc-manage-terms');
+
+        if ($screen && strpos((string) $screen->id, 'cc-manage-terms') !== false) {
+            $is_terms_page = true;
+        }
+        if (strpos($hook, 'cc-manage-terms') !== false) {
+            $is_terms_page = true;
+        }
+
+        if (!$is_terms_page) {
             return;
         }
 
