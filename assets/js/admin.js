@@ -127,9 +127,9 @@ jQuery(document).ready(function ($) {
                 html += '<div class="cc-media-uploader" data-type="' + sub.type + '">';
                 html += '<input type="hidden" name="' + fName + '" class="cc-media-id-input">';
                 html += '<div class="cc-media-preview"></div>';
-                html += '<div class="cc-media-actions" style="margin-top:10px;">';
+                html += '<div class="cc-media-actions">';
                 html += '<button type="button" class="button cc-media-upload-btn">' + bt + '</button> ';
-                html += '<button type="button" class="button cc-media-remove-btn" style="display:none;">Remove</button>';
+                html += '<button type="button" class="button cc-media-remove-btn hidden">Remove</button>';
                 html += '</div></div>';
             } else {
                 html += '<input type="text" id="' + fId + '" name="' + fName + '" class="cc-input-full">';
@@ -305,77 +305,266 @@ jQuery(document).ready(function ($) {
         if (!$menu.length) return;
 
         var $submenu = $menu.find('.wp-submenu');
-        var $headers = $submenu.find('a[href*="-root"]');
+        var $headerLinks = $submenu.find('a[href*="-root"]');
+        if (!$headerLinks.length) return;
 
-        $headers.each(function () {
+        $submenu.addClass('cc-menu-groups-ready');
+        $submenu.find('li').removeClass('cc-menu-dashboard cc-menu-group-header cc-menu-group-item');
+
+        // Dashboard row is the first explicit content-core link.
+        var $dashboardLink = $submenu.find('a[href*="page=content-core"]').first();
+        if ($dashboardLink.length) {
+            $dashboardLink.parent().addClass('cc-menu-dashboard');
+        }
+
+        $headerLinks.each(function () {
             var $header = $(this);
-            var $li = $header.parent();
-            var slug = $header.attr('href').split('page=')[1] || '';
+            var $headerLi = $header.parent();
+            var href = $header.attr('href') || '';
+            var slug = '';
+            var pagePos = href.indexOf('page=');
+            if (pagePos !== -1) {
+                slug = href.substring(pagePos + 5).split('&')[0];
+            }
+
+            $headerLi.addClass('cc-menu-group-header');
+            $header.addClass('cc-menu-header-toggle');
+
+            var $items = $();
+            var $cursor = $headerLi.next();
+            while ($cursor.length && !$cursor.find('a[href*="-root"]').length) {
+                $cursor.addClass('cc-menu-group-item');
+                $items = $items.add($cursor);
+                $cursor = $cursor.next();
+            }
+
+            var hasCurrentItem = $items.filter('.current').length > 0 || $items.find('a.current').length > 0;
             var isCollapsed = false;
 
-            // Default states
             if (slug.indexOf('cc-system-root') !== -1) {
                 isCollapsed = true;
             }
-
-            // Check localized states (from user meta)
-            if (window.ccAdmin && ccAdmin.menuState && ccAdmin.menuState[slug]) {
+            if (slug.indexOf('cc-structure-root') !== -1 || slug.indexOf('cc-settings-root') !== -1) {
+                isCollapsed = false;
+            }
+            if (window.ccAdmin && ccAdmin.menuState && typeof ccAdmin.menuState[slug] !== 'undefined') {
                 isCollapsed = ccAdmin.menuState[slug] === 'collapsed';
             }
-
-            // Mark header
-            $header.addClass('cc-menu-header-toggle');
-            if (isCollapsed) {
-                $header.addClass('is-collapsed');
+            if (hasCurrentItem) {
+                isCollapsed = false;
             }
 
-            // Toggle logic
-            $header.off('click').on('click', function (e) {
+            applySectionState($header, $items, isCollapsed);
+
+            $header.off('click.ccMenuToggle').on('click.ccMenuToggle', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
 
-                var currentlyCollapsed = $(this).hasClass('is-collapsed');
-                var newCollapsed = !currentlyCollapsed;
+                var nextCollapsed = !$header.hasClass('is-collapsed');
+                applySectionState($header, $items, nextCollapsed);
 
-                $(this).toggleClass('is-collapsed', newCollapsed);
-
-                // Persist via REST
                 if (window.wp && wp.apiFetch) {
                     wp.apiFetch({
                         path: 'content-core/v1/user-preferences/menu-state',
                         method: 'POST',
                         data: {
                             slug: slug,
-                            state: newCollapsed ? 'collapsed' : 'expanded'
+                            state: nextCollapsed ? 'collapsed' : 'expanded'
                         }
                     }).catch(function (err) {
                         console.warn('Content Core: Failed to persist menu state.', err);
                     });
                 }
-
-                toggleSectionItems($(this), newCollapsed);
             });
-
-            // Initial apply
-            if (isCollapsed) {
-                toggleSectionItems($header, true);
-            }
         });
 
-        function toggleSectionItems($header, hide) {
-            var $next = $header.parent().next();
-            while ($next.length && !$next.find('a[href*="-root"]').length) {
-                if (hide) {
-                    $next.hide();
-                } else {
-                    $next.show();
-                }
-                $next = $next.next();
-            }
+        function applySectionState($header, $items, collapsed) {
+            $header.toggleClass('is-collapsed', collapsed);
+            $header.attr('aria-expanded', collapsed ? 'false' : 'true');
+            $items.attr('hidden', collapsed ? 'hidden' : null);
         }
     }
 
+    function initSidebarSectionLabels() {
+        return;
+    }
+
+    function initTopLevelMenuToggle() {
+        var $adminMenu = $('#adminmenu');
+        if (!$adminMenu.length) return;
+
+        $adminMenu.off('click.ccTopLevelToggle', '> li.menu-top > a.menu-top');
+        $adminMenu.on('click.ccTopLevelToggle', '> li.menu-top > a.menu-top', function (e) {
+            var $link = $(this);
+            var $item = $link.parent('li.menu-top');
+            if (!$item.length) return;
+
+            // Menus intentionally flattened by CSS should keep normal click behavior.
+            if (
+                $item.is('#menu-dashboard') ||
+                $item.is('#menu-pages') ||
+                $item.is('#menu-posts') ||
+                $item.is('#menu-media') ||
+                $item.is('#menu-plugins') ||
+                $item.is('#menu-users') ||
+                $item.is('#toplevel_page_cc-site-options') ||
+                $item.is('[id^="menu-posts-"]')
+            ) {
+                return;
+            }
+
+            var $submenu = $item.children('.wp-submenu');
+            if (!$submenu.length) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            var willCollapse = !$item.hasClass('cc-submenu-collapsed');
+            if (willCollapse) {
+                $item.addClass('cc-submenu-collapsed').removeClass('opensub');
+                $link.attr('aria-expanded', 'false');
+                return;
+            }
+
+            // Accordion behavior: open one, collapse siblings with submenus.
+            $item
+                .siblings('li.menu-top')
+                .has('.wp-submenu')
+                .addClass('cc-submenu-collapsed')
+                .removeClass('opensub')
+                .children('a.menu-top')
+                .attr('aria-expanded', 'false');
+
+            $item.removeClass('cc-submenu-collapsed').addClass('opensub');
+            $link.attr('aria-expanded', 'true');
+        });
+    }
+
+    function initSidebarCollapseToggleButton() {
+        var $customToggle = $('#cc-sidebar-collapse-toggle');
+        if (!$customToggle.length) return;
+
+        $customToggle.off('click.ccSidebarCollapse').on('click.ccSidebarCollapse', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var $nativeToggle = $('#collapse-button');
+            if ($nativeToggle.length) {
+                $nativeToggle.trigger('click');
+                return;
+            }
+
+            $('body').toggleClass('folded');
+        });
+    }
+
+    function initDarkModeToggle() {
+        var $toggle = $('#cc-sidebar-account .cc-sidebar-account__switch');
+        if (!$toggle.length) return;
+
+        var body = document.body;
+        var isOn = body.classList.contains('cc-admin-theme-dark') || !!(window.ccAdmin && window.ccAdmin.darkMode);
+
+        function applyState(next) {
+            isOn = !!next;
+            body.classList.toggle('cc-admin-theme-dark', isOn);
+            $toggle.toggleClass('is-on', isOn);
+            $toggle.attr('aria-pressed', isOn ? 'true' : 'false');
+        }
+
+        applyState(isOn);
+
+        $toggle.off('click.ccDarkMode').on('click.ccDarkMode', function (e) {
+            e.preventDefault();
+            var next = !isOn;
+            applyState(next);
+
+            if (!window.ccAdmin || !ccAdmin.restUrl || !ccAdmin.nonce) return;
+            $.ajax({
+                url: String(ccAdmin.restUrl).replace(/\/$/, '') + '/user-preferences/dark-mode',
+                method: 'POST',
+                data: JSON.stringify({ enabled: next }),
+                contentType: 'application/json',
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader('X-WP-Nonce', ccAdmin.nonce);
+                }
+            }).fail(function () {
+                applyState(!next);
+            });
+        });
+    }
+
+    function initMediaLibraryInspector() {
+        var body = document.body;
+        if (!body || !body.classList.contains('upload-php')) return;
+
+        var bind = function () {
+            var sidebars = document.querySelectorAll('.media-modal .media-sidebar, .media-frame .media-sidebar');
+            sidebars.forEach(function (sidebar) {
+                var title = sidebar.querySelector('.media-frame-title h1');
+                if (title) {
+                    title.textContent = 'Asset Details';
+                }
+
+                if (!sidebar.classList.contains('cc-media-inspector-ready')) {
+                    sidebar.classList.add('cc-media-inspector-ready');
+                }
+
+                var details = sidebar.querySelector('.attachment-details');
+                if (!details) return;
+
+                var actionsRow = details.querySelector('.cc-media-field-actions');
+                if (!actionsRow) {
+                    actionsRow = document.createElement('div');
+                    actionsRow.className = 'cc-media-field-actions';
+                    actionsRow.innerHTML = '<button type="button" class="button button-primary cc-media-save">Save Changes</button><button type="button" class="button ui-button--danger cc-media-delete">Delete Asset</button>';
+                    details.appendChild(actionsRow);
+                }
+
+                var altInput = details.querySelector('.setting[data-setting="alt"] textarea, .setting[data-setting="alt"] input');
+                var titleInput = details.querySelector('.setting[data-setting="title"] input, .setting[data-setting="title"] textarea');
+                var deleteLink = details.querySelector('.delete-attachment, .delete-permanently');
+
+                var saveBtn = actionsRow.querySelector('.cc-media-save');
+                var deleteBtn = actionsRow.querySelector('.cc-media-delete');
+
+                if (saveBtn && !saveBtn.dataset.ccBound) {
+                    saveBtn.dataset.ccBound = '1';
+                    saveBtn.addEventListener('click', function () {
+                        [altInput, titleInput].forEach(function (input) {
+                            if (!input) return;
+                            input.dispatchEvent(new Event('input', { bubbles: true }));
+                            input.dispatchEvent(new Event('change', { bubbles: true }));
+                            input.blur();
+                        });
+                    });
+                }
+
+                if (deleteBtn && !deleteBtn.dataset.ccBound) {
+                    deleteBtn.dataset.ccBound = '1';
+                    deleteBtn.addEventListener('click', function () {
+                        if (deleteLink) deleteLink.click();
+                    });
+                }
+            });
+        };
+
+        bind();
+
+        var observer = new MutationObserver(function () {
+            bind();
+        });
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+    }
+
     // Delay a bit to ensure WP has rendered everything
-    setTimeout(initSidebarCollapse, 100);
+    setTimeout(function () {
+        initSidebarCollapse();
+        initSidebarSectionLabels();
+        initTopLevelMenuToggle();
+        initSidebarCollapseToggleButton();
+        initDarkModeToggle();
+        initMediaLibraryInspector();
+    }, 100);
 
 });
