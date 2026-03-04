@@ -18,6 +18,7 @@ class Assets
 
         // Register all assets as early as possible before enqueueing logic.
         add_action('admin_enqueue_scripts', [$this, 'register_all_assets'], 1);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_screen_layouts'], 10);
     }
 
     /**
@@ -37,6 +38,44 @@ class Assets
     }
 
     /**
+     * Conditionally enqueue layout packs based on the current admin screen
+     */
+    public function enqueue_screen_layouts(string $hook_suffix): void
+    {
+        $screen = get_current_screen();
+        if (!$screen)
+            return;
+
+        // Ensure base elements/tokens are loaded (required by index.css usually, but we register specific layout dependencies here if needed).
+        // Dependencies for layouts assume 'cc-admin-ui' provides the tokens/base.
+
+        // 1. List Tables
+        if (in_array($screen->base, ['edit', 'users', 'plugins', 'edit-comments'])) {
+            $this->enqueue_style('cc-admin-layout-list', 'assets/css/admin-theme/10-layout-list-tables.css', ['cc-admin-ui']);
+        }
+
+        // 2. Media Library
+        if ('upload' === $screen->base) {
+            $this->enqueue_style('cc-admin-layout-media', 'assets/css/admin-theme/11-layout-media.css', ['cc-admin-ui']);
+        }
+
+        // 3. Post Editor
+        if ('post' === $screen->base || 'post-new' === $screen->base) {
+            $this->enqueue_style('cc-admin-layout-editor', 'assets/css/admin-theme/12-layout-editor.css', ['cc-admin-ui']);
+        }
+
+        // 4. Taxonomy Terms
+        if ('edit-tags' === $screen->base || 'term' === $screen->base) {
+            $this->enqueue_style('cc-admin-layout-taxonomy', 'assets/css/admin-theme/13-layout-taxonomy.css', ['cc-admin-ui']);
+        }
+
+        // 5. Settings Pages
+        if (strpos($screen->id, 'settings_page_') !== false || strpos($screen->id, 'toplevel_page_') !== false || 'options-general' === $screen->base) {
+            $this->enqueue_style('cc-admin-layout-settings', 'assets/css/admin-theme/14-layout-settings.css', ['cc-admin-ui']);
+        }
+    }
+
+    /**
      * Helper to safely register a stylesheet
      */
     private function register_style(string $handle, string $relative_path, array $deps = []): void
@@ -44,6 +83,21 @@ class Assets
         $version = $this->asset_version($relative_path);
 
         wp_register_style(
+            $handle,
+            CONTENT_CORE_PLUGIN_URL . $relative_path,
+            $deps,
+            $version
+        );
+    }
+
+    /**
+     * Helper to safely enqueue a stylesheet using our asset versioning
+     */
+    private function enqueue_style(string $handle, string $relative_path, array $deps = []): void
+    {
+        $version = $this->asset_version($relative_path);
+
+        wp_enqueue_style(
             $handle,
             CONTENT_CORE_PLUGIN_URL . $relative_path,
             $deps,

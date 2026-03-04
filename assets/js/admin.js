@@ -3,13 +3,35 @@
  * Handles field interactions: Repeaters, Media, Galleries.
  */
 
-console.log("CC DEBUG LOADED", document.body.className);
+/* ── Blank-page tripwire (dev log only, zero DOM edits) ─────────────────────
+ * Fires once after 500ms. If .wrap has no visible height while cc-admin-theme
+ * is active, logs a diagnostic. Enabled only when WP_DEBUG is on (ccAdmin.debug).
+ */
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof ccAdmin === 'undefined' || !ccAdmin.debug) { return; }
+    setTimeout(function () {
+        if (!document.body.classList.contains('cc-admin-theme')) { return; }
+        var wrap = document.querySelector('#wpbody-content .wrap');
+        if (!wrap) { return; }
+        var h = wrap.getBoundingClientRect().height;
+        if (h < 1) {
+            var screenId = (typeof ccAdmin !== 'undefined' && ccAdmin.screenId) ? ccAdmin.screenId : 'unknown';
+            var wpbodyContent = document.getElementById('wpbody-content');
+            var wpcontent = document.getElementById('wpcontent');
+            console.error(
+                '[CC] Blank-page tripwire: .wrap has zero height on screen:', screenId,
+                '\n  .wrap computed display:', getComputedStyle(wrap).display,
+                '\n  #wpbody-content computed display:', wpbodyContent ? getComputedStyle(wpbodyContent).display : 'not found',
+                '\n  #wpcontent computed display:', wpcontent ? getComputedStyle(wpcontent).display : 'not found'
+            );
+        }
+    }, 500);
+});
+
 
 jQuery(document).ready(function ($) {
-    // 1. Annihilate any rogue split-arrows natively injected by WordPress/Polylang
-    if ($('.page-title-action').length) {
-        $('.page-title-action').nextUntil('.wp-header-end, hr, form, .notice, table, .subsubsub, #screen-meta-links, .wp-list-table, h2').remove();
-    }
+    // NOTE: split-arrow cleanup via JS DOM removal was removed.
+    // Use the scoped CSS selectors in the screen family layout packs instead.
 
     var fileFrame;
 
@@ -504,60 +526,9 @@ jQuery(document).ready(function ($) {
     function initMediaLibraryInspector() {
         var body = document.body;
         if (!body || !body.classList.contains('upload-php')) return;
-        body.classList.remove('cc-media-has-selection');
-        body.classList.remove('cc-media-bulk-mode');
 
-        var scheduled = false;
-        var rafId = 0;
-
-        var updateSelectionState = function () {
-            scheduled = false;
-            rafId = 0;
-
-            var selected = document.querySelectorAll(
-                '.media-frame .attachments-browser .attachments .attachment.selected, ' +
-                '.media-frame .attachments-browser .attachments .attachment.details, ' +
-                '.media-frame .attachments-browser .attachments .attachment[aria-checked="true"], ' +
-                '.media-frame .attachments-browser .attachments .attachment[aria-selected="true"]'
-            );
-
-            var isBulkMode = !!document.querySelector(
-                '.media-frame.mode-select, ' +
-                '.media-frame .attachments-browser.mode-select, ' +
-                '.media-frame .media-toolbar .select-mode-toggle-button.active'
-            );
-
-            var hasSelection = !isBulkMode && selected.length > 0;
-
-            body.classList.toggle('cc-media-has-selection', hasSelection);
-            body.classList.toggle('cc-media-bulk-mode', isBulkMode);
-        };
-
-        var scheduleUpdate = function () {
-            if (scheduled) return;
-            scheduled = true;
-            rafId = window.requestAnimationFrame(updateSelectionState);
-        };
-
-        scheduleUpdate();
-        document.addEventListener('click', scheduleUpdate, true);
-        document.addEventListener('keyup', scheduleUpdate, true);
-
-        var root = document.querySelector('.media-frame') || document.documentElement;
-        var observer = new MutationObserver(scheduleUpdate);
-        observer.observe(root, {
-            subtree: true,
-            childList: true,
-            attributes: true,
-            attributeFilter: ['class', 'aria-selected', 'aria-checked']
-        });
-
-        window.addEventListener('beforeunload', function () {
-            if (rafId) {
-                window.cancelAnimationFrame(rafId);
-            }
-            observer.disconnect();
-        });
+        // Removed MutationObserver relying on heavy DOM inspections per architectural guidelines.
+        // Purely behavioral bindings should be done natively to wp.media backbone events if needed.
     }
 
     initSidebarCollapse();
@@ -567,185 +538,7 @@ jQuery(document).ready(function ($) {
     initDarkModeToggle();
     initMediaLibraryInspector();
 
-    /**
-     * Unified List Topbar
-     */
-    function initUnifiedListTopbar() {
-        var $listTable = $('.wp-list-table');
-        if (!$listTable.length) {
-            $('.wrap').addClass('cc-ready');
-            return;
-        }
-        if ($('.cc-list-topbar').length) {
-            $('.wrap').addClass('cc-ready');
-            return; // Dedupe
-        }
-
-        var $wrap = $listTable.closest('.wrap');
-        if (!$wrap.length) return;
-
-        var $topbar = $('<div class="cc-list-topbar"></div>');
-        var $left = $('<div class="cc-list-topbar-left"></div>');
-        var $right = $('<div class="cc-list-topbar-right"></div>');
-
-        var $subsubsub = $wrap.find('.subsubsub').first();
-        if ($subsubsub.length) {
-            $left.append($subsubsub);
-        }
-
-        // Setup Filter button with a native Screen Options dropdown proxy
-        var $nativeScreenOptions = $('#adv-settings');
-        if ($nativeScreenOptions.length) {
-            var $filterWrap = $('<div class="cc-filter-wrap"></div>');
-            var $filterBtn = $('<button type="button" class="button cc-filter-trigger">Filter</button>');
-            var $filterDropdown = $('<div class="cc-filter-dropdown" style="display: none;"></div>');
-
-            var $columns = $nativeScreenOptions.find('.metabox-prefs').clone();
-
-            if ($columns.length) {
-                // Remove IDs to avoid conflict with native hidden DOM
-                $columns.find('input').removeAttr('id');
-                $columns.find('label').removeAttr('for');
-
-                $filterDropdown.append($columns);
-
-                // Sync click events back to native
-                $filterDropdown.on('change', 'input[type="checkbox"]', function () {
-                    var $nativeCheckbox = $nativeScreenOptions.find('input[name="' + $(this).attr('name') + '"]');
-                    if ($nativeCheckbox.length) {
-                        $nativeCheckbox.prop('checked', $(this).prop('checked')).trigger('change');
-                        // Some WP events listen to standard click
-                        $nativeCheckbox.trigger('click');
-                    }
-                });
-
-                // Sync initial state
-                $filterDropdown.find('input[type="checkbox"]').each(function () {
-                    var $nativeCheckbox = $nativeScreenOptions.find('input[name="' + $(this).attr('name') + '"]');
-                    if ($nativeCheckbox.length) {
-                        $(this).prop('checked', $nativeCheckbox.prop('checked'));
-                    }
-                });
-
-                $filterBtn.on('click', function (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    $filterDropdown.toggle();
-                });
-
-                $(document).on('click', function (e) {
-                    if (!$(e.target).closest('.cc-filter-wrap').length) {
-                        $filterDropdown.hide();
-                    }
-                });
-
-                $filterWrap.append($filterBtn).append($filterDropdown);
-                $right.append($filterWrap);
-            }
-        }
-
-        var $searchBox = $wrap.find('.search-box, p.search-box').first();
-        if ($searchBox.length) {
-            // Remove submit buttons explicitly
-            $searchBox.find('input[type="submit"], button[type="submit"], #search-submit').remove();
-
-            // Re-enforce enter submits form natively
-            $searchBox.find('input[type="search"], input[name="s"]').on('keydown', function (e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    $(this).closest('form').submit();
-                }
-            });
-
-            $right.append($searchBox); // Then append Search
-        }
-
-        // Ensure "Search References" or similar wrongly injected buttons are completely removed from DOM
-        $('input[value="Search References"], button:contains("Search References")').remove();
-
-        $topbar.append($left).append($right);
-        $listTable.before($topbar);
-
-        // Reveal safely without massive shift
-        requestAnimationFrame(function () {
-            $wrap.addClass('cc-ready');
-        });
-    }
-
-    /**
-     * List Table Cleanup and Unified Delete Action
-     */
-    function initUnifiedListTableDelete() {
-        var $listTable = $('.wp-list-table');
-        if (!$listTable.length) return;
-
-        function injectDeleteColumn() {
-            $('.wp-list-table').each(function () {
-                var $table = $(this);
-                if ($table.data('cc-delete-injected')) return;
-                $table.data('cc-delete-injected', true);
-
-                // Add header/footer columns
-                $table.find('thead tr, tfoot tr').each(function () {
-                    $(this).append('<th scope="col" class="cc-delete-column manage-column"></th>');
-                });
-
-                // Add row delete action
-                $table.find('tbody tr').each(function () {
-                    var $row = $(this);
-
-                    if ($row.hasClass('no-items')) {
-                        var colSpan = parseInt($row.find('td').attr('colspan') || 1, 10);
-                        $row.find('td').attr('colspan', colSpan + 1);
-                        return;
-                    }
-
-                    // WordPress uses 'trash' for posts/pages, 'delete' for plugins/users/terms
-                    var deleteUrl = $row.find('.row-actions .trash a, .row-actions .delete a').attr('href');
-
-                    var $td = $('<td class="cc-delete-column"></td>');
-                    if (deleteUrl) {
-                        var $btn = $('<button type="button" class="cc-delete-row-btn" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>');
-                        $btn.data('delete-url', deleteUrl);
-                        $td.append($btn);
-                    }
-                    $row.append($td);
-                });
-            });
-        }
-
-        injectDeleteColumn();
-
-        // Safe re-init for ajax contexts
-        $(document).ajaxComplete(function (event, xhr, settings) {
-            clearTimeout(window.ccDeleteInitTimer);
-            window.ccDeleteInitTimer = setTimeout(function () {
-                initUnifiedListTopbar();
-                injectDeleteColumn();
-            }, 50);
-        });
-
-        $(document).on('click', '.cc-delete-row-btn', function (e) {
-            e.preventDefault();
-            var $btn = $(this);
-            var url = $btn.data('delete-url');
-
-            if (confirm('Are you sure you want to delete this item?')) {
-                var $row = $btn.closest('tr');
-                $row.css({ 'opacity': '0.5', 'pointer-events': 'none' });
-
-                $.get(url, function () {
-                    // Success or follow-up redirect completed
-                    $row.fadeOut(300, function () {
-                        $(this).remove();
-                    });
-                }).fail(function () {
-                    // Fallback to regular navigation
-                    window.location.href = url;
-                });
-            }
-        });
-    }
+    // initUnifiedListTopbar() & initUnifiedListTableDelete() removed per new scoped CSS architecture.
 
     /**
      * List Table Date Formatting
@@ -821,7 +614,5 @@ jQuery(document).ready(function ($) {
         }
     }
 
-    initUnifiedListTopbar();
-    initUnifiedListTableDelete();
     initListDateFormatter();
 });

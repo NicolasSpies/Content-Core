@@ -1,0 +1,473 @@
+/* Content Core Admin Theme - Layout: List Tables */
+/* Scoped to list table screens (.edit-php, .users-php, .plugins-php, etc.) */
+/* Final list-screen rebuild: reference/posts tables should follow product card layout */
+body.cc-admin-theme.edit-php .wrap {
+    max-width: 1280px !important;
+    margin: var(--ui-space-6) auto 0 !important;
+    padding-bottom: 0 !important;
+    align-items: stretch !important;
+    display: grid !important;
+    gap: var(--ui-space-5) !important;
+}
+
+body.cc-admin-theme.edit-php .wrap .wp-heading-inline,
+body.cc-admin-theme.edit-php .wrap h1 {
+    text-align: left !important;
+    margin: 0 !important;
+}
+
+body.cc-admin-theme.edit-php .wrap>.page-title-action,
+body.cc-admin-theme.edit-php .wrap>.add-new-h2 {
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    height: 40px !important;
+}
+
+body.cc-admin-theme.edit-php .wrap>.subsubsub {
+    margin: 0 !important;
+    width: fit-content !important;
+}
+
+body.cc-admin-theme.edit-php form#posts-filter {
+    display: grid !important;
+    gap: 0 !important;
+    width: 100% !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav.top {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--ui-space-3) !important;
+    padding: var(--ui-space-4) var(--ui-space-5) !important;
+    margin: 0 !important;
+    border: var(--ui-border-default) !important;
+    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0 !important;
+    background: var(--ui-color-bg-surface) !important;
+    box-shadow: var(--ui-shadow-sm) !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav.top .actions {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: var(--ui-space-2) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav.top .actions.bulkactions {
+    margin-right: var(--ui-space-2) !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav .tablenav-pages {
+    margin-left: auto !important;
+    order: 2 !important;
+}
+
+body.cc-admin-theme.edit-php .search-box {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    margin: 0 0 0 var(--ui-space-2) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: var(--ui-space-2) !important;
+    order: 3 !important;
+    z-index: auto !important;
+}
+
+body.cc-admin-theme.edit-php .search-box input[type="search"] {
+    min-width: 280px !important;
+    width: 320px !important;
+    height: 42px !important;
+    border-radius: var(--ui-radius-pill) !important;
+    background-position: 12px center !important;
+}
+
+body.cc-admin-theme.edit-php .wp-list-table {
+    margin: 0 !important;
+    border: var(--ui-border-default) !important;
+    border-top: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav.bottom {
+    margin: 0 !important;
+    padding: var(--ui-space-4) var(--ui-space-5) !important;
+    border: var(--ui-border-default) !important;
+    border-top: 0 !important;
+    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg) !important;
+    background: var(--ui-color-bg-surface) !important;
+    box-shadow: var(--ui-shadow-sm) !important;
+}
+
+@media (max-width: 1200px) {
+    body.cc-admin-theme.edit-php .tablenav.top {
+        flex-wrap: wrap !important;
+    }
+
+    body.cc-admin-theme.edit-php .tablenav .tablenav-pages {
+        order: 4 !important;
+        margin-left: 0 !important;
+    }
+
+    body.cc-admin-theme.edit-php .search-box {
+        margin-left: auto !important;
+    }
+}
+
+/* Final parity pass for list screens (Pages/Posts/Users) */
+body.cc-admin-theme.edit-php #screen-meta-links,
+body.cc-admin-theme.edit-php #screen-meta,
+body.cc-admin-theme.edit-php #contextual-help-link-wrap,
+body.cc-admin-theme.edit-php #screen-options-link-wrap,
+body.cc-admin-theme.users-php #screen-meta-links,
+body.cc-admin-theme.users-php #screen-meta,
+body.cc-admin-theme.users-php #contextual-help-link-wrap,
+body.cc-admin-theme.users-php #screen-options-link-wrap {
+    display: none !important;
+}
+
+body.cc-admin-theme.edit-php .wrap,
+body.cc-admin-theme.users-php .wrap {
+    max-width: 1280px !important;
+    margin: var(--ui-space-6) auto 0 !important;
+    display: grid !important;
+    gap: var(--ui-space-5) !important;
+    align-items: stretch !important;
+}
+
+body.cc-admin-theme.edit-php .wrap .wp-heading-inline,
+body.cc-admin-theme.edit-php .wrap h1,
+body.cc-admin-theme.users-php .wrap .wp-heading-inline,
+body.cc-admin-theme.users-php .wrap h1 {
+    text-align: left !important;
+    margin: 0 !important;
+}
+
+body.cc-admin-theme.edit-php .wrap>.page-title-action,
+body.cc-admin-theme.edit-php .wrap>.add-new-h2,
+body.cc-admin-theme.users-php .wrap>.page-title-action,
+body.cc-admin-theme.users-php .wrap>.add-new-h2 {
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    height: 40px !important;
+}
+
+body.cc-admin-theme.edit-php form#posts-filter,
+body.cc-admin-theme.users-php form#users-filter {
+    display: grid !important;
+    gap: 0 !important;
+    width: 100% !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav.top,
+body.cc-admin-theme.users-php .tablenav.top {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    gap: var(--ui-space-3) !important;
+    margin: 0 !important;
+    padding: var(--ui-space-4) var(--ui-space-5) !important;
+    border: var(--ui-border-default) !important;
+    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0 !important;
+    background: var(--ui-color-bg-surface) !important;
+    box-shadow: var(--ui-shadow-sm) !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav.top .actions,
+body.cc-admin-theme.users-php .tablenav.top .actions {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: var(--ui-space-2) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    float: none !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav .tablenav-pages,
+body.cc-admin-theme.users-php .tablenav .tablenav-pages {
+    margin-left: auto !important;
+    order: 2 !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav.top .search-box,
+body.cc-admin-theme.users-php .tablenav.top .search-box {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    margin: 0 0 0 var(--ui-space-2) !important;
+    order: 3 !important;
+    z-index: auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: var(--ui-space-2) !important;
+    float: none !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav.bottom .search-box,
+body.cc-admin-theme.users-php .tablenav.bottom .search-box,
+body.cc-admin-theme.edit-php .wrap>.search-box,
+body.cc-admin-theme.users-php .wrap>.search-box {
+    display: none !important;
+}
+
+body.cc-admin-theme.edit-php .search-box input[type="search"],
+body.cc-admin-theme.users-php .search-box input[type="search"] {
+    min-width: 280px !important;
+    width: 320px !important;
+    height: 42px !important;
+    border-radius: var(--ui-radius-pill) !important;
+    background-position: 12px center !important;
+}
+
+body.cc-admin-theme.edit-php .wp-list-table,
+body.cc-admin-theme.users-php .wp-list-table {
+    margin: 0 !important;
+    border: var(--ui-border-default) !important;
+    border-top: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav.bottom,
+body.cc-admin-theme.users-php .tablenav.bottom {
+    margin: 0 !important;
+    padding: var(--ui-space-4) var(--ui-space-5) !important;
+    border: var(--ui-border-default) !important;
+    border-top: 0 !important;
+    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg) !important;
+    background: var(--ui-color-bg-surface) !important;
+    box-shadow: var(--ui-shadow-sm) !important;
+}
+
+@media (max-width: 1200px) {
+
+    body.cc-admin-theme.edit-php .tablenav.top,
+    body.cc-admin-theme.users-php .tablenav.top {
+        flex-wrap: wrap !important;
+    }
+
+    body.cc-admin-theme.edit-php .tablenav .tablenav-pages,
+    body.cc-admin-theme.users-php .tablenav .tablenav-pages {
+        order: 4 !important;
+        margin-left: 0 !important;
+    }
+
+    body.cc-admin-theme.edit-php .tablenav.top .search-box,
+    body.cc-admin-theme.users-php .tablenav.top .search-box {
+        margin-left: auto !important;
+    }
+}
+
+/* Centralized lock: list UIs must match the product shell on edit/users/plugins */
+body.cc-admin-theme.edit-php #screen-meta-links,
+body.cc-admin-theme.edit-php #screen-meta,
+body.cc-admin-theme.edit-php #contextual-help-link-wrap,
+body.cc-admin-theme.edit-php #screen-options-link-wrap,
+body.cc-admin-theme.users-php #screen-meta-links,
+body.cc-admin-theme.users-php #screen-meta,
+body.cc-admin-theme.users-php #contextual-help-link-wrap,
+body.cc-admin-theme.users-php #screen-options-link-wrap,
+body.cc-admin-theme.plugins-php #screen-meta-links,
+body.cc-admin-theme.plugins-php #screen-meta,
+body.cc-admin-theme.plugins-php #contextual-help-link-wrap,
+body.cc-admin-theme.plugins-php #screen-options-link-wrap,
+body.cc-admin-theme .screen-meta-toggle {
+    display: none !important;
+}
+
+body.cc-admin-theme.edit-php .wrap,
+body.cc-admin-theme.users-php .wrap,
+body.cc-admin-theme.plugins-php .wrap {
+    max-width: 1280px !important;
+    margin: var(--ui-space-6) auto 0 !important;
+    display: grid !important;
+    gap: var(--ui-space-5) !important;
+    align-items: stretch !important;
+}
+
+body.cc-admin-theme.edit-php .wrap .wp-heading-inline,
+body.cc-admin-theme.edit-php .wrap h1,
+body.cc-admin-theme.users-php .wrap .wp-heading-inline,
+body.cc-admin-theme.users-php .wrap h1,
+body.cc-admin-theme.plugins-php .wrap .wp-heading-inline,
+body.cc-admin-theme.plugins-php .wrap h1 {
+    text-align: left !important;
+    margin: 0 !important;
+}
+
+body.cc-admin-theme.edit-php .wrap>.page-title-action,
+body.cc-admin-theme.edit-php .wrap>.add-new-h2,
+body.cc-admin-theme.users-php .wrap>.page-title-action,
+body.cc-admin-theme.users-php .wrap>.add-new-h2,
+body.cc-admin-theme.plugins-php .wrap>.page-title-action,
+body.cc-admin-theme.plugins-php .wrap>.add-new-h2 {
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    height: 40px !important;
+}
+
+body.cc-admin-theme.edit-php form#posts-filter,
+body.cc-admin-theme.users-php form#users-filter,
+body.cc-admin-theme.plugins-php form#plugins-filter {
+    width: 100% !important;
+    margin: 0 !important;
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    grid-template-areas:
+        "views search"
+        "toolbar toolbar"
+        "table table"
+        "footer footer" !important;
+    gap: var(--ui-space-4) !important;
+}
+
+body.cc-admin-theme.edit-php form#posts-filter>.subsubsub,
+body.cc-admin-theme.users-php form#users-filter>.subsubsub,
+body.cc-admin-theme.plugins-php form#plugins-filter>.subsubsub {
+    grid-area: views !important;
+    width: auto !important;
+    margin: 0 !important;
+    justify-self: start !important;
+}
+
+body.cc-admin-theme.edit-php form#posts-filter>p.search-box,
+body.cc-admin-theme.users-php form#users-filter>p.search-box,
+body.cc-admin-theme.plugins-php form#plugins-filter>p.search-box {
+    grid-area: search !important;
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    clear: none !important;
+    float: none !important;
+    margin: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-self: end !important;
+    gap: var(--ui-space-2) !important;
+    z-index: auto !important;
+}
+
+body.cc-admin-theme.edit-php .search-box,
+body.cc-admin-theme.users-php .search-box,
+body.cc-admin-theme.plugins-php .search-box {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    float: none !important;
+}
+
+body.cc-admin-theme.edit-php .search-box input[type="search"],
+body.cc-admin-theme.users-php .search-box input[type="search"],
+body.cc-admin-theme.plugins-php .search-box input[type="search"] {
+    min-width: 280px !important;
+    width: 320px !important;
+    height: 42px !important;
+    border-radius: var(--ui-radius-pill) !important;
+    background-position: 12px center !important;
+}
+
+body.cc-admin-theme.edit-php .search-box input[type="submit"],
+body.cc-admin-theme.users-php .search-box input[type="submit"],
+body.cc-admin-theme.plugins-php .search-box input[type="submit"] {
+    display: none !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav.top,
+body.cc-admin-theme.users-php .tablenav.top,
+body.cc-admin-theme.plugins-php .tablenav.top {
+    grid-area: toolbar !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--ui-space-3) !important;
+    margin: 0 !important;
+    padding: var(--ui-space-4) var(--ui-space-5) !important;
+    border: var(--ui-border-default) !important;
+    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0 !important;
+    background: var(--ui-color-bg-surface) !important;
+    box-shadow: var(--ui-shadow-sm) !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav.top .search-box,
+body.cc-admin-theme.users-php .tablenav.top .search-box,
+body.cc-admin-theme.plugins-php .tablenav.top .search-box,
+body.cc-admin-theme.edit-php .tablenav.bottom .search-box,
+body.cc-admin-theme.users-php .tablenav.bottom .search-box,
+body.cc-admin-theme.plugins-php .tablenav.bottom .search-box {
+    display: none !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav.top .actions,
+body.cc-admin-theme.users-php .tablenav.top .actions,
+body.cc-admin-theme.plugins-php .tablenav.top .actions {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: var(--ui-space-2) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    float: none !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav .tablenav-pages,
+body.cc-admin-theme.users-php .tablenav .tablenav-pages,
+body.cc-admin-theme.plugins-php .tablenav .tablenav-pages {
+    margin-left: auto !important;
+}
+
+body.cc-admin-theme.edit-php .wp-list-table,
+body.cc-admin-theme.users-php .wp-list-table,
+body.cc-admin-theme.plugins-php .wp-list-table {
+    grid-area: table !important;
+    margin: 0 !important;
+    border: var(--ui-border-default) !important;
+    border-top: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+body.cc-admin-theme.edit-php .tablenav.bottom,
+body.cc-admin-theme.users-php .tablenav.bottom,
+body.cc-admin-theme.plugins-php .tablenav.bottom {
+    grid-area: footer !important;
+    margin: 0 !important;
+    padding: var(--ui-space-4) var(--ui-space-5) !important;
+    border: var(--ui-border-default) !important;
+    border-top: 0 !important;
+    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg) !important;
+    background: var(--ui-color-bg-surface) !important;
+    box-shadow: var(--ui-shadow-sm) !important;
+}
+
+@media (max-width: 1200px) {
+
+    body.cc-admin-theme.edit-php form#posts-filter,
+    body.cc-admin-theme.users-php form#users-filter,
+    body.cc-admin-theme.plugins-php form#plugins-filter {
+        grid-template-columns: 1fr !important;
+        grid-template-areas:
+            "views"
+            "search"
+            "toolbar"
+            "table"
+            "footer" !important;
+    }
+
+    body.cc-admin-theme.edit-php form#posts-filter>p.search-box,
+    body.cc-admin-theme.users-php form#users-filter>p.search-box,
+    body.cc-admin-theme.plugins-php form#plugins-filter>p.search-box {
+        justify-self: stretch !important;
+    }
+}

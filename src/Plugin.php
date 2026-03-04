@@ -214,7 +214,7 @@ class Plugin
      */
     public function get_version(): string
     {
-        return '1.6.3';
+        return '1.6.4';
     }
 
     /**

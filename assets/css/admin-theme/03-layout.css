@@ -1,3 +1,31 @@
+/* ─── Content Visibility Guardrail — DO NOT REMOVE ─────────────────────────
+ * Uses :where() (zero specificity) so any scoped screen rule still wins.
+ * RULE: Never add display:none / visibility:hidden / height:0 on
+ *       #wpwrap, #wpcontent, #wpbody, #wpbody-content, or .wrap
+ *       without a screen-family body class qualifier.
+ */
+:where(body.cc-admin-theme #wpwrap,
+    body.cc-admin-theme #wpcontent,
+    body.cc-admin-theme #wpbody,
+    body.cc-admin-theme #wpbody-content) {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    clip: auto !important;
+}
+
+:where(body.cc-admin-theme .wrap) {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+}
+
 :where(body.cc-admin-theme #wpcontent, body.cc-admin-theme #wpbody, body.cc-admin-theme #wpbody-content, body.cc-admin-theme #wpfooter) {
     background: var(--ui-color-bg-canvas);
 }

@@ -69,7 +69,9 @@ class AdminMenu
             'menuState' => get_user_meta(get_current_user_id(), 'cc_menu_state', true) ?: [],
             'darkMode' => get_user_meta(get_current_user_id(), 'cc_dark_mode', true) === '1',
             'restUrl' => esc_url_raw(rest_url('content-core/v1')),
-            'nonce' => wp_create_nonce('wp_rest')
+            'nonce' => wp_create_nonce('wp_rest'),
+            'screenId' => $screen->id,
+            'debug' => defined('WP_DEBUG') && WP_DEBUG,
         ]);
 
         $plugin = \ContentCore\Plugin::get_instance();
@@ -346,7 +348,8 @@ class AdminMenu
         <div id="cc-sidebar-account" class="cc-sidebar-account" aria-label="<?php esc_attr_e('Account', 'content-core'); ?>">
             <div class="cc-sidebar-account__top">
                 <span class="cc-sidebar-account__darkmode-label"><?php esc_html_e('Dark Mode', 'content-core'); ?></span>
-                <button type="button" class="cc-sidebar-account__switch" aria-label="<?php esc_attr_e('Toggle dark mode', 'content-core'); ?>" aria-pressed="false"></button>
+                <button type="button" class="cc-sidebar-account__switch"
+                    aria-label="<?php esc_attr_e('Toggle dark mode', 'content-core'); ?>" aria-pressed="false"></button>
             </div>
 
             <div class="cc-sidebar-account__user">
@@ -357,7 +360,9 @@ class AdminMenu
                         <span class="cc-sidebar-account__role"><?php echo esc_html($role_label); ?></span>
                     </span>
                 </a>
-                <a class="cc-sidebar-account__logout" href="<?php echo esc_url($logout_url); ?>" title="<?php esc_attr_e('Log Out', 'content-core'); ?>" aria-label="<?php esc_attr_e('Log Out', 'content-core'); ?>">
+                <a class="cc-sidebar-account__logout" href="<?php echo esc_url($logout_url); ?>"
+                    title="<?php esc_attr_e('Log Out', 'content-core'); ?>"
+                    aria-label="<?php esc_attr_e('Log Out', 'content-core'); ?>">
                     <svg class="cc-sidebar-account__logout-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                         <path d="M10 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3" />
                         <path d="M13 8l4 4-4 4" />
@@ -415,7 +420,9 @@ class AdminMenu
                     <?php endif; ?>
                     <span class="cc-sidebar-branding__name"><?php echo esc_html($site_name); ?></span>
                 </a>
-                <button type="button" id="cc-sidebar-collapse-toggle" class="cc-sidebar-branding__collapse" aria-label="<?php esc_attr_e('Toggle Menu', 'content-core'); ?>" title="<?php esc_attr_e('Toggle Menu', 'content-core'); ?>">
+                <button type="button" id="cc-sidebar-collapse-toggle" class="cc-sidebar-branding__collapse"
+                    aria-label="<?php esc_attr_e('Toggle Menu', 'content-core'); ?>"
+                    title="<?php esc_attr_e('Toggle Menu', 'content-core'); ?>">
                     <span class="dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span>
                 </button>
             </div>

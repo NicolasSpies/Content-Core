@@ -1,0 +1,47 @@
+/* Content Core Admin Theme - Layout: Settings Pages */
+/* Scoped to settings and plugin admin pages (.options-general-php, .settings_page_*, .toplevel_page_*) */
+
+body.cc-admin-theme[class*="options-"] .wrap>form {
+    max-width: var(--ui-layout-form-max);
+    width: min(100%, var(--ui-layout-form-max));
+    margin: 0 auto;
+    display: grid;
+    gap: var(--ui-space-5);
+}
+
+body.cc-admin-theme[class*="options-"] .wrap>form .form-table {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+body.cc-admin-theme[class*="options-"] .wrap>form .form-table tr {
+    border: var(--ui-border-default);
+    border-radius: var(--ui-radius-lg);
+    background: var(--ui-color-bg-surface);
+    padding: var(--ui-space-6);
+    margin-bottom: var(--ui-space-4);
+    box-shadow: var(--ui-shadow-sm);
+}
+
+body.cc-admin-theme[class*="options-"] .wrap>form .form-table tr:last-child {
+    margin-bottom: 0;
+}
+
+body.cc-admin-theme[class*="options-"] .wrap>form p.submit {
+    margin: 0;
+    padding: 0;
+}
+
+body.cc-admin-theme.options-general-php .search-box {
+    margin-left: auto;
+}
+
+body.cc-admin-theme.options-general-php .form-table,
+body.cc-admin-theme.options-writing-php .form-table,
+body.cc-admin-theme.options-reading-php .form-table,
+body.cc-admin-theme.options-discussion-php .form-table,
+body.cc-admin-theme.options-media-php .form-table,
+body.cc-admin-theme.options-permalink-php .form-table {
+    box-shadow: var(--ui-shadow-sm);
+}

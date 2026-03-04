@@ -1,5 +1,23 @@
-/* Unlayered control primitive overrides.
- * This file must stay unlayered so it can dominate WordPress core unlayered styles.
+/* ─── 06 Control Overrides — COMPONENT SKINS ONLY ──────────────────────────
+ *
+ * ALLOWED in this file:
+ *   • Button, input, select, textarea skins
+ *   • Small WP chrome: notices, badges, tooltips, .screen-meta-toggle
+ *   • Component-level overrides (exact class/ID targets)
+ *
+ * FORBIDDEN in this file — move to a 10-14-layout-*.css pack instead:
+ *   • display:grid / display:flex on .wrap, #wpbody-content, #wpcontent, #wpbody
+ *   • grid-template-areas / grid-template-columns on page containers
+ *   • Any selector of the form:  body.cc-admin-theme .wrap  { display: ... }
+ *     without a screen-family qualifier like  body.cc-admin-theme.edit-php
+ *   • Sibling-wildcard hides:  .foo ~ *  { display: none }
+ *     — target only exact ids/classes you want gone
+ *
+ * DUPLICATE RULE:
+ *   Each screen-family container (.edit-php .wrap, .upload-php .wrap, etc.)
+ *   must have exactly ONE layout block. Delete older copies; do not stack !important.
+ *
+ * This file stays unlayered so it dominates WordPress core unlayered styles.
  */
 
 body.cc-admin-theme .button,
@@ -998,8 +1016,7 @@ body.cc-admin-theme .wrap {
     margin: var(--ui-space-6) var(--ui-space-8) 0;
     padding: 0;
     box-sizing: border-box;
-    display: grid;
-    gap: var(--ui-space-6);
+    display: block;
     position: relative;
 }
 
@@ -1086,15 +1103,7 @@ body.cc-admin-theme .subsubsub {
     width: fit-content;
 }
 
-body.cc-admin-theme .wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    max-width: 1200px !important;
-    margin: var(--ui-space-12) auto !important;
-    position: relative;
-    padding-bottom: 80px !important;
-}
+/* Removed: was a duplicate global .wrap layout block (display:flex). Single canonical rule is at the top of this section. */
 
 body.cc-admin-theme .wp-list-table,
 body.cc-admin-theme .tablenav {
@@ -1203,76 +1212,7 @@ body.cc-admin-theme .tablenav .tablenav-pages {
     gap: var(--ui-space-2);
 }
 
-/* Force Toolbar Alignment on One Row */
-body.cc-admin-theme.edit-php form#posts-filter,
-body.cc-admin-theme.users-php form#users-filter,
-body.cc-admin-theme.plugins-php form#plugins-filter {
-    display: flex;
-    flex-direction: column;
-    gap: var(--ui-space-4);
-}
 
-body.cc-admin-theme.edit-php .tablenav.top,
-body.cc-admin-theme.users-php .tablenav.top,
-body.cc-admin-theme.plugins-php .tablenav.top {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    gap: var(--ui-space-4);
-    width: 100%;
-    background: var(--ui-color-bg-surface) !important;
-    padding: 24px var(--ui-space-5) !important;
-    border: var(--ui-border-default);
-    border-bottom: 0;
-    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
-    box-shadow: var(--ui-shadow-sm);
-    margin-bottom: 0;
-    position: relative;
-    padding-right: 360px !important;
-}
-
-body.cc-admin-theme .search-box {
-    position: absolute;
-    top: 24px;
-    right: var(--ui-space-6);
-    margin: 0 !important;
-    float: none !important;
-    z-index: 100;
-}
-
-body.cc-admin-theme .search-box input[type="search"],
-body.cc-admin-theme.upload-php .media-toolbar .search {
-    min-width: 320px !important;
-    height: 44px !important;
-    padding-left: 42px !important;
-    background-image: var(--ui-icon-search) !important;
-    background-repeat: no-repeat !important;
-    background-position: 14px center !important;
-    background-size: 16px !important;
-    border-radius: var(--ui-radius-pill) !important;
-    border: var(--ui-border-default) !important;
-    background-color: var(--ui-color-bg-surface) !important;
-}
-
-body.cc-admin-theme .search-box input[type="submit"],
-body.cc-admin-theme #search-submit,
-body.cc-admin-theme.upload-php .search-form label {
-    display: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top .actions:first-child {
-    grid-column: 1;
-    display: flex;
-    gap: var(--ui-space-2);
-    padding: 0;
-    background: transparent;
-    border: 0;
-    box-shadow: none;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top .tablenav-pages {
-    grid-column: 3;
-}
 
 body.cc-admin-theme .tablenav .displaying-num {
     color: var(--ui-color-text-muted);
@@ -1588,31 +1528,6 @@ body.cc-admin-theme .form-table tr {
     border-top: var(--ui-border-muted);
 }
 
-body.cc-admin-theme[class*="options-"] .wrap>form {
-    max-width: var(--ui-layout-form-max);
-    display: grid;
-    gap: var(--ui-space-4);
-}
-
-body.cc-admin-theme[class*="options-"] .wrap>form .form-table {
-    border: 0;
-    background: transparent;
-    box-shadow: none;
-}
-
-body.cc-admin-theme[class*="options-"] .wrap>form .form-table tr {
-    border: var(--ui-border-default);
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-color-bg-surface);
-    padding: var(--ui-space-6);
-    margin-bottom: var(--ui-space-4);
-    box-shadow: var(--ui-shadow-sm);
-}
-
-body.cc-admin-theme[class*="options-"] .wrap>form .form-table tr:last-child {
-    margin-bottom: 0;
-}
-
 body.cc-admin-theme .form-table tr:first-child {
     border-top: 0;
 }
@@ -1651,136 +1566,8 @@ body.cc-admin-theme .form-table td .description {
     line-height: var(--ui-text-body-sm-line);
 }
 
-/* Media library grid and inspector */
-body.cc-admin-theme .media-frame .media-frame-content,
-body.cc-admin-theme .media-frame .attachments-browser {
-    background: var(--ui-color-bg-canvas);
-}
 
-body.cc-admin-theme .media-frame .media-toolbar {
-    padding: var(--ui-space-4) var(--ui-space-6);
-    border-bottom: var(--ui-border-muted);
-}
 
-body.cc-admin-theme .media-modal,
-body.cc-admin-theme .media-modal .media-modal-content {
-    background: var(--ui-color-bg-canvas);
-}
-
-body.cc-admin-theme .media-frame.mode-grid .attachments,
-body.cc-admin-theme .media-frame .attachments {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: var(--ui-space-5);
-    padding: var(--ui-space-6);
-}
-
-body.cc-admin-theme .media-frame.mode-grid .attachments .attachment,
-body.cc-admin-theme .media-frame .attachments .attachment {
-    position: relative;
-    float: none;
-    width: auto;
-    margin: 0;
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-color-bg-surface);
-    overflow: hidden;
-    box-shadow: var(--ui-shadow-sm);
-    transition: transform 120ms ease, box-shadow 120ms ease;
-}
-
-body.cc-admin-theme .media-frame .attachment:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--ui-shadow-md);
-}
-
-body.cc-admin-theme .media-frame .attachment .attachment-preview {
-    border: 0;
-    background: transparent;
-}
-
-body.cc-admin-theme .media-frame .media-sidebar {
-    padding: var(--ui-space-6);
-    background: var(--ui-color-bg-surface);
-    border-left: var(--ui-border-default);
-}
-
-body.cc-admin-theme .media-frame .attachment-details,
-body.cc-admin-theme .media-frame .settings-save-status,
-body.cc-admin-theme .media-frame .media-sidebar .setting {
-    margin-bottom: var(--ui-space-4);
-}
-
-body.cc-admin-theme .media-frame .media-toolbar-primary,
-body.cc-admin-theme .media-frame .media-toolbar-secondary {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--ui-space-2);
-}
-
-body.cc-admin-theme.upload-php .wp-filter {
-    margin: 0;
-    padding: var(--ui-space-4) var(--ui-space-5);
-    border: var(--ui-border-default);
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-color-bg-surface);
-    box-shadow: var(--ui-shadow-sm);
-}
-
-body.cc-admin-theme.upload-php .wp-filter .media-toolbar-secondary,
-body.cc-admin-theme.upload-php .wp-filter .media-toolbar-primary {
-    gap: var(--ui-space-2);
-}
-
-body.cc-admin-theme.upload-php .media-frame {
-    border: var(--ui-border-default);
-    border-radius: var(--ui-radius-lg);
-    overflow: hidden;
-    background: var(--ui-color-bg-surface);
-    box-shadow: var(--ui-shadow-sm);
-}
-
-/* Classic editor layout */
-body.cc-admin-theme.post-new-php #poststuff,
-body.cc-admin-theme.post-php #poststuff {
-    display: grid;
-    gap: var(--ui-space-6);
-}
-
-body.cc-admin-theme.post-new-php #post-body-content,
-body.cc-admin-theme.post-php #post-body-content {
-    min-width: 0;
-}
-
-body.cc-admin-theme.post-new-php #titlediv #title,
-body.cc-admin-theme.post-php #titlediv #title {
-    min-height: var(--ui-size-control-lg);
-    border-radius: var(--ui-radius-md);
-    font-size: var(--ui-text-title-size);
-    line-height: var(--ui-text-title-line);
-    font-weight: var(--ui-font-weight-semibold);
-    padding-left: var(--ui-space-4);
-    padding-right: var(--ui-space-4);
-}
-
-body.cc-admin-theme.post-new-php #titlediv,
-body.cc-admin-theme.post-php #titlediv,
-body.cc-admin-theme.post-new-php #postbox-container-2 .postbox,
-body.cc-admin-theme.post-php #postbox-container-2 .postbox,
-body.cc-admin-theme.post-new-php #postbox-container-1 .postbox,
-body.cc-admin-theme.post-php #postbox-container-1 .postbox {
-    border: var(--ui-border-default);
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-color-bg-surface);
-    box-shadow: var(--ui-shadow-sm);
-    overflow: hidden;
-}
-
-body.cc-admin-theme.post-new-php #postbox-container-1 .postbox,
-body.cc-admin-theme.post-php #postbox-container-1 .postbox,
-body.cc-admin-theme.post-new-php #postbox-container-2 .postbox,
-body.cc-admin-theme.post-php #postbox-container-2 .postbox {
-    margin: 0 0 var(--ui-space-4);
-}
 
 /* WordPress dashboard full-width product shell */
 body.cc-admin-theme.index-php #dashboard-widgets-wrap,
@@ -1990,19 +1777,12 @@ body.cc-admin-theme.plugin-install-php .plugins .plugin-card .action-links {
 }
 
 body.cc-admin-theme.users-php .search-box,
-body.cc-admin-theme.plugins-php .search-box,
-body.cc-admin-theme.options-general-php .search-box {
+body.cc-admin-theme.plugins-php .search-box {
     margin-left: auto;
 }
 
 body.cc-admin-theme.users-php .wp-list-table.users,
-body.cc-admin-theme.plugins-php .wp-list-table.plugins,
-body.cc-admin-theme.options-general-php .form-table,
-body.cc-admin-theme.options-writing-php .form-table,
-body.cc-admin-theme.options-reading-php .form-table,
-body.cc-admin-theme.options-discussion-php .form-table,
-body.cc-admin-theme.options-media-php .form-table,
-body.cc-admin-theme.options-permalink-php .form-table {
+body.cc-admin-theme.plugins-php .wp-list-table.plugins {
     box-shadow: var(--ui-shadow-sm);
 }
 
@@ -2084,15 +1864,7 @@ body.cc-admin-theme #wpbody-content>.updated {
     margin-right: auto;
 }
 
-body.cc-admin-theme .wrap {
-    width: min(100%, var(--ui-layout-wrap-max));
-    max-width: none;
-    margin: 0 auto;
-    padding: 0;
-    display: grid;
-    align-content: start;
-    gap: var(--ui-space-6);
-}
+/* Removed: was a duplicate global .wrap layout block (display:grid). Single canonical rule is at the top of this section. */
 
 body.cc-admin-theme .wrap>* {
     margin-top: 0;
@@ -2203,60 +1975,7 @@ body.cc-admin-theme .wrap>.subsubsub {
     width: 100%;
 }
 
-/* List/table screens: enforce compact app rhythm and toolbar alignment */
-body.cc-admin-theme.edit-php .wrap,
-body.cc-admin-theme.users-php .wrap,
-body.cc-admin-theme.plugins-php .wrap {
-    gap: var(--ui-space-5);
-}
 
-body.cc-admin-theme.edit-php .wrap>*+*,
-body.cc-admin-theme.users-php .wrap>*+*,
-body.cc-admin-theme.plugins-php .wrap>*+* {
-    margin-top: var(--ui-space-5);
-}
-
-body.cc-admin-theme.edit-php .wrap>.subsubsub,
-body.cc-admin-theme.users-php .wrap>.subsubsub,
-body.cc-admin-theme.plugins-php .wrap>.subsubsub {
-    margin-top: var(--ui-space-4);
-}
-
-body.cc-admin-theme.edit-php .tablenav.top,
-body.cc-admin-theme.users-php .tablenav.top,
-body.cc-admin-theme.plugins-php .tablenav.top {
-    margin-top: 0;
-}
-
-body.cc-admin-theme.edit-php .tablenav .actions,
-body.cc-admin-theme.users-php .tablenav .actions,
-body.cc-admin-theme.plugins-php .tablenav .actions {
-    flex-wrap: wrap;
-}
-
-body.cc-admin-theme.edit-php .tablenav .tablenav-pages,
-body.cc-admin-theme.users-php .tablenav .tablenav-pages,
-body.cc-admin-theme.plugins-php .tablenav .tablenav-pages {
-    margin-left: auto;
-}
-
-body.cc-admin-theme.edit-php .wp-list-table,
-body.cc-admin-theme.users-php .wp-list-table,
-body.cc-admin-theme.plugins-php .wp-list-table {
-    margin-top: 0;
-}
-
-body.cc-admin-theme.edit-php .wp-list-table .column-primary,
-body.cc-admin-theme.users-php .wp-list-table .column-primary,
-body.cc-admin-theme.plugins-php .wp-list-table .column-primary {
-    min-width: 240px;
-}
-
-body.cc-admin-theme.edit-php .wp-list-table .column-date,
-body.cc-admin-theme.users-php .wp-list-table .column-date,
-body.cc-admin-theme.plugins-php .wp-list-table .column-date {
-    white-space: nowrap;
-}
 
 @media (max-width: 1200px) {
     body.cc-admin-theme #wpbody-content {
@@ -2497,9 +2216,7 @@ body.cc-admin-theme:is(.edit-php, .users-php, .plugins-php) #wpbody-content .wra
     display: none !important;
 }
 
-body.cc-admin-theme:is(.edit-php, .users-php, .plugins-php) #wpbody-content .wrap>.page-title-action~*:not(.wp-header-end):not(.subsubsub):not(form):not(.notice):not(#ajax-response):not(.clear):not(.search-form):not(.spinner) {
-    display: none !important;
-}
+/* Broad sibling hide removed — unsafe after JS purge. Individual screen families handle their own chrome. */
 
 body.cc-admin-theme.edit-php .wrap,
 body.cc-admin-theme.users-php .wrap,
@@ -2864,22 +2581,6 @@ body.cc-admin-theme.post-php #postbox-container-2 .postbox {
     margin: 0;
 }
 
-body.cc-admin-theme[class*="options-"] .wrap>form {
-    width: min(100%, var(--ui-layout-form-max));
-    margin: 0 auto;
-    display: grid;
-    gap: var(--ui-space-5);
-}
-
-body.cc-admin-theme[class*="options-"] .wrap>form .form-table tr {
-    padding: var(--ui-space-6);
-}
-
-body.cc-admin-theme[class*="options-"] .wrap>form p.submit {
-    margin: 0;
-    padding: 0;
-}
-
 body.cc-admin-theme.edit-php .tablenav.top,
 body.cc-admin-theme.users-php .tablenav.top {
     padding: var(--ui-space-3) var(--ui-space-4);
@@ -2960,125 +2661,7 @@ body.cc-admin-theme .notice.notice-info {
     border-color: var(--ui-color-info-border);
 }
 
-/* Final list-screen rebuild: reference/posts tables should follow product card layout */
-body.cc-admin-theme.edit-php .wrap {
-    max-width: 1280px !important;
-    margin: var(--ui-space-6) auto 0 !important;
-    padding-bottom: 0 !important;
-    align-items: stretch !important;
-    display: grid !important;
-    gap: var(--ui-space-5) !important;
-}
 
-body.cc-admin-theme.edit-php .wrap .wp-heading-inline,
-body.cc-admin-theme.edit-php .wrap h1 {
-    text-align: left !important;
-    margin: 0 !important;
-}
-
-body.cc-admin-theme.edit-php .wrap>.page-title-action,
-body.cc-admin-theme.edit-php .wrap>.add-new-h2 {
-    position: absolute !important;
-    top: 0 !important;
-    right: 0 !important;
-    height: 40px !important;
-}
-
-body.cc-admin-theme.edit-php .wrap>.subsubsub {
-    margin: 0 !important;
-    width: fit-content !important;
-}
-
-body.cc-admin-theme.edit-php form#posts-filter {
-    display: grid !important;
-    gap: 0 !important;
-    width: 100% !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top {
-    display: flex !important;
-    align-items: center !important;
-    gap: var(--ui-space-3) !important;
-    padding: var(--ui-space-4) var(--ui-space-5) !important;
-    margin: 0 !important;
-    border: var(--ui-border-default) !important;
-    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0 !important;
-    background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top .actions {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: var(--ui-space-2) !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top .actions.bulkactions {
-    margin-right: var(--ui-space-2) !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav .tablenav-pages {
-    margin-left: auto !important;
-    order: 2 !important;
-}
-
-body.cc-admin-theme.edit-php .search-box {
-    position: static !important;
-    top: auto !important;
-    right: auto !important;
-    margin: 0 0 0 var(--ui-space-2) !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: var(--ui-space-2) !important;
-    order: 3 !important;
-    z-index: auto !important;
-}
-
-body.cc-admin-theme.edit-php .search-box input[type="search"] {
-    min-width: 280px !important;
-    width: 320px !important;
-    height: 42px !important;
-    border-radius: var(--ui-radius-pill) !important;
-    background-position: 12px center !important;
-}
-
-body.cc-admin-theme.edit-php .wp-list-table {
-    margin: 0 !important;
-    border: var(--ui-border-default) !important;
-    border-top: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.bottom {
-    margin: 0 !important;
-    padding: var(--ui-space-4) var(--ui-space-5) !important;
-    border: var(--ui-border-default) !important;
-    border-top: 0 !important;
-    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg) !important;
-    background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
-}
-
-@media (max-width: 1200px) {
-    body.cc-admin-theme.edit-php .tablenav.top {
-        flex-wrap: wrap !important;
-    }
-
-    body.cc-admin-theme.edit-php .tablenav .tablenav-pages {
-        order: 4 !important;
-        margin-left: 0 !important;
-    }
-
-    body.cc-admin-theme.edit-php .search-box {
-        margin-left: auto !important;
-    }
-}
 
 /* Overflow guardrails for dashboard and appearance edge cases */
 body.cc-admin-theme #cc_client_dashboard_widget,
@@ -3216,357 +2799,6 @@ body.cc-admin-theme.index-php #cc_client_dashboard_widget .cc-wp-translation-det
     background: var(--ui-color-bg-surface);
 }
 
-/* Final parity pass for list screens (Pages/Posts/Users) */
-body.cc-admin-theme.edit-php #screen-meta-links,
-body.cc-admin-theme.edit-php #screen-meta,
-body.cc-admin-theme.edit-php #contextual-help-link-wrap,
-body.cc-admin-theme.edit-php #screen-options-link-wrap,
-body.cc-admin-theme.users-php #screen-meta-links,
-body.cc-admin-theme.users-php #screen-meta,
-body.cc-admin-theme.users-php #contextual-help-link-wrap,
-body.cc-admin-theme.users-php #screen-options-link-wrap {
-    display: none !important;
-}
-
-body.cc-admin-theme.edit-php .wrap,
-body.cc-admin-theme.users-php .wrap {
-    max-width: 1280px !important;
-    margin: var(--ui-space-6) auto 0 !important;
-    display: grid !important;
-    gap: var(--ui-space-5) !important;
-    align-items: stretch !important;
-}
-
-body.cc-admin-theme.edit-php .wrap .wp-heading-inline,
-body.cc-admin-theme.edit-php .wrap h1,
-body.cc-admin-theme.users-php .wrap .wp-heading-inline,
-body.cc-admin-theme.users-php .wrap h1 {
-    text-align: left !important;
-    margin: 0 !important;
-}
-
-body.cc-admin-theme.edit-php .wrap>.page-title-action,
-body.cc-admin-theme.edit-php .wrap>.add-new-h2,
-body.cc-admin-theme.users-php .wrap>.page-title-action,
-body.cc-admin-theme.users-php .wrap>.add-new-h2 {
-    position: absolute !important;
-    top: 0 !important;
-    right: 0 !important;
-    height: 40px !important;
-}
-
-body.cc-admin-theme.edit-php form#posts-filter,
-body.cc-admin-theme.users-php form#users-filter {
-    display: grid !important;
-    gap: 0 !important;
-    width: 100% !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top,
-body.cc-admin-theme.users-php .tablenav.top {
-    display: flex !important;
-    align-items: center !important;
-    flex-wrap: nowrap !important;
-    gap: var(--ui-space-3) !important;
-    margin: 0 !important;
-    padding: var(--ui-space-4) var(--ui-space-5) !important;
-    border: var(--ui-border-default) !important;
-    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0 !important;
-    background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top .actions,
-body.cc-admin-theme.users-php .tablenav.top .actions {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: var(--ui-space-2) !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    float: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav .tablenav-pages,
-body.cc-admin-theme.users-php .tablenav .tablenav-pages {
-    margin-left: auto !important;
-    order: 2 !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top .search-box,
-body.cc-admin-theme.users-php .tablenav.top .search-box {
-    position: static !important;
-    top: auto !important;
-    right: auto !important;
-    margin: 0 0 0 var(--ui-space-2) !important;
-    order: 3 !important;
-    z-index: auto !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: var(--ui-space-2) !important;
-    float: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.bottom .search-box,
-body.cc-admin-theme.users-php .tablenav.bottom .search-box,
-body.cc-admin-theme.edit-php .wrap>.search-box,
-body.cc-admin-theme.users-php .wrap>.search-box {
-    display: none !important;
-}
-
-body.cc-admin-theme.edit-php .search-box input[type="search"],
-body.cc-admin-theme.users-php .search-box input[type="search"] {
-    min-width: 280px !important;
-    width: 320px !important;
-    height: 42px !important;
-    border-radius: var(--ui-radius-pill) !important;
-    background-position: 12px center !important;
-}
-
-body.cc-admin-theme.edit-php .wp-list-table,
-body.cc-admin-theme.users-php .wp-list-table {
-    margin: 0 !important;
-    border: var(--ui-border-default) !important;
-    border-top: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.bottom,
-body.cc-admin-theme.users-php .tablenav.bottom {
-    margin: 0 !important;
-    padding: var(--ui-space-4) var(--ui-space-5) !important;
-    border: var(--ui-border-default) !important;
-    border-top: 0 !important;
-    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg) !important;
-    background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
-}
-
-@media (max-width: 1200px) {
-
-    body.cc-admin-theme.edit-php .tablenav.top,
-    body.cc-admin-theme.users-php .tablenav.top {
-        flex-wrap: wrap !important;
-    }
-
-    body.cc-admin-theme.edit-php .tablenav .tablenav-pages,
-    body.cc-admin-theme.users-php .tablenav .tablenav-pages {
-        order: 4 !important;
-        margin-left: 0 !important;
-    }
-
-    body.cc-admin-theme.edit-php .tablenav.top .search-box,
-    body.cc-admin-theme.users-php .tablenav.top .search-box {
-        margin-left: auto !important;
-    }
-}
-
-/* Centralized lock: list UIs must match the product shell on edit/users/plugins */
-body.cc-admin-theme.edit-php #screen-meta-links,
-body.cc-admin-theme.edit-php #screen-meta,
-body.cc-admin-theme.edit-php #contextual-help-link-wrap,
-body.cc-admin-theme.edit-php #screen-options-link-wrap,
-body.cc-admin-theme.users-php #screen-meta-links,
-body.cc-admin-theme.users-php #screen-meta,
-body.cc-admin-theme.users-php #contextual-help-link-wrap,
-body.cc-admin-theme.users-php #screen-options-link-wrap,
-body.cc-admin-theme.plugins-php #screen-meta-links,
-body.cc-admin-theme.plugins-php #screen-meta,
-body.cc-admin-theme.plugins-php #contextual-help-link-wrap,
-body.cc-admin-theme.plugins-php #screen-options-link-wrap,
-body.cc-admin-theme .screen-meta-toggle {
-    display: none !important;
-}
-
-body.cc-admin-theme.edit-php .wrap,
-body.cc-admin-theme.users-php .wrap,
-body.cc-admin-theme.plugins-php .wrap {
-    max-width: 1280px !important;
-    margin: var(--ui-space-6) auto 0 !important;
-    display: grid !important;
-    gap: var(--ui-space-5) !important;
-    align-items: stretch !important;
-}
-
-body.cc-admin-theme.edit-php .wrap .wp-heading-inline,
-body.cc-admin-theme.edit-php .wrap h1,
-body.cc-admin-theme.users-php .wrap .wp-heading-inline,
-body.cc-admin-theme.users-php .wrap h1,
-body.cc-admin-theme.plugins-php .wrap .wp-heading-inline,
-body.cc-admin-theme.plugins-php .wrap h1 {
-    text-align: left !important;
-    margin: 0 !important;
-}
-
-body.cc-admin-theme.edit-php .wrap>.page-title-action,
-body.cc-admin-theme.edit-php .wrap>.add-new-h2,
-body.cc-admin-theme.users-php .wrap>.page-title-action,
-body.cc-admin-theme.users-php .wrap>.add-new-h2,
-body.cc-admin-theme.plugins-php .wrap>.page-title-action,
-body.cc-admin-theme.plugins-php .wrap>.add-new-h2 {
-    position: absolute !important;
-    top: 0 !important;
-    right: 0 !important;
-    height: 40px !important;
-}
-
-body.cc-admin-theme.edit-php form#posts-filter,
-body.cc-admin-theme.users-php form#users-filter,
-body.cc-admin-theme.plugins-php form#plugins-filter {
-    width: 100% !important;
-    margin: 0 !important;
-    display: grid !important;
-    grid-template-columns: 1fr auto !important;
-    grid-template-areas:
-        "views search"
-        "toolbar toolbar"
-        "table table"
-        "footer footer" !important;
-    gap: var(--ui-space-4) !important;
-}
-
-body.cc-admin-theme.edit-php form#posts-filter>.subsubsub,
-body.cc-admin-theme.users-php form#users-filter>.subsubsub,
-body.cc-admin-theme.plugins-php form#plugins-filter>.subsubsub {
-    grid-area: views !important;
-    width: auto !important;
-    margin: 0 !important;
-    justify-self: start !important;
-}
-
-body.cc-admin-theme.edit-php form#posts-filter>p.search-box,
-body.cc-admin-theme.users-php form#users-filter>p.search-box,
-body.cc-admin-theme.plugins-php form#plugins-filter>p.search-box {
-    grid-area: search !important;
-    position: static !important;
-    top: auto !important;
-    right: auto !important;
-    clear: none !important;
-    float: none !important;
-    margin: 0 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-self: end !important;
-    gap: var(--ui-space-2) !important;
-    z-index: auto !important;
-}
-
-body.cc-admin-theme.edit-php .search-box,
-body.cc-admin-theme.users-php .search-box,
-body.cc-admin-theme.plugins-php .search-box {
-    position: static !important;
-    top: auto !important;
-    right: auto !important;
-    float: none !important;
-}
-
-body.cc-admin-theme.edit-php .search-box input[type="search"],
-body.cc-admin-theme.users-php .search-box input[type="search"],
-body.cc-admin-theme.plugins-php .search-box input[type="search"] {
-    min-width: 280px !important;
-    width: 320px !important;
-    height: 42px !important;
-    border-radius: var(--ui-radius-pill) !important;
-    background-position: 12px center !important;
-}
-
-body.cc-admin-theme.edit-php .search-box input[type="submit"],
-body.cc-admin-theme.users-php .search-box input[type="submit"],
-body.cc-admin-theme.plugins-php .search-box input[type="submit"] {
-    display: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top,
-body.cc-admin-theme.users-php .tablenav.top,
-body.cc-admin-theme.plugins-php .tablenav.top {
-    grid-area: toolbar !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: var(--ui-space-3) !important;
-    margin: 0 !important;
-    padding: var(--ui-space-4) var(--ui-space-5) !important;
-    border: var(--ui-border-default) !important;
-    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0 !important;
-    background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top .search-box,
-body.cc-admin-theme.users-php .tablenav.top .search-box,
-body.cc-admin-theme.plugins-php .tablenav.top .search-box,
-body.cc-admin-theme.edit-php .tablenav.bottom .search-box,
-body.cc-admin-theme.users-php .tablenav.bottom .search-box,
-body.cc-admin-theme.plugins-php .tablenav.bottom .search-box {
-    display: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top .actions,
-body.cc-admin-theme.users-php .tablenav.top .actions,
-body.cc-admin-theme.plugins-php .tablenav.top .actions {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: var(--ui-space-2) !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    float: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav .tablenav-pages,
-body.cc-admin-theme.users-php .tablenav .tablenav-pages,
-body.cc-admin-theme.plugins-php .tablenav .tablenav-pages {
-    margin-left: auto !important;
-}
-
-body.cc-admin-theme.edit-php .wp-list-table,
-body.cc-admin-theme.users-php .wp-list-table,
-body.cc-admin-theme.plugins-php .wp-list-table {
-    grid-area: table !important;
-    margin: 0 !important;
-    border: var(--ui-border-default) !important;
-    border-top: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.bottom,
-body.cc-admin-theme.users-php .tablenav.bottom,
-body.cc-admin-theme.plugins-php .tablenav.bottom {
-    grid-area: footer !important;
-    margin: 0 !important;
-    padding: var(--ui-space-4) var(--ui-space-5) !important;
-    border: var(--ui-border-default) !important;
-    border-top: 0 !important;
-    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg) !important;
-    background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
-}
-
-@media (max-width: 1200px) {
-
-    body.cc-admin-theme.edit-php form#posts-filter,
-    body.cc-admin-theme.users-php form#users-filter,
-    body.cc-admin-theme.plugins-php form#plugins-filter {
-        grid-template-columns: 1fr !important;
-        grid-template-areas:
-            "views"
-            "search"
-            "toolbar"
-            "table"
-            "footer" !important;
-    }
-
-    body.cc-admin-theme.edit-php form#posts-filter>p.search-box,
-    body.cc-admin-theme.users-php form#users-filter>p.search-box,
-    body.cc-admin-theme.plugins-php form#plugins-filter>p.search-box {
-        justify-self: stretch !important;
-    }
-}
 
 /* Sidebar compact mode + group labels (centralized) */
 @media screen and (min-width: 783px) {
@@ -3918,19 +3150,7 @@ body.cc-admin-theme.post-new-php #postbox-container-2 {
 }
 
 /* List surfaces v2: stable product layout for pages/post types/users */
-body.cc-admin-theme.edit-php .wrap,
-body.cc-admin-theme.users-php .wrap {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
-    grid-template-areas:
-        "title title"
-        "views search"
-        "list list" !important;
-    align-items: start !important;
-    column-gap: var(--ui-space-4) !important;
-    row-gap: var(--ui-space-4) !important;
-    position: relative !important;
-}
+/* list .wrap layout removed - now handled by display:block + form internal grid */
 
 body.cc-admin-theme.edit-php .wrap>h1,
 body.cc-admin-theme.edit-php .wrap>.wp-heading-inline,
@@ -4452,15 +3672,12 @@ body.cc-admin-theme.index-php #cc_client_dashboard_widget .cc-wp-translation-det
     }
 }
 
-/* List screens final lock: pages, post types, users, plugins */
+/* List screens: display is controlled by the unified final authority block below */
 body.cc-admin-theme.edit-php .wrap,
 body.cc-admin-theme.users-php .wrap,
 body.cc-admin-theme.plugins-php .wrap {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    align-items: center !important;
-    column-gap: var(--ui-space-3) !important;
-    row-gap: var(--ui-space-4) !important;
+    max-width: var(--ui-layout-wrap-max) !important;
+    margin: 0 auto !important;
 }
 
 body.cc-admin-theme.edit-php .wrap>h1,
@@ -4492,12 +3709,9 @@ body.cc-admin-theme.plugins-php .wrap>.subsubsub {
 body.cc-admin-theme.edit-php form#posts-filter,
 body.cc-admin-theme.users-php form#users-filter,
 body.cc-admin-theme.plugins-php form#plugins-filter {
-    flex: 0 0 100% !important;
-    display: flex !important;
-    flex-wrap: wrap !important;
-    align-items: stretch !important;
+    width: 100% !important;
+    display: block !important;
     margin: 0 !important;
-    gap: 0 !important;
 }
 
 body.cc-admin-theme.edit-php form#posts-filter>p.search-box,
@@ -6185,22 +5399,7 @@ body.cc-admin-theme.plugins-php form#plugins-filter>.tablenav.bottom {
 /* Unified list-screen architecture lock
  * Final authority block for posts/pages/CPT/users/plugins list screens.
  */
-body.cc-admin-theme.edit-php .wrap,
-body.cc-admin-theme.users-php .wrap,
-body.cc-admin-theme.plugins-php .wrap {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
-    grid-template-areas:
-        "title action"
-        "views views"
-        "form form" !important;
-    align-items: start !important;
-    column-gap: var(--ui-space-4) !important;
-    row-gap: var(--ui-space-4) !important;
-    width: min(100%, var(--ui-layout-wrap-max)) !important;
-    max-width: var(--ui-layout-wrap-max) !important;
-    margin: 0 auto !important;
-}
+/* list .wrap grid v5420 removed - now display:block per final authority block */
 
 body.cc-admin-theme.edit-php .wrap>h1,
 body.cc-admin-theme.edit-php .wrap>.wp-heading-inline,
@@ -6884,14 +6083,10 @@ body.cc-admin-theme.plugins-php #screen-meta {
 body.cc-admin-theme.edit-php .wrap,
 body.cc-admin-theme.users-php .wrap,
 body.cc-admin-theme.plugins-php .wrap {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
-    grid-template-areas:
-        "title action"
-        "views views"
-        "form arrow" !important;
-    align-items: start !important;
-    column-gap: var(--ui-space-3) !important;
+    display: block !important;
+    width: min(100%, var(--ui-layout-wrap-max)) !important;
+    max-width: var(--ui-layout-wrap-max) !important;
+    margin: 0 auto !important;
 }
 
 body.cc-admin-theme.edit-php form#posts-filter,

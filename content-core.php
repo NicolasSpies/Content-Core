@@ -3,7 +3,7 @@
  * Plugin Name: Content Core
  * Plugin URI:  
  * Description: Content Core is a custom engineered WordPress framework built from scratch by Nicolas Spies. It provides structured content architecture, controlled admin environments, modular extensions, and scalable backend logic for modern agency projects..
- * Version:     1.6.3
+ * Version:     1.6.4
  * Author:      Nicolas Spies
  * Text Domain: content-core
  */
@@ -220,7 +220,7 @@ function cc_get_site_image_id($key): int
 	$images = isset($settings['images']) && is_array($settings['images']) ? $settings['images'] : [];
 	foreach ($candidates as $candidate) {
 		if (!empty($images[$candidate])) {
-			return absint($images[$candidate]);
+			return (int) $images[$candidate];
 		}
 	}
 
@@ -228,7 +228,7 @@ function cc_get_site_image_id($key): int
 	$legacy = get_option('cc_site_images', []);
 	foreach ($candidates as $candidate) {
 		if (!empty($legacy[$candidate])) {
-			return absint($legacy[$candidate]);
+			return (int) $legacy[$candidate];
 		}
 	}
 	return 0;
