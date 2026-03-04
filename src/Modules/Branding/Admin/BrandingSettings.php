@@ -88,7 +88,9 @@ class BrandingSettings
             $primary = sanitize_hex_color($data['custom_primary_color']);
             if ($primary) {
                 $clean['custom_primary_color'] = $primary;
-                $clean['login_bg_color'] = $primary;
+                if (!isset($data['login_bg_color'])) {
+                    $clean['login_bg_color'] = $primary;
+                }
             }
         }
         if (isset($data['custom_accent_color'])) {
@@ -98,10 +100,9 @@ class BrandingSettings
                 $clean['login_btn_color'] = $accent;
             }
         }
-        if (isset($data['login_bg_color']) && !isset($data['custom_primary_color'])) {
+        if (isset($data['login_bg_color'])) {
             $primary = sanitize_hex_color($data['login_bg_color']);
             if ($primary) {
-                $clean['custom_primary_color'] = $primary;
                 $clean['login_bg_color'] = $primary;
             }
         }

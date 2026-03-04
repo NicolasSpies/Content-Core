@@ -15,7 +15,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             const root = document.getElementById('cc-site-settings-react-root');
             if (root) {
-                root.innerHTML = '<div class="notice notice-error" style="margin: 20px 0;"><p><strong>Content Core config missing.</strong> Assets not localized. Please check admin enqueue + caching plugins.</p></div>';
+                root.innerHTML = '<div class="notice notice-error cc-notice-inline"><p><strong>Content Core config missing.</strong> Assets not localized. Please check admin enqueue + caching plugins.</p></div>';
             }
         });
         return;
@@ -1912,20 +1912,17 @@
                     el('hr', { style: { margin: '24px 0', border: 'none', borderTop: '1px solid var(--cc-border-header)' } }),
 
                     el('div', { className: 'cc-field' },
-                        el('label', { className: 'cc-field-label' }, __('Background Color', 'content-core')),
+                        el('label', { className: 'cc-field-label' }, __('Login Background Color', 'content-core')),
                         el('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' } },
                             el('input', {
                                 type: 'color',
-                                value: branding.custom_primary_color || branding.login_bg_color || '#1e1e1e',
+                                value: branding.login_bg_color || branding.custom_primary_color || '#1e1e1e',
                                 onChange: function (e) {
-                                    set({
-                                        custom_primary_color: e.target.value,
-                                        login_bg_color: e.target.value
-                                    });
+                                    set('login_bg_color', e.target.value);
                                 },
                                 style: { width: '44px', height: '44px', padding: '4px', border: '1px solid var(--cc-border)', borderRadius: '4px' }
                             }),
-                            el('code', { style: { fontSize: '11px' } }, branding.custom_primary_color || branding.login_bg_color || '#1e1e1e')
+                            el('code', { style: { fontSize: '11px' } }, branding.login_bg_color || branding.custom_primary_color || '#1e1e1e')
                         )
                     ),
                     el('div', { className: 'cc-field' },

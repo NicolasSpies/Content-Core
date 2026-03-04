@@ -59,31 +59,31 @@ class SeoModule implements ModuleInterface
         $image_id = get_post_meta($post->ID, 'cc_seo_og_image_id', true);
         $noindex = get_post_meta($post->ID, 'cc_seo_noindex', true);
         ?>
-        <div style="padding: 10px 0;">
-            <p style="margin-bottom: 15px;">
-                <label for="cc_seo_title" style="display:block; font-weight:bold; margin-bottom:5px;">
+        <div>
+            <p>
+                <label for="cc_seo_title">
                     <?php _e('SEO Title', 'content-core'); ?>
                 </label>
-                <input type="text" id="cc_seo_title" name="cc_seo_title" value="<?php echo esc_attr($title); ?>" style="width: 100%; max-width: 600px;" />
+                <input type="text" id="cc_seo_title" name="cc_seo_title" value="<?php echo esc_attr($title); ?>" />
             </p>
 
-            <p style="margin-bottom: 15px;">
-                <label for="cc_seo_description" style="display:block; font-weight:bold; margin-bottom:5px;">
+            <p>
+                <label for="cc_seo_description">
                     <?php _e('Meta Description', 'content-core'); ?>
                 </label>
-                <textarea id="cc_seo_description" name="cc_seo_description" rows="4" style="width: 100%; max-width: 600px;"><?php echo esc_textarea($description); ?></textarea>
+                <textarea id="cc_seo_description" name="cc_seo_description" rows="4"><?php echo esc_textarea($description); ?></textarea>
             </p>
 
-            <p style="margin-bottom: 15px;">
-                <label style="display:block; font-weight:bold; margin-bottom:5px;">
+            <p>
+                <label>
                     <?php _e('OG Image', 'content-core'); ?>
                 </label>
                 <input type="hidden" id="cc_seo_og_image_id" name="cc_seo_og_image_id" value="<?php echo esc_attr($image_id); ?>" />
                 
-                <div id="cc-seo-meta-image-preview" style="margin-bottom: 10px; <?php echo empty($image_id) ? 'display: none;' : ''; ?>">
+                <div id="cc-seo-meta-image-preview">
                     <?php
                     if (!empty($image_id)) {
-                        echo wp_get_attachment_image(absint($image_id), 'thumbnail', false, ['style' => 'max-width: 150px; height: auto; border: 1px solid #ddd; padding: 3px; border-radius: 4px;']);
+                        echo wp_get_attachment_image(absint($image_id), 'thumbnail', false, ['class' => 'cc-media-preview-image']);
                     }
                     ?>
                 </div>
@@ -91,13 +91,13 @@ class SeoModule implements ModuleInterface
                 <button type="button" class="button" id="cc-seo-meta-image-button">
                     <?php _e('Select Image', 'content-core'); ?>
                 </button>
-                <button type="button" class="button button-link-delete" id="cc-seo-meta-image-remove" style="<?php echo empty($image_id) ? 'display: none;' : ''; ?>">
+                <button type="button" class="button button-link-delete" id="cc-seo-meta-image-remove">
                     <?php _e('Remove Image', 'content-core'); ?>
                 </button>
             </p>
 
-            <p style="margin-bottom: 15px;">
-                <label for="cc_seo_noindex" style="font-weight:bold;">
+            <p>
+                <label for="cc_seo_noindex">
                     <input type="checkbox" id="cc_seo_noindex" name="cc_seo_noindex" value="1" <?php checked($noindex, '1'); ?> />
                     <?php _e('Noindex (Hide from search engines)', 'content-core'); ?>
                 </label>
@@ -122,7 +122,7 @@ class SeoModule implements ModuleInterface
                         var attachment = metaMediaFrame.state().get('selection').first().toJSON();
                         $('#cc_seo_og_image_id').val(attachment.id);
                         var imgUrl = attachment.sizes && attachment.sizes.thumbnail ? attachment.sizes.thumbnail.url : attachment.url;
-                        $('#cc-seo-meta-image-preview').html('<img src="' + imgUrl + '" style="max-width: 150px; height: auto; border: 1px solid #ddd; padding: 3px; border-radius: 4px;" />').show();
+                        $('#cc-seo-meta-image-preview').html('<img src="' + imgUrl + '" />').show();
                         $('#cc-seo-meta-image-remove').show();
                     });
                     metaMediaFrame.open();

@@ -301,25 +301,25 @@ class DashboardRenderer
                         </div>
                     </div>
                     <div class="cc-card-footer">
-                        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="margin:0;">
+                        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
                             <input type="hidden" name="action" value="cc_clear_plugin_caches">
                             <?php wp_nonce_field('cc_cache_nonce'); ?>
                             <button type="submit" class="cc-button-secondary">
                                 <?php _e('Clear CC Cache', 'content-core'); ?>
                             </button>
                         </form>
-                        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="margin:0;">
+                        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
                             <input type="hidden" name="action" value="cc_clear_expired_transients">
                             <?php wp_nonce_field('cc_cache_nonce'); ?>
                             <button type="submit" class="cc-button-secondary">
                                 <?php _e('Clear Expired', 'content-core'); ?>
                             </button>
                         </form>
-                        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="margin:0;">
+                        <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
                             <input type="hidden" name="action" value="cc_rebuild_runtime_cache">
                             <?php wp_nonce_field('cc_rebuild_cache_nonce'); ?>
                             <button type="submit" class="cc-button-primary">
-                                <span class="dashicons dashicons-hammer" style="margin-right:4px;"></span>
+                                <span class="dashicons dashicons-hammer"></span>
                                 <?php _e('Rebuild Runtime Cache', 'content-core'); ?>
                             </button>
                         </form>
@@ -334,7 +334,7 @@ class DashboardRenderer
                             <?php _e('Recent Activity', 'content-core'); ?>
                         </h2>
                     </div>
-                    <div class="cc-card-body" style="padding:0;">
+                    <div class="cc-card-body">
                         <?php
                         $audit_service = new \ContentCore\Admin\AuditService();
                         $logs = array_filter($audit_service->get_logs(), function ($log) {
@@ -343,7 +343,7 @@ class DashboardRenderer
                         });
                         $logs = array_slice(array_values($logs), 0, 5);
                         if (empty($logs)): ?>
-                            <div style="padding:32px; text-align:center; color:var(--cc-text-muted);">
+                            <div>
                                 <?php _e('No activity recorded.', 'content-core'); ?>
                             </div>
                         <?php else: ?>
@@ -353,20 +353,20 @@ class DashboardRenderer
                                         <tr>
                                             <th><?php _e('Action', 'content-core'); ?></th>
                                             <th><?php _e('Time', 'content-core'); ?></th>
-                                            <th style="text-align:right;"><?php _e('Status', 'content-core'); ?></th>
+                                            <th><?php _e('Status', 'content-core'); ?></th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php foreach ($logs as $log): ?>
                                             <tr>
-                                                <td style="font-weight:600;"><?php echo esc_html($log['action']); ?></td>
-                                                <td style="color:var(--cc-text-muted); font-size:12px;">
+                                                <td><?php echo esc_html($log['action']); ?></td>
+                                                <td>
                                                     <?php echo esc_html($log['timestamp']); ?>
                                                 </td>
-                                                <td style="text-align:right;">
+                                                <td>
                                                     <span
                                                         class="cc-status-pill cc-status-<?php echo ($log['status'] ?? '') === 'success' ? 'healthy' : 'warning'; ?>"
-                                                        style="font-size:10px;">
+                                                       >
                                                         <?php echo strtoupper($log['status'] ?? 'INFO'); ?>
                                                     </span>
                                                 </td>

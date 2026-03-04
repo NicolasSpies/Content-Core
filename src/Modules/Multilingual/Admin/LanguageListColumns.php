@@ -58,7 +58,7 @@ class LanguageListColumns
 
         $screen = get_current_screen();
         if ($screen && $this->should_show_column($screen->post_type)) {
-            wp_enqueue_style('cc-admin-modern');
+            wp_enqueue_style('cc-admin-ui');
         }
     }
 

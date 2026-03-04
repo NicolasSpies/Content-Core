@@ -37,7 +37,7 @@ class ApiReferenceRenderer
                 <table class="wp-list-table widefat fixed striped">
                     <thead>
                         <tr>
-                            <th style="width: 300px;">
+                            <th>
                                 <?php _e('Endpoint', 'content-core'); ?>
                             </th>
                             <th>

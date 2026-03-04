@@ -87,8 +87,8 @@ class OptionsPageAdmin
                 continue;
             }
 
-            echo '<div class="cc-group-wrap" style="margin-bottom: 40px;">';
-            echo '<h2 style="font-size: 1.5rem; margin-bottom: 20px; border-bottom: 2px solid #ccc; padding-bottom: 10px;">' . esc_html($group->post_title) . '</h2>';
+            echo '<div class="cc-group-wrap">';
+            echo '<h2 class="cc-group-title">' . esc_html($group->post_title) . '</h2>';
             echo '<div class="cc-fields-container">';
 
             $in_section = false;
@@ -260,7 +260,7 @@ class OptionsPageAdmin
             echo '<span class="cc-section-toggle-icon dashicons dashicons-arrow-down-alt2"></span>';
         }
         echo '</div>';
-        echo '<div class="cc-section-content" style="padding: 20px;">';
+        echo '<div class="cc-section-content">';
     }
 
     /**
@@ -281,9 +281,9 @@ class OptionsPageAdmin
             }
         }
         echo '</div>';
-        echo '<div class="cc-media-actions" style="margin-top: 10px;">';
+        echo '<div class="cc-media-actions">';
         echo '<button type="button" class="button cc-media-upload-btn">' . esc_html($bt) . '</button> ';
-        echo '<button type="button" class="button cc-media-remove-btn" style="' . (!$value ? 'display:none;' : '') . '">' . esc_html__('Remove', 'content-core') . '</button>';
+        echo '<button type="button" class="button cc-media-remove-btn' . (!$value ? ' hidden' : '') . '"' . (!$value ? ' hidden' : '') . '>' . esc_html__('Remove', 'content-core') . '</button>';
         echo '</div>';
         echo '</div>';
     }
@@ -336,7 +336,7 @@ class OptionsPageAdmin
         echo '<button type="button" class="cc-repeater-row-remove" title="' . esc_attr__('Remove Row', 'content-core') . '"><span class="dashicons dashicons-trash"></span></button>';
         echo '</div>';
         echo '</div>';
-        echo '<div class="cc-repeater-row-content" style="display:none;">';
+        echo '<div class="cc-repeater-row-content hidden" hidden>';
 
         foreach ($sub_fields as $sub) {
             $sub_name = $sub['name'] ?? '';
@@ -556,21 +556,9 @@ class OptionsPageAdmin
         wp_enqueue_media();
         wp_enqueue_script('jquery-ui-sortable');
 
-        // Enqueue modern assets
-        wp_enqueue_style(
-            'cc-admin-modern',
-            plugins_url('assets/css/admin.css', dirname(__DIR__, 4)),
-            [],
-            '1.0.0'
-        );
-
-        wp_enqueue_script(
-            'cc-admin-modern',
-            plugins_url('assets/js/admin.js', dirname(__DIR__, 4)),
-            ['jquery', 'jquery-ui-sortable'],
-            '1.0.0',
-            true
-        );
+        // Enqueue centrally registered unified admin assets.
+        wp_enqueue_style('cc-admin-ui');
+        wp_enqueue_script('cc-admin-js');
 
     }
 }

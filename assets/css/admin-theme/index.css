@@ -1,0 +1,7 @@
+@layer tokens, reset-bridge, primitives, components, wp-bridge, utilities, overrides;
+@import url('./01-tokens.css?v=2') layer(tokens);
+@import url('./02-base-reset.css?v=2') layer(reset-bridge);
+@import url('./03-layout.css?v=2') layer(primitives);
+@import url('./04-components.css?v=2') layer(components);
+@import url('./05-wp-bridge.css?v=2') layer(wp-bridge);
+@import url('./06-control-overrides.css?v=5');

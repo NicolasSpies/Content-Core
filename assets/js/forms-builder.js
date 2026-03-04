@@ -23,42 +23,42 @@
             $container.empty();
 
             if (fields.length === 0) {
-                $container.append('<p style="padding: 20px; color: #646970; text-align: center; border: 1px dashed #ccd0d4; background: #fff;">Keine Felder hinzugefügt. Wählen Sie oben einen Typ und klicken Sie auf Hinzufügen.</p>');
+                $container.append('<p>Keine Felder hinzugefügt. Wählen Sie oben einen Typ und klicken Sie auf Hinzufügen.</p>');
             }
 
             fields.forEach((field, index) => {
                 const $fieldItem = $(`
-                    <div class="cc-field-item card" data-index="${index}" style="background: #fff; border: 1px solid #ccd0d4; border-radius: 4px; padding: 15px; margin-bottom: 15px; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
-                        <div class="cc-field-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #f0f0f1;">
+                    <div class="cc-field-item card" data-index="${index}">
+                        <div class="cc-field-header">
                             <div>
-                                <span class="cc-field-type-badge" style="background: #2271b1; color: #fff; padding: 2px 8px; border-radius: 3px; font-size: 11px; text-transform: uppercase;">${field.type}</span>
-                                <strong style="margin-left: 10px;">${field.label || '(Unbenannt)'}</strong>
+                                <span class="cc-field-type-badge">${field.type}</span>
+                                <strong>${field.label || '(Unbenannt)'}</strong>
                             </div>
                             <div class="cc-field-actions">
                                 <button type="button" class="button-link cc-move-up" title="Nach oben" ${index === 0 ? 'disabled' : ''}><span class="dashicons dashicons-arrow-up-alt2"></span></button>
                                 <button type="button" class="button-link cc-move-down" title="Nach unten" ${index === fields.length - 1 ? 'disabled' : ''}><span class="dashicons dashicons-arrow-down-alt2"></span></button>
-                                <button type="button" class="button-link cc-remove-field" style="color: #d63638; margin-left: 10px;">Löschen</button>
+                                <button type="button" class="button-link cc-remove-field">Löschen</button>
                             </div>
                         </div>
                         
-                        <div class="cc-field-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="cc-field-body">
                             <div class="cc-field-input-group">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px;">Label</label>
+                                <label>Label</label>
                                 <input type="text" class="cc-f-label widefat" value="${field.label || ''}">
                             </div>
                             <div class="cc-field-input-group">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px;">Name (Slug)</label>
+                                <label>Name (Slug)</label>
                                 <input type="text" class="cc-f-name widefat" value="${field.name || ''}" placeholder="auto-generiert">
                             </div>
                             
                             ${field.type !== 'consent' ? `
                             <div class="cc-field-input-group">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px;">Platzhalter</label>
+                                <label>Platzhalter</label>
                                 <input type="text" class="cc-f-placeholder widefat" value="${field.placeholder || ''}">
                             </div>
                             ` : ''}
 
-                            <div class="cc-field-input-group" style="display: flex; align-items: flex-end; padding-bottom: 5px;">
+                            <div class="cc-field-input-group">
                                 <label>
                                     <input type="checkbox" class="cc-f-required" ${field.required ? 'checked' : ''} ${field.type === 'consent' ? 'disabled' : ''}> <strong>Pflichtfeld</strong>
                                 </label>
@@ -80,17 +80,17 @@
                 html = renderOptionsEditor(field, index);
             } else if (field.type === 'number') {
                 html = `
-                    <div class="cc-advanced-config" style="margin-top: 15px; padding: 15px; background: #f6f7f7; border: 1px solid #ccd0d4; border-radius: 4px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                    <div class="cc-advanced-config">
                         <div class="cc-field-input-group">
-                            <label style="display: block; font-weight: 600; margin-bottom: 5px;">Min</label>
+                            <label>Min</label>
                             <input type="number" class="cc-f-min widefat" value="${field.min || ''}">
                         </div>
                         <div class="cc-field-input-group">
-                            <label style="display: block; font-weight: 600; margin-bottom: 5px;">Max</label>
+                            <label>Max</label>
                             <input type="number" class="cc-f-max widefat" value="${field.max || ''}">
                         </div>
                         <div class="cc-field-input-group">
-                            <label style="display: block; font-weight: 600; margin-bottom: 5px;">Schrittweite</label>
+                            <label>Schrittweite</label>
                             <input type="number" step="any" class="cc-f-step widefat" value="${field.step || ''}">
                         </div>
                     </div>
@@ -98,18 +98,18 @@
             } else if (field.type === 'file') {
                 const allowedStr = (field.allowed_types || ['pdf', 'jpg', 'png']).join(',');
                 html = `
-                    <div class="cc-advanced-config" style="margin-top: 15px; padding: 15px; background: #f6f7f7; border: 1px solid #ccd0d4; border-radius: 4px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="cc-advanced-config">
+                        <div>
                             <div class="cc-field-input-group">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px;">Max. Größe (MB)</label>
+                                <label>Max. Größe (MB)</label>
                                 <input type="number" class="cc-f-max-size widefat" value="${field.max_size_mb || 5}">
                             </div>
                             <div class="cc-field-input-group">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px;">Erlaubte Typen (kommagetrennt)</label>
+                                <label>Erlaubte Typen (kommagetrennt)</label>
                                 <input type="text" class="cc-f-allowed-types widefat" value="${allowedStr}">
                             </div>
                         </div>
-                        <div style="margin-top: 10px;">
+                        <div>
                             <label>
                                 <input type="checkbox" class="cc-f-multiple" ${field.multiple ? 'checked' : ''}> Mehrfacher Upload erlauben
                             </label>
@@ -118,13 +118,13 @@
                 `;
             } else if (field.type === 'consent') {
                 html = `
-                    <div class="cc-advanced-config" style="margin-top: 15px; padding: 15px; background: #f6f7f7; border: 1px solid #ccd0d4; border-radius: 4px;">
-                        <div class="cc-field-input-group" style="margin-bottom: 10px;">
-                            <label style="display: block; font-weight: 600; margin-bottom: 5px;">Einwilligungstext (HTML erlaubt)</label>
+                    <div class="cc-advanced-config">
+                        <div class="cc-field-input-group">
+                            <label>Einwilligungstext (HTML erlaubt)</label>
                             <textarea class="cc-f-consent-text widefat" rows="2">${field.consent_text || ''}</textarea>
                         </div>
                         <div class="cc-field-input-group">
-                            <label style="display: block; font-weight: 600; margin-bottom: 5px;">Link zur Datenschutzerklärung (URL)</label>
+                            <label>Link zur Datenschutzerklärung (URL)</label>
                             <input type="url" class="cc-f-consent-url widefat" value="${field.consent_link_url || ''}">
                         </div>
                     </div>
@@ -137,17 +137,17 @@
         function renderOptionsEditor(field, index) {
             const ops = field.options || [];
             let html = `
-                <div class="cc-options-editor" style="margin-top: 20px; padding: 15px; background: #f6f7f7; border: 1px solid #ccd0d4; border-radius: 4px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 10px;">Optionen</label>
+                <div class="cc-options-editor">
+                    <label>Optionen</label>
                     <div class="cc-options-list">
             `;
 
             ops.forEach((o, i) => {
                 html += `
-                    <div class="cc-option-row" style="display: flex; gap: 10px; margin-bottom: 8px;" data-opt-index="${i}">
+                    <div class="cc-option-row" data-opt-index="${i}">
                         <input type="text" class="cc-f-opt-label widefat" value="${o.label || ''}" placeholder="Label">
                         <input type="text" class="cc-f-opt-value widefat" value="${o.value || ''}" placeholder="Wert">
-                        <button type="button" class="button cc-remove-option" style="color: #d63638;">&times;</button>
+                        <button type="button" class="button cc-remove-option">&times;</button>
                     </div>
                 `;
             });

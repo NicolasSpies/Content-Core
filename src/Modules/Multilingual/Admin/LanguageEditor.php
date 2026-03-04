@@ -66,7 +66,7 @@ class LanguageEditor
 
         if ($is_new_post) {
             echo '<input type="hidden" name="cc_language" value="' . esc_attr($default_lang) . '">';
-            echo '<p style="color: #646970; font-size: 12px; margin: 0;">';
+            echo '<p>';
             echo esc_html(sprintf(
                 __('This item will be created in the default language (%s). You can change the language after saving.', 'content-core'),
                 strtoupper($default_lang)
@@ -83,9 +83,9 @@ class LanguageEditor
 
         $group_id = get_post_meta($post->ID, '_cc_translation_group', true);
 
-        echo '<div class="cc-language-selector" style="margin-bottom: 20px;">';
-        echo '<label style="display: block; margin-bottom: 8px; font-weight: 600;">' . __('Current Language', 'content-core') . '</label>';
-        echo '<select name="cc_language" style="width: 100%;">';
+        echo '<div class="cc-language-selector">';
+        echo '<label>' . __('Current Language', 'content-core') . '</label>';
+        echo '<select name="cc_language">';
         foreach ($settings['languages'] as $l) {
             echo '<option value="' . esc_attr($l['code']) . '" ' . selected($current_lang, $l['code'], false) . '>' . esc_html($l['label']) . ' (' . strtoupper(esc_html($l['code'])) . ')</option>';
         }
@@ -93,28 +93,28 @@ class LanguageEditor
         echo '</div>';
 
         if ($current_lang !== $default_lang) {
-            echo '<div class="cc-language-selector" style="margin-bottom: 20px;">';
-            echo '<label style="display:flex; align-items:center; gap:8px; font-weight:600;">';
+            echo '<div class="cc-language-selector">';
+            echo '<label>';
             echo '<input type="hidden" name="cc_allow_custom_slug" value="0">';
             echo '<input type="checkbox" name="cc_allow_custom_slug" value="1" ' . checked($allow_custom_slug, true, false) . '>';
             echo esc_html__('Allow custom slug for this translation', 'content-core');
             echo '</label>';
-            echo '<p style="margin:6px 0 0; color:#646970; font-size:12px;">';
+            echo '<p>';
             echo esc_html__('Disabled by default. When disabled, slug is auto-synced from this translation title on save.', 'content-core');
             echo '</p>';
             echo '</div>';
         }
 
         if ($group_id) {
-            echo '<div style="margin-bottom: 20px; padding: 10px; background: #f0f0f1; border: 1px solid #ccd0d4; border-radius: 4px;">';
-            echo '<strong style="display: block; margin-bottom: 4px; font-size: 12px; color: #50575e;">' . __('Translation Group ID', 'content-core') . '</strong>';
-            echo '<code style="display: block; font-size: 11px; word-break: break-all; background: transparent; padding: 0;">' . esc_html($group_id) . '</code>';
+            echo '<div>';
+            echo '<strong>' . __('Translation Group ID', 'content-core') . '</strong>';
+            echo '<code>' . esc_html($group_id) . '</code>';
             echo '</div>';
 
             $translations = $this->module->get_translation_manager()->get_translations($group_id);
             echo '<div class="cc-translations-list">';
-            echo '<label style="display: block; margin-bottom: 8px; font-weight: 600;">' . __('Translations', 'content-core') . '</label>';
-            echo '<ul style="margin: 0; padding: 0; list-style: none;">';
+            echo '<label>' . __('Translations', 'content-core') . '</label>';
+            echo '<ul>';
             foreach ($settings['languages'] as $l) {
                 $lang = $l['code'];
                 $flag_id = $l['flag_id'] ?? 0;
@@ -123,11 +123,11 @@ class LanguageEditor
                     continue;
                 }
 
-                echo '<li style="margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f0f0f1; padding-bottom: 6px;">';
+                echo '<li>';
 
-                echo '<div style="display: flex; align-items: center; gap: 8px;">';
+                echo '<div>';
                 echo $this->module->get_flag_html($lang, $flag_id);
-                echo '<span style="font-size: 13px; font-weight: 500;">' . esc_html($l['label']) . '</span>';
+                echo '<span>' . esc_html($l['label']) . '</span>';
                 echo '</div>';
 
                 if (isset($translations[$lang])) {
@@ -135,9 +135,9 @@ class LanguageEditor
                     $status_color = $translated_post->post_status === 'publish' ? '#2271b1' : '#646970';
                     $status_label = get_post_status_object($translated_post->post_status)->label;
 
-                    echo '<a href="' . get_edit_post_link($translations[$lang]) . '" style="text-decoration: none; display: flex; align-items: center; gap: 4px; color: ' . $status_color . ';" title="' . esc_attr($translated_post->post_title) . '">';
-                    echo '<span class="dashicons dashicons-edit" style="font-size: 16px; width: 16px; height: 16px;"></span>';
-                    echo '<span style="font-size: 11px; font-weight: 500;">' . esc_html($status_label) . '</span>';
+                    echo '<a href="' . get_edit_post_link($translations[$lang]) . '" title="' . esc_attr($translated_post->post_title) . '">';
+                    echo '<span class="dashicons dashicons-edit"></span>';
+                    echo '<span>' . esc_html($status_label) . '</span>';
                     echo '</a>';
                 } else {
                     $create_url = add_query_arg([
@@ -147,7 +147,7 @@ class LanguageEditor
                         'nonce' => wp_create_nonce('cc_create_translation_' . $post->ID)
                     ], admin_url('admin.php'));
 
-                    echo '<a href="' . esc_url($create_url) . '" class="button button-small" style="display: flex; align-items: center; gap: 2px;"><span class="dashicons dashicons-plus-alt2" style="font-size: 15px; margin-top: 1px; width: 15px; height: 15px;"></span> ' . __('Create', 'content-core') . '</a>';
+                    echo '<a href="' . esc_url($create_url) . '" class="button button-small"><span class="dashicons dashicons-plus-alt2"></span> ' . __('Create', 'content-core') . '</a>';
                 }
                 echo '</li>';
             }
@@ -205,11 +205,11 @@ class LanguageEditor
         $settings = $this->module->get_settings();
         $default_lang = $settings['default_lang'] ?? 'de';
         ?>
-        <div class="form-field term-group" style="display:none;">
+        <div class="form-field term-group">
             <input type="hidden" name="cc_term_language" value="<?php echo esc_attr($default_lang); ?>">
         </div>
         <div class="form-field">
-            <p class="description" style="color:#646970; font-style:italic; margin-top:4px;">
+            <p class="description">
                 <?php printf(
                     esc_html__('This term will be created in the default language (%s). You can add translations after saving.', 'content-core'),
                     strtoupper($default_lang)

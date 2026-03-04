@@ -84,12 +84,11 @@ class FormAdmin
 
         // Field Adder UI
         ?>
-        <div class="cc-form-builder-toolbar"
-            style="margin-bottom: 20px; padding: 15px; background: #f6f7f7; border: 1px solid #ccd0d4; border-radius: 4px; display: flex; align-items: center; gap: 10px;">
+        <div class="cc-form-builder-toolbar">
             <label for="cc-add-field-type"><strong>
                     <?php _e('Neues Feld:', 'content-core'); ?>
                 </strong></label>
-            <select id="cc-add-field-type" class="postbox">
+            <select id="cc-add-field-type" class="cc-input-full">
                 <option value="text">Text</option>
                 <option value="email">Email</option>
                 <option value="tel">Tel (Telefon)</option>
@@ -282,7 +281,7 @@ class FormAdmin
         }
 
         // Enqueue Admin Assets
-        wp_enqueue_style('cc-form-admin-css', CONTENT_CORE_PLUGIN_URL . 'assets/css/forms-admin.css', [], CONTENT_CORE_VERSION);
+        wp_enqueue_style('cc-admin-ui');
         wp_enqueue_script('cc-form-builder-js', CONTENT_CORE_PLUGIN_URL . 'assets/js/forms-builder.js', ['jquery', 'wp-util'], CONTENT_CORE_VERSION, true);
     }
 }

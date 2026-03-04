@@ -21,6 +21,7 @@ class AdminMenu
         // 2. Assets (Delegates to centralized Assets class registration)
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
         add_filter('admin_body_class', [$this, 'add_admin_theme_body_class']);
+        add_action('load-upload.php', [$this, 'enforce_media_grid_view']);
 
         // 3. Maintenance Actions
         $maintenance = new MaintenanceService();
@@ -94,6 +95,27 @@ class AdminMenu
         }
 
         wp_enqueue_script('jquery-ui-sortable');
+    }
+
+    /**
+     * Force Media Library into grid mode and prevent list mode access.
+     */
+    public function enforce_media_grid_view(): void
+    {
+        if (!is_user_logged_in()) {
+            return;
+        }
+
+        update_user_option(get_current_user_id(), 'media_library_mode', 'grid', true);
+
+        $requested_mode = isset($_GET['mode']) ? sanitize_key((string) wp_unslash($_GET['mode'])) : '';
+        if ($requested_mode === 'grid') {
+            return;
+        }
+
+        $target = add_query_arg('mode', 'grid', remove_query_arg('mode'));
+        wp_safe_redirect($target);
+        exit;
     }
 
     /**
@@ -432,18 +454,57 @@ class AdminMenu
         if (!$screen || !$this->is_unified_theme_scope($screen)) {
             return $classes;
         }
-        $result = $classes;
-        if (strpos($result, 'cc-admin-theme') === false) {
-            $result = trim($result . ' cc-admin-theme');
-        }
-        if (is_user_logged_in() && get_user_meta(get_current_user_id(), 'cc_dark_mode', true) === '1' && strpos($result, 'cc-admin-theme-dark') === false) {
-            $result = trim($result . ' cc-admin-theme-dark');
-        }
-        if ($screen->id === 'upload' && strpos($result, 'cc-upload-media-final') === false) {
-            $result = trim($result . ' cc-upload-media-final');
+
+        $tokens = preg_split('/\s+/', trim($classes)) ?: [];
+        $tokens = array_values(array_filter($tokens, static fn($token): bool => $token !== ''));
+
+        $add_class = static function (string $class_name) use (&$tokens): void {
+            if (!in_array($class_name, $tokens, true)) {
+                $tokens[] = $class_name;
+            }
+        };
+
+        $add_class('cc-admin-theme');
+
+        if (is_user_logged_in() && get_user_meta(get_current_user_id(), 'cc_dark_mode', true) === '1') {
+            $add_class('cc-admin-theme-dark');
         }
 
-        return $result;
+        if ($this->is_list_table_screen($screen)) {
+            $add_class('cc-list-table-screen');
+        }
+
+        if ($screen->id === 'upload') {
+            $add_class('cc-upload-media-final');
+            $add_class('cc-media-screen');
+            $add_class('cc-media-native-inspector');
+        }
+
+        if (in_array($screen->base, ['post', 'site-editor'], true)) {
+            $add_class('cc-post-edit-screen');
+        }
+
+        if (in_array($screen->base, ['options-general', 'options-writing', 'options-reading', 'options-discussion', 'options-media', 'options-permalink'], true)) {
+            $add_class('cc-settings-screen');
+        }
+
+        return trim(implode(' ', $tokens));
+    }
+
+    /**
+     * Detect common list-table admin screens so layout CSS can apply on first paint.
+     */
+    private function is_list_table_screen(\WP_Screen $screen): bool
+    {
+        if (in_array($screen->base, ['edit', 'upload', 'users', 'plugins', 'comments', 'edit-tags'], true)) {
+            return true;
+        }
+
+        if (in_array($screen->id, ['edit', 'upload', 'users', 'plugins', 'edit-comments', 'edit-tags'], true)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

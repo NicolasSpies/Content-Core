@@ -61,10 +61,10 @@ class VisibilityTabRenderer
                         <table class="cc-table cc-table-flush cc-visibility-sortable">
                             <thead>
                                 <tr>
-                                    <th style="width: 50px;"></th>
+                                    <th></th>
                                     <th><?php _e('Menu Item', 'content-core'); ?></th>
-                                    <th style="text-align: center; width: 140px;"><?php _e('Admins', 'content-core'); ?></th>
-                                    <th style="text-align: center; width: 140px;">
+                                    <th><?php _e('Admins', 'content-core'); ?></th>
+                                    <th>
                                         <?php _e('Editors / Clients', 'content-core'); ?></th>
                                 </tr>
                             </thead>
@@ -86,17 +86,17 @@ class VisibilityTabRenderer
                                     $a_locked = in_array($slug, ['options-general.php', 'plugins.php', 'content-core'], true);
                                     ?>
                                     <tr data-slug="<?php echo esc_attr($slug); ?>">
-                                        <td style="text-align: center;">
+                                        <td>
                                             <span class="dashicons dashicons-menu cc-drag-handle"
-                                                style="cursor:grab; color:var(--cc-text-muted);"></span>
+                                               ></span>
                                         </td>
                                         <td>
-                                            <div style="font-weight:700; font-size:14px;"><?php echo esc_html($title); ?></div>
+                                            <div><?php echo esc_html($title); ?></div>
                                             <code
-                                                style="font-size: 11px; opacity:0.6; display:inline-block; margin-top:2px;"><?php echo esc_html($slug); ?></code>
+                                               ><?php echo esc_html($slug); ?></code>
                                         </td>
-                                        <td style="text-align: center;">
-                                            <div class="cc-toggle-wrap" style="justify-content:center;">
+                                        <td>
+                                            <div class="cc-toggle-wrap">
                                                 <label class="cc-toggle">
                                                     <input type="hidden" name="cc_menu_admin[<?php echo esc_attr($slug); ?>]"
                                                         value="0">
@@ -110,8 +110,8 @@ class VisibilityTabRenderer
                                                 <input type="hidden" name="cc_menu_admin[<?php echo esc_attr($slug); ?>]" value="1">
                                             <?php endif; ?>
                                         </td>
-                                        <td style="text-align: center;">
-                                            <div class="cc-toggle-wrap" style="justify-content:center;">
+                                        <td>
+                                            <div class="cc-toggle-wrap">
                                                 <label class="cc-toggle">
                                                     <input type="hidden" name="cc_menu_client[<?php echo esc_attr($slug); ?>]"
                                                         value="0">

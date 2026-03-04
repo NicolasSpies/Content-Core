@@ -39,16 +39,12 @@ class SiteOptionsAdmin
         }
 
         wp_enqueue_media();
-        wp_enqueue_style('cc-admin-modern');
-        wp_enqueue_style('cc-metabox-ui');
+        wp_enqueue_style('cc-admin-ui');
         wp_enqueue_script('cc-admin-js');
-        wp_add_inline_style('cc-admin-modern', $this->get_accent_inline_css());
-        wp_add_inline_style('cc-admin-modern', $this->get_site_options_inline_css());
 
         if ($is_schema_page) {
             wp_enqueue_script('jquery-ui-sortable');
             wp_enqueue_script('cc-schema-editor');
-            wp_add_inline_style('cc-admin-modern', $this->get_site_profile_schema_inline_css());
             wp_localize_script('cc-schema-editor', 'ccSchemaEditorConfig', [
                 'languages' => [],
                 'singleLabel' => true,
@@ -100,28 +96,25 @@ class SiteOptionsAdmin
                                 if (empty($visible_fields))
                                     continue;
                                 ?>
-                                <div class="cc-card"
-                                    style="margin-bottom: 20px; padding: 20px; background: #fff; border: 1px solid #ccd0d4; border-radius: 4px; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
-                                    <h2
-                                        style="margin-top: 0; padding-bottom: 12px; border-bottom: 1px solid #f0f0f1; font-size: 1.3em;">
+                                <div class="cc-card cc-site-profile-card">
+                                    <h2 class="cc-site-profile-card-title">
                                         <?php echo esc_html($section['title']); ?>
                                     </h2>
 
-                                    <div class="cc-options-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                    <div class="cc-options-grid">
                                         <?php foreach ($visible_fields as $field_id => $field):
                                             $value = $options[$field_id] ?? '';
                                             $is_editable = !isset($field['client_editable']) || $field['client_editable'];
                                             $field_label = is_array($field['label'] ?? null)
                                                 ? (string) reset($field['label'])
                                                 : (string) ($field['label'] ?? $field_id);
+                                            $row_class = ($field['type'] === 'textarea') ? ' cc-option-row--full' : '';
                                             ?>
-                                            <div class="cc-option-row"
-                                                style="<?php echo $field['type'] === 'textarea' ? 'grid-column: span 2;' : ''; ?>">
-                                                <label style="display: block; font-weight: 600; margin-bottom: 5px;">
+                                            <div class="cc-option-row<?php echo esc_attr($row_class); ?>">
+                                                <label>
                                                     <?php echo esc_html($field_label); ?>
                                                     <?php if (!$is_editable): ?>
-                                                        <span class="dashicons dashicons-lock"
-                                                            style="font-size: 14px; color: #a0a5aa; vertical-align: middle;"
+                                                        <span class="dashicons dashicons-lock cc-lock-icon"
                                                             title="<?php esc_attr_e('System-reserved (Read Only)', 'content-core'); ?>"></span>
                                                         <?php
                                                     endif; ?>
@@ -147,41 +140,6 @@ class SiteOptionsAdmin
             </form>
         </div>
 
-        <script>
-            jQuery(document).ready(function ($) {
-                // Simple Media Picker for logo_id
-                $('.cc-media-upload-btn').on('click', function (e) {
-                    e.preventDefault();
-                    var $btn = $(this);
-                    var $container = $btn.closest('.cc-media-uploader');
-                    var $input = $container.find('.cc-media-id-input');
-                    var $preview = $container.find('.cc-media-preview');
-                    var $removeBtn = $container.find('.cc-media-remove-btn');
-
-                    var frame = wp.media({
-                        title: 'Logo auswählen',
-                        button: { text: 'Logo verwenden' },
-                        multiple: false
-                    });
-
-                    frame.on('select', function () {
-                        var attachment = frame.state().get('selection').first().toJSON();
-                        $input.val(attachment.id);
-                        $preview.html('<img src="' + attachment.url + '" style="max-height: 100px; display: block; margin-bottom: 10px;" />');
-                        $removeBtn.show();
-                    });
-
-                    frame.open();
-                });
-
-                $('.cc-media-remove-btn').on('click', function () {
-                    var $container = $(this).closest('.cc-media-uploader');
-                    $container.find('.cc-media-id-input').val('');
-                    $container.find('.cc-media-preview').empty();
-                    $(this).hide();
-                });
-            });
-        </script>
         <?php
     }
 
@@ -240,46 +198,39 @@ class SiteOptionsAdmin
 
                     <div id="cc-schema-editor">
                         <?php foreach ($schema as $section_id => $section): ?>
-                            <div class="cc-schema-section cc-card"
-                                style="background: #f8f9fa; margin-bottom: 20px; border: 1px solid #dcdcde;"
-                                data-id="<?php echo esc_attr($section_id); ?>">
-                                <div
-                                    style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #dcdcde; padding-bottom: 15px;">
-                                    <span class="dashicons dashicons-menu" style="color: #a0a5aa; cursor: grab;"></span>
-                                    <div style="flex-grow: 1;">
+                            <div class="cc-schema-section cc-card" data-id="<?php echo esc_attr($section_id); ?>">
+                                <div class="cc-schema-section__header">
+                                    <span class="dashicons dashicons-menu"></span>
+                                    <div class="cc-grow">
                                         <input type="text" name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][title]"
                                             value="<?php echo esc_attr($section['title'] ?? ''); ?>" class="large-text"
-                                            style="font-weight: 600;" placeholder="<?php esc_attr_e('Group title', 'content-core'); ?>">
+                                            placeholder="<?php esc_attr_e('Group title', 'content-core'); ?>">
                                     </div>
                                     <button type="button" class="button button-link-delete cc-remove-section">
                                         <span class="dashicons dashicons-trash"></span>
                                     </button>
                                 </div>
 
-                                <div class="cc-schema-fields" style="padding-left: 20px;">
+                                <div class="cc-schema-fields">
                                     <?php foreach ($section['fields'] ?? [] as $field_id => $field): ?>
-                                        <div class="cc-schema-field" data-id="<?php echo esc_attr($field_id); ?>"
-                                            style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 15px; padding: 12px; background: #fff; border: 1px solid #dcdcde; border-radius: 4px;">
-                                            <span class="dashicons dashicons-menu"
-                                                style="color: #a0a5aa; cursor: grab; margin-top: 8px;"></span>
-                                            <div style="flex-grow: 1;">
-                                                <div
-                                                    style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                        <div class="cc-schema-field" data-id="<?php echo esc_attr($field_id); ?>">
+                                            <span class="dashicons dashicons-menu"></span>
+                                            <div class="cc-grow">
+                                                <div class="cc-schema-grid-3">
                                                     <div>
-                                                        <label style="display: block; font-size: 11px; margin-bottom: 3px;">
+                                                        <label class="cc-schema-field-label">
                                                             <?php _e('Stable Key', 'content-core'); ?>
                                                         </label>
                                                         <input type="text" value="<?php echo esc_attr($field_id); ?>"
-                                                            class="regular-text" style="width: 100%; font-family: monospace;" readonly
+                                                            class="regular-text cc-input-mono" readonly
                                                             disabled>
                                                     </div>
                                                     <div>
-                                                        <label style="display: block; font-size: 11px; margin-bottom: 3px;">
+                                                        <label class="cc-schema-field-label">
                                                             <?php _e('Type', 'content-core'); ?>
                                                         </label>
                                                         <select
-                                                            name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][type]"
-                                                            style="width: 100%;">
+                                                            name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][type]">
                                                             <option value="text" <?php selected($field['type'] ?? 'text', 'text'); ?>>Text
                                                             </option>
                                                             <option value="email" <?php selected($field['type'] ?? '', 'email'); ?>>Email
@@ -291,7 +242,7 @@ class SiteOptionsAdmin
                                                             </option>
                                                         </select>
                                                     </div>
-                                                    <div style="display: flex; gap: 15px; align-items: center; padding-top: 20px;">
+                                                    <div class="cc-schema-flags">
                                                         <label><input type="checkbox"
                                                                 name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][client_visible]"
                                                                 value="1" <?php checked(!empty($field['client_visible'])); ?>>
@@ -306,17 +257,15 @@ class SiteOptionsAdmin
                                                 </div>
 
                                                 <div>
-                                                    <label style="display: block; font-size: 11px; margin-bottom: 3px;">
+                                                    <label class="cc-schema-field-label">
                                                         <?php _e('Label', 'content-core'); ?>
                                                     </label>
                                                     <input type="text"
                                                         name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][label]"
-                                                        value="<?php echo esc_attr(is_array($field['label'] ?? null) ? (string) reset($field['label']) : (string) ($field['label'] ?? '')); ?>"
-                                                        style="width: 100%;">
+                                                        value="<?php echo esc_attr(is_array($field['label'] ?? null) ? (string) reset($field['label']) : (string) ($field['label'] ?? '')); ?>">
                                                 </div>
                                             </div>
-                                            <button type="button" class="button button-link-delete cc-remove-field"
-                                                style="margin-top: 5px;">
+                                            <button type="button" class="button button-link-delete cc-remove-field cc-btn-top-gap">
                                                 <span class="dashicons dashicons-no-alt"></span>
                                             </button>
                                         </div>
@@ -334,7 +283,7 @@ class SiteOptionsAdmin
                     </div>
                 </div>
 
-                <div style="margin-top:16px;">
+                <div class="cc-schema-submit">
                     <input type="submit" class="button button-primary button-large"
                         value="<?php echo esc_attr__('Save Field Groups', 'content-core'); ?>">
                 </div>
@@ -377,7 +326,7 @@ class SiteOptionsAdmin
                 class="cc-media-id-input">
             <div class="cc-media-preview">
                 <?php if ($preview_url): ?>
-                    <img src="<?php echo esc_url($preview_url); ?>" style="max-height: 100px; display: block; margin-bottom: 10px;">
+                    <img src="<?php echo esc_url($preview_url); ?>" class="cc-media-preview-image">
                     <?php
                 endif; ?>
             </div>
@@ -386,7 +335,7 @@ class SiteOptionsAdmin
                     <button type="button" class="button cc-media-upload-btn">
                         <?php _e('Logo wählen', 'content-core'); ?>
                     </button>
-                    <button type="button" class="button cc-media-remove-btn" style="<?php echo $value ? '' : 'display:none;'; ?>">
+                    <button type="button" class="button cc-media-remove-btn<?php echo $value ? '' : ' hidden'; ?>"<?php echo $value ? '' : ' hidden'; ?>>
                         <?php _e('Entfernen', 'content-core'); ?>
                     </button>
                     <?php
@@ -455,41 +404,6 @@ class SiteOptionsAdmin
         });
     }
 
-    private function get_accent_inline_css(): string
-    {
-        $accent = '#2271b1';
-        $plugin = \ContentCore\Plugin::get_instance();
-        $branding = $plugin->get_module('branding');
-        if ($branding instanceof \ContentCore\Modules\Branding\BrandingModule) {
-            $settings = $branding->get_settings();
-            if (!empty($settings['custom_accent_color'])) {
-                $candidate = sanitize_hex_color((string) $settings['custom_accent_color']);
-                if ($candidate) {
-                    $accent = $candidate;
-                }
-            }
-        }
-
-        [$r, $g, $b] = $this->hex_to_rgb($accent);
-        return sprintf(':root{--cc-accent-color:%1$s;--cc-accent-rgb:%2$d,%3$d,%4$d;}', esc_attr($accent), $r, $g, $b);
-    }
-
-    private function hex_to_rgb(string $hex): array
-    {
-        $hex = ltrim($hex, '#');
-        if (strlen($hex) === 3) {
-            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
-        }
-        if (strlen($hex) !== 6) {
-            return [34, 113, 177];
-        }
-        return [
-            hexdec(substr($hex, 0, 2)),
-            hexdec(substr($hex, 2, 2)),
-            hexdec(substr($hex, 4, 2)),
-        ];
-    }
-
     private function sanitize_schema_input(array $raw_schema): array
     {
         $allowed_types = ['text', 'email', 'url', 'textarea', 'image'];
@@ -547,330 +461,4 @@ class SiteOptionsAdmin
         return $clean_schema ?: $this->module->get_default_schema();
     }
 
-    private function get_site_options_inline_css(): string
-    {
-        return '
-        .cc-site-options-page{
-            max-width:none!important;
-            width:100%!important;
-            margin-left:0!important;
-            margin-right:0!important;
-            padding-right:0!important;
-        }
-        .cc-site-options-page:not(.cc-site-profile-schema-page){
-            width:calc(100% - 20px)!important;
-            max-width:none!important;
-            margin-right:20px!important;
-            padding-right:0!important;
-        }
-        .cc-site-options-page:not(.cc-site-profile-schema-page) #poststuff,
-        .cc-site-options-page:not(.cc-site-profile-schema-page) #post-body,
-        .cc-site-options-page:not(.cc-site-profile-schema-page) #post-body-content{
-            width:100%!important;
-            max-width:none!important;
-            margin:0!important;
-        }
-        .cc-site-options-page:not(.cc-site-profile-schema-page) #post-body{
-            min-height:auto!important;
-        }
-        .cc-site-options-page #poststuff{padding-top:10px;}
-        .cc-site-options-page #post-body.columns-2{display:grid;grid-template-columns:1fr;gap:18px;}
-        .cc-site-options-page #post-body.columns-2 #post-body-content{float:none!important;width:auto!important;margin:0!important;}
-        .cc-site-options-page #post-body-content{display:flex;flex-direction:column;gap:16px;}
-        .cc-site-options-page .cc-site-profile-sections{
-            display:grid;
-            grid-template-columns:repeat(2,minmax(0,1fr));
-            gap:16px;
-            align-items:start;
-        }
-        .cc-site-options-page #post-body-content .cc-card{
-            margin:0!important;
-            padding:18px!important;
-            background:var(--cc-bg-card)!important;
-            border:1px solid var(--cc-border)!important;
-            border-radius:var(--cc-radius)!important;
-            box-shadow:var(--cc-shadow)!important;
-            overflow:hidden;
-            width:auto!important;
-            min-width:0;
-        }
-        .cc-site-options-page #post-body-content .cc-card h2{
-            margin:0 0 14px 0!important;
-            padding:0 0 10px 0!important;
-            border-bottom:1px solid var(--cc-border-light)!important;
-            font-size:15px!important;
-            letter-spacing:.04em!important;
-            text-transform:uppercase!important;
-            font-weight:700!important;
-            color:var(--cc-text)!important;
-        }
-        .cc-site-options-page .cc-options-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:16px!important;}
-        .cc-site-options-page .cc-option-row{min-width:0;}
-        .cc-site-options-page .cc-option-row[style*=\"grid-column: span 2\"]{grid-column:1 / -1;}
-        .cc-site-options-page .cc-option-row label{display:block!important;font-weight:700!important;margin:0 0 8px 0!important;font-size:14px;}
-        .cc-site-options-page .description{margin-top:6px!important;color:var(--cc-text-muted)!important;font-style:italic!important;}
-        .cc-site-options-page .cc-site-profile-actions{
-            display:flex;
-            justify-content:flex-start;
-            margin-top:8px;
-        }
-        .cc-site-options-page .cc-site-profile-actions .button-primary{
-            width:auto!important;
-            min-width:220px;
-        }
-        .cc-site-options-page .postbox{
-            border:1px solid var(--cc-border)!important;
-            border-radius:var(--cc-radius)!important;
-            box-shadow:var(--cc-shadow)!important;
-            overflow:hidden;
-            margin:0!important;
-            background:var(--cc-bg-card)!important;
-        }
-        .cc-site-options-page .postbox .hndle{
-            border-bottom:1px solid var(--cc-border-light)!important;
-            padding:12px 14px!important;
-            font-size:14px!important;
-            text-transform:uppercase!important;
-            letter-spacing:.04em!important;
-            color:var(--cc-text)!important;
-            background:var(--cc-bg-soft)!important;
-        }
-        .cc-site-options-page .postbox .inside{padding:14px!important;margin:0!important;background:var(--cc-bg-card);}
-        .cc-site-options-page .widefat,
-        .cc-site-options-page input[type=\"text\"],
-        .cc-site-options-page input[type=\"email\"],
-        .cc-site-options-page input[type=\"url\"],
-        .cc-site-options-page textarea,
-        .cc-site-options-page select{
-            border:1px solid var(--cc-border)!important;
-            border-radius:10px!important;
-            min-height:42px;
-            background:#fff;
-            padding:8px 12px;
-            box-shadow:none!important;
-        }
-        .cc-site-options-page input[type=\"text\"]:focus,
-        .cc-site-options-page input[type=\"email\"]:focus,
-        .cc-site-options-page input[type=\"url\"]:focus,
-        .cc-site-options-page textarea:focus,
-        .cc-site-options-page select:focus{
-            border-color:var(--cc-accent-color)!important;
-            box-shadow:0 0 0 3px rgba(var(--cc-accent-rgb), .14)!important;
-            outline:none!important;
-        }
-        .cc-site-options-page textarea{min-height:110px;resize:vertical;}
-        .cc-site-options-page .button{
-            border-radius:10px!important;
-            min-height:38px!important;
-            padding:0 14px!important;
-            font-weight:600!important;
-            box-shadow:none!important;
-            transition:all .16s ease!important;
-        }
-        .cc-site-options-page .button:not(.button-primary){
-            border:1px solid var(--cc-border)!important;
-            background:var(--cc-bg-soft)!important;
-            color:var(--cc-text)!important;
-        }
-        .cc-site-options-page .button:not(.button-primary):hover{
-            border-color:var(--cc-accent-color)!important;
-            color:var(--cc-accent-color)!important;
-            background:#fff!important;
-        }
-        .cc-site-options-page .button-primary{
-            background:var(--cc-accent-color)!important;
-            border-color:var(--cc-accent-color)!important;
-            color:#fff!important;
-            border-radius:10px!important;
-            min-height:44px!important;
-            padding:0 18px!important;
-            font-weight:700!important;
-            box-shadow:none!important;
-        }
-        .cc-site-options-page .button-primary:hover,
-        .cc-site-options-page .button-primary:focus{
-            filter:brightness(1.04)!important;
-            background:var(--cc-accent-color)!important;
-            border-color:var(--cc-accent-color)!important;
-            color:#fff!important;
-        }
-        .cc-site-options-page #publishing-action{padding:0!important;text-align:left!important;}
-        .cc-site-options-page #publishing-action .button-primary{width:100%;}
-        .cc-site-options-page .button-small{min-height:32px!important;}
-        .cc-site-options-page #major-publishing-actions{border:0!important;background:transparent!important;}
-        @media (max-width: 1024px){
-            .cc-site-options-page .cc-site-profile-sections{grid-template-columns:1fr;}
-        }';
-    }
-
-    private function get_site_profile_schema_inline_css(): string
-    {
-        return '
-        .cc-site-profile-schema-page{
-            width:100%!important;
-            max-width:960px!important;
-            margin-left:auto!important;
-            margin-right:auto!important;
-            padding:6px 0 18px 0!important;
-        }
-        .cc-site-profile-schema-page h1.wp-heading-inline{
-            margin-bottom:12px!important;
-        }
-        .cc-site-profile-schema-page .cc-schema-shell{
-            margin:0!important;
-            padding:8px 0 0!important;
-            background:transparent!important;
-            border:0!important;
-            border-radius:0!important;
-            box-shadow:none!important;
-        }
-        .cc-site-profile-schema-page .cc-schema-shell-header{
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:12px;
-            margin:0 0 20px 0;
-            padding:0 6px;
-        }
-        .cc-site-profile-schema-page .cc-schema-shell-header p{
-            margin:0;
-            color:var(--cc-text-muted);
-            font-size:14px;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor{
-            display:flex;
-            flex-direction:column;
-            gap:20px;
-            width:100%;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor .cc-card{
-            margin:0!important;
-            border:1px solid var(--cc-border)!important;
-            border-radius:14px!important;
-            box-shadow:none!important;
-            background:var(--cc-bg-soft)!important;
-            overflow:hidden!important;
-            width:100%!important;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor .cc-schema-section > div:first-child{
-            background:var(--cc-bg-card)!important;
-            padding:16px 18px!important;
-            border-bottom:1px solid var(--cc-border-light)!important;
-            margin:0!important;
-            gap:14px!important;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor .cc-schema-fields{
-            padding:20px!important;
-            display:flex;
-            flex-direction:column;
-            gap:14px;
-            background:var(--cc-bg-soft)!important;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor .cc-schema-field{
-            margin:0!important;
-            border:1px solid var(--cc-border)!important;
-            border-radius:12px!important;
-            background:#fff!important;
-            padding:16px!important;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor .cc-schema-field > div{
-            width:100%;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor .cc-schema-field label{
-            font-size:12px!important;
-            text-transform:uppercase!important;
-            letter-spacing:.04em!important;
-            color:var(--cc-text-muted)!important;
-            font-weight:700!important;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor input[type=\"text\"],
-        .cc-site-profile-schema-page #cc-schema-editor select{
-            min-height:42px!important;
-            border:1px solid var(--cc-border)!important;
-            border-radius:10px!important;
-            background:#fff!important;
-            box-shadow:none!important;
-            padding:10px 12px!important;
-            color:var(--cc-text)!important;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor input[type=\"text\"]:focus,
-        .cc-site-profile-schema-page #cc-schema-editor select:focus{
-            border-color:var(--cc-accent-color)!important;
-            box-shadow:0 0 0 3px rgba(var(--cc-accent-rgb), .14)!important;
-            outline:none!important;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor .dashicons-menu{
-            color:var(--cc-text-muted)!important;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor .cc-remove-section,
-        .cc-site-profile-schema-page #cc-schema-editor .cc-remove-field{
-            border:1px solid var(--cc-border)!important;
-            border-radius:10px!important;
-            background:var(--cc-bg-soft)!important;
-            color:var(--cc-text)!important;
-            min-height:44px!important;
-            min-width:56px!important;
-            box-shadow:none!important;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor .cc-remove-section:hover,
-        .cc-site-profile-schema-page #cc-schema-editor .cc-remove-field:hover{
-            border-color:#d63638!important;
-            color:#d63638!important;
-            background:#fff!important;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor .cc-add-field,
-        .cc-site-profile-schema-page #cc-schema-editor .cc-add-section{
-            align-self:flex-start;
-            border:1px solid var(--cc-border)!important;
-            border-radius:10px!important;
-            background:#fff!important;
-            color:var(--cc-text)!important;
-            min-height:42px!important;
-            padding:0 18px!important;
-            font-weight:700!important;
-            box-shadow:none!important;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor .cc-add-field:hover,
-        .cc-site-profile-schema-page #cc-schema-editor .cc-add-section:hover{
-            border-color:var(--cc-accent-color)!important;
-            color:var(--cc-accent-color)!important;
-            background:#fff!important;
-        }
-        .cc-site-profile-schema-page .cc-schema-shell > .button,
-        .cc-site-profile-schema-page .cc-schema-shell-header .button,
-        .cc-site-profile-schema-page input[type=\"submit\"].button-primary{
-            border-radius:10px!important;
-            min-height:44px!important;
-            padding:0 18px!important;
-            font-weight:700!important;
-            box-shadow:none!important;
-        }
-        .cc-site-profile-schema-page input[type=\"submit\"].button-primary{
-            background:var(--cc-accent-color)!important;
-            border-color:var(--cc-accent-color)!important;
-            color:#fff!important;
-        }
-        .cc-site-profile-schema-page input[type=\"submit\"].button-primary:hover{
-            filter:brightness(1.04)!important;
-            background:var(--cc-accent-color)!important;
-            border-color:var(--cc-accent-color)!important;
-            color:#fff!important;
-        }
-        .cc-site-profile-schema-page #cc-schema-editor .button{
-            border-radius:10px!important;
-            transition:all .15s ease!important;
-        }
-        @media (max-width: 1024px){
-            .cc-site-profile-schema-page{
-                max-width:none!important;
-            }
-            .cc-site-profile-schema-page #cc-schema-editor .cc-schema-field > div > div{
-                grid-template-columns:1fr!important;
-            }
-            .cc-site-profile-schema-page .cc-schema-shell-header{
-                flex-direction:column;
-                align-items:flex-start;
-            }
-        }';
-    }
 }

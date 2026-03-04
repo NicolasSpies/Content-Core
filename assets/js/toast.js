@@ -1,40 +1,30 @@
 (function (window, document) {
     'use strict';
 
+    function normalizeType(type) {
+        if (type === 'warning') {
+            return 'warning';
+        }
+        if (type === 'error' || type === 'danger') {
+            return 'danger';
+        }
+        return 'success';
+    }
+
     function buildToast(message, type) {
         var toast = document.createElement('div');
-        var isSuccess = type !== 'error';
+        var variant = normalizeType(type);
 
-        toast.style.background = isSuccess ? '#00a32a' : '#d63638';
-        toast.style.position = 'fixed';
-        toast.style.top = '60px';
-        toast.style.right = '20px';
-        toast.style.zIndex = '99999';
-        toast.style.color = '#fff';
-        toast.style.padding = '12px 20px';
-        toast.style.borderRadius = '6px';
-        toast.style.boxShadow = '0 4px 20px rgba(0,0,0,0.25)';
-        toast.style.fontSize = '14px';
-        toast.style.fontWeight = '500';
-        toast.style.maxWidth = '400px';
-        toast.style.display = 'flex';
-        toast.style.alignItems = 'center';
-        toast.style.gap = '10px';
+        toast.className = 'cc-toast cc-toast--' + variant;
 
         var text = document.createElement('span');
+        text.className = 'cc-toast__text';
         text.textContent = message || '';
 
         var close = document.createElement('button');
         close.type = 'button';
+        close.className = 'cc-toast__close';
         close.textContent = '\u00d7';
-        close.style.background = 'none';
-        close.style.border = 'none';
-        close.style.color = '#fff';
-        close.style.cursor = 'pointer';
-        close.style.fontSize = '18px';
-        close.style.lineHeight = '1';
-        close.style.padding = '0';
-        close.style.marginLeft = 'auto';
 
         close.addEventListener('click', function () {
             if (toast.parentNode) {
@@ -55,7 +45,8 @@
         }
 
         var toast = buildToast(message, type);
-        var ttl = typeof duration === 'number' ? duration : (type === 'error' ? 8000 : 4000);
+        var normalized = normalizeType(type);
+        var ttl = typeof duration === 'number' ? duration : (normalized === 'danger' ? 8000 : 4000);
 
         toast.id = 'cc-shared-toast';
         document.body.appendChild(toast);

@@ -15,7 +15,7 @@
 
     if (!cfg || !cfg.restBase || !cfg.nonce) {
         $(function () {
-            $('#cc-terms-manager').prepend('<div class="notice notice-error" style="margin: 20px 0;"><p><strong>Content Core config missing.</strong> Assets not localized. Please check admin enqueue + caching plugins.</p></div>');
+            $('#cc-terms-manager').prepend('<div class="notice notice-error cc-notice-inline"><p><strong>Content Core config missing.</strong> Assets not localized. Please check admin enqueue + caching plugins.</p></div>');
             $('#cc-tm-accordions').html('<p class="cc-tm-error">Initialization aborted due to missing configuration.</p>');
         });
         return;
@@ -64,9 +64,12 @@
         $n.text(msg)
             .removeClass('notice-success notice-error cc-tm-notice-inline')
             .addClass(type === 'error' ? 'notice-error' : 'notice-success')
-            .show();
+            .removeClass('hidden')
+            .prop('hidden', false);
         clearTimeout($n.data('timer'));
-        $n.data('timer', setTimeout(function () { $n.fadeOut(); }, 4000));
+        $n.data('timer', setTimeout(function () {
+            $n.addClass('hidden').prop('hidden', true);
+        }, 4000));
     }
 
     // ── Accordion State ───────────────────────────────────────────────────────
@@ -122,9 +125,9 @@
             const groups = taxObj.groups;
 
             const isOpen = (tax === openTax);
-            const style = isOpen ? '' : 'display:none;';
             const iconClass = isOpen ? 'dashicons-arrow-up-alt2' : 'dashicons-arrow-down-alt2';
             const expandedClass = isOpen ? 'cc-tm-accordion-open' : '';
+            const hiddenClass = isOpen ? '' : ' hidden';
 
             let theadHtml = '<tr><th class="cc-tm-drag-col"></th><th>Group</th>';
             LANG_KEYS.forEach(function (code) {
@@ -148,7 +151,7 @@
                         <h3 class="cc-tm-accordion-title">${escHtml(label)} <span class="cc-tm-tax-slug">(${escHtml(tax)})</span></h3>
                         <span class="cc-tm-accordion-icon dashicons ${iconClass}"></span>
                     </div>
-                    <div class="cc-tm-accordion-body" style="${style}">
+                    <div class="cc-tm-accordion-body${hiddenClass}">
                         <div class="cc-tm-toolbar-inner">
                             <input type="text" class="cc-tm-new-name" placeholder="New term name…">
                             <button class="cc-tm-create-btn button button-primary">Create Term</button>
@@ -372,7 +375,7 @@
             'This will permanently delete all translations in group "' +
             pendingDelete.groupLabel + '". Are you sure?'
         );
-        $('#cc-tm-modal').show();
+        $('#cc-tm-modal').removeClass('hidden').prop('hidden', false);
     }
 
     function confirmDeleteGroup() {
@@ -400,7 +403,7 @@
     }
 
     function closeModal() {
-        $('#cc-tm-modal').hide();
+        $('#cc-tm-modal').addClass('hidden').prop('hidden', true);
         pendingDelete = null;
     }
 
@@ -430,19 +433,17 @@
             const $body = $acc.find('.cc-tm-accordion-body');
             const $icon = $(this).find('.cc-tm-accordion-icon');
 
-            if ($body.is(':visible')) {
-                // close it
-                $body.slideUp(200);
+            if (!$body.hasClass('hidden')) {
+                $body.addClass('hidden');
                 $icon.removeClass('dashicons-arrow-up-alt2').addClass('dashicons-arrow-down-alt2');
                 $acc.removeClass('cc-tm-accordion-open');
                 if (getOpenTaxonomy() === tax) setOpenTaxonomy(null);
             } else {
-                // open it (close others)
-                $('.cc-tm-accordion-body').slideUp(200);
+                $('.cc-tm-accordion-body').addClass('hidden');
                 $('.cc-tm-accordion-icon').removeClass('dashicons-arrow-up-alt2').addClass('dashicons-arrow-down-alt2');
                 $('.cc-tm-accordion').removeClass('cc-tm-accordion-open');
 
-                $body.slideDown(200);
+                $body.removeClass('hidden');
                 $icon.removeClass('dashicons-arrow-down-alt2').addClass('dashicons-arrow-up-alt2');
                 $acc.addClass('cc-tm-accordion-open');
                 setOpenTaxonomy(tax);

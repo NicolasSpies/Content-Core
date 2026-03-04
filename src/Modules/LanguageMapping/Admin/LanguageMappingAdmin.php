@@ -250,16 +250,16 @@ class LanguageMappingAdmin
         ?>
         <div class="wrap content-core-admin">
             <div class="cc-header"
-                style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px;">
+               >
                 <div>
                     <h1>
                         <?php _e('Language Mapping', 'content-core'); ?>
                     </h1>
-                    <p style="color: #646970; margin-top: 4px;">
+                    <p>
                         <?php _e('Manage translation groups and term relationships.', 'content-core'); ?>
                     </p>
-                    <div class="notice notice-info inline" style="margin:8px 0 0 0; padding:6px 12px;">
-                        <p style="margin:0; font-size:12px;">
+                    <div class="notice notice-info inline">
+                        <p>
                             <?php _e('This is a technical diagnostic view.', 'content-core'); ?>
                             <?php printf(
                                 '<a href="%s">%s</a>',
@@ -292,7 +292,7 @@ class LanguageMappingAdmin
             }
             ?>
 
-            <h2 class="nav-tab-wrapper" style="margin-bottom: 20px;">
+            <h2 class="nav-tab-wrapper">
                 <a href="?page=content-core-language-mapping&tab=groups&taxonomy=<?php echo esc_attr($taxonomy); ?>"
                     class="nav-tab <?php echo $tab === 'groups' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Translation Groups', 'content-core'); ?>
@@ -305,9 +305,9 @@ class LanguageMappingAdmin
 
             <?php if ($tab === 'groups'): ?>
                 <div class="cc-card">
-                    <div style="display: flex; gap: 16px; margin-bottom: 24px; align-items: flex-end;">
+                    <div>
                         <div>
-                            <label style="display: block; margin-bottom: 4px; font-weight: 600;">
+                            <label>
                                 <?php _e('Taxonomy', 'content-core'); ?>
                             </label>
                             <select
@@ -321,7 +321,7 @@ class LanguageMappingAdmin
                             </select>
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 4px; font-weight: 600;">
+                            <label>
                                 <?php _e('Status Filter', 'content-core'); ?>
                             </label>
                             <select
@@ -350,10 +350,9 @@ class LanguageMappingAdmin
         </div>
 
         <!-- Modal: Create Term -->
-        <div id="cc-create-term-modal"
-            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100000; align-items:center; justify-content:center;">
-            <div class="cc-card" style="width: 400px; padding: 24px;">
-                <h2 style="margin-top:0;">
+        <div id="cc-create-term-modal" class="cc-lm-modal" hidden>
+            <div class="cc-card">
+                <h2>
                     <?php _e('Create Translation', 'content-core'); ?>
                 </h2>
                 <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
@@ -364,23 +363,22 @@ class LanguageMappingAdmin
                     <input type="hidden" name="cc_lang" id="modal-lang-code" value="">
                     <input type="hidden" name="taxonomy" value="<?php echo esc_attr($taxonomy); ?>">
 
-                    <div style="margin-bottom: 15px;">
-                        <label style="display:block; margin-bottom:5px;">
+                    <div>
+                        <label>
                             <?php _e('Name (leave empty for default)', 'content-core'); ?>
                         </label>
                         <input type="text" name="term_name" placeholder="<?php _e('e.g. My Category (FR)', 'content-core'); ?>"
-                            style="width:100%;">
+                           >
                     </div>
-                    <div style="margin-bottom: 20px;">
-                        <label style="display:block; margin-bottom:5px;">
+                    <div>
+                        <label>
                             <?php _e('Slug (optional)', 'content-core'); ?>
                         </label>
-                        <input type="text" name="term_slug" style="width:100%;">
+                        <input type="text" name="term_slug">
                     </div>
 
-                    <div style="display: flex; justify-content: flex-end; gap: 12px;">
-                        <button type="button" class="button"
-                            onclick="document.getElementById('cc-create-term-modal').style.display='none'">
+                    <div>
+                        <button type="button" class="button" data-cc-lm-close="cc-create-term-modal">
                             <?php _e('Cancel', 'content-core'); ?>
                         </button>
                         <button type="submit" class="button button-primary">
@@ -392,10 +390,9 @@ class LanguageMappingAdmin
         </div>
 
         <!-- Modal: Link Existing -->
-        <div id="cc-link-modal"
-            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100000; align-items:center; justify-content:center;">
-            <div class="cc-card" style="width: 400px; padding: 24px;">
-                <h2 style="margin-top:0;">
+        <div id="cc-link-modal" class="cc-lm-modal" hidden>
+            <div class="cc-card">
+                <h2>
                     <?php _e('Link Existing Term', 'content-core'); ?>
                 </h2>
                 <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
@@ -405,21 +402,20 @@ class LanguageMappingAdmin
                     <input type="hidden" name="cc_tr_group" id="link-modal-group-id" value="">
                     <input type="hidden" name="taxonomy" value="<?php echo esc_attr($taxonomy); ?>">
 
-                    <div style="margin-bottom: 20px;">
-                        <label style="display:block; margin-bottom:5px;" id="link-modal-label">
+                    <div>
+                        <label id="link-modal-label">
                             <?php _e('Select Term', 'content-core'); ?>
                         </label>
-                        <select name="term_id" id="link-modal-select" style="width:100%;" required>
+                        <select name="term_id" id="link-modal-select" required>
                             <!-- Populated by JS -->
                         </select>
-                        <p style="font-size: 11px; color: #646970; margin-top: 5px;">
+                        <p>
                             <?php _e('Showing terms from this taxonomy with the required language and no assigned group.', 'content-core'); ?>
                         </p>
                     </div>
 
-                    <div style="display: flex; justify-content: flex-end; gap: 12px;">
-                        <button type="button" class="button"
-                            onclick="document.getElementById('cc-link-modal').style.display='none'">
+                    <div>
+                        <button type="button" class="button" data-cc-lm-close="cc-link-modal">
                             <?php _e('Cancel', 'content-core'); ?>
                         </button>
                         <button type="submit" class="button button-primary">
@@ -463,7 +459,7 @@ class LanguageMappingAdmin
             function openCreateModal(group, lang) {
                 document.getElementById('modal-group-id').value = group;
                 document.getElementById('modal-lang-code').value = lang;
-                document.getElementById('cc-create-term-modal').style.display = 'flex';
+                document.getElementById('cc-create-term-modal').hidden = false;
             }
 
             function openLinkModal(group, lang, langLabel) {
@@ -491,8 +487,37 @@ class LanguageMappingAdmin
                 }
 
                 document.getElementById('link-modal-group-id').value = group;
-                document.getElementById('cc-link-modal').style.display = 'flex';
+                document.getElementById('cc-link-modal').hidden = false;
             }
+
+            document.addEventListener('click', function (event) {
+                const openButton = event.target.closest('[data-cc-lm-open]');
+                if (openButton) {
+                    const mode = openButton.getAttribute('data-cc-lm-open');
+                    const group = openButton.getAttribute('data-group') || '';
+                    const lang = openButton.getAttribute('data-lang') || '';
+                    const langLabel = openButton.getAttribute('data-lang-label') || '';
+
+                    if (mode === 'create') {
+                        openCreateModal(group, lang);
+                        return;
+                    }
+                    if (mode === 'link') {
+                        openLinkModal(group, lang, langLabel);
+                        return;
+                    }
+                }
+
+                const closeButton = event.target.closest('[data-cc-lm-close]');
+                if (!closeButton) {
+                    return;
+                }
+                const modalId = closeButton.getAttribute('data-cc-lm-close');
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.hidden = true;
+                }
+            });
         </script>
         <?php
     }
@@ -546,7 +571,7 @@ class LanguageMappingAdmin
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th style="width: 140px;">
+                    <th>
                         <?php _e('Group ID / Taxonomy', 'content-core'); ?>
                     </th>
                     <?php foreach ($languages as $l): ?>
@@ -555,7 +580,7 @@ class LanguageMappingAdmin
                         </th>
                         <?php
                     endforeach; ?>
-                    <th style="width: 100px;">
+                    <th>
                         <?php _e('Row Source', 'content-core'); ?>
                     </th>
                 </tr>
@@ -574,8 +599,8 @@ class LanguageMappingAdmin
                     <tr>
                         <td>
                             <code
-                                style="font-size: 10px; display: block; margin-bottom: 4px;"><?php echo esc_html($g['id']); ?></code>
-                            <span style="font-size: 11px; color: #646970;">
+                               ><?php echo esc_html($g['id']); ?></code>
+                            <span>
                                 <?php echo esc_html($taxonomy); ?>
                             </span>
                         </td>
@@ -584,24 +609,24 @@ class LanguageMappingAdmin
                             ?>
                             <td>
                                 <?php if ($term): ?>
-                                    <div style="margin-bottom: 4px;">
+                                    <div>
                                         <strong>
                                             <?php echo esc_html($term->name); ?>
                                         </strong><br>
-                                        <code style="font-size: 10px;"><?php echo esc_html($term->slug); ?></code>
+                                        <code><?php echo esc_html($term->slug); ?></code>
                                     </div>
-                                    <div class="row-actions" style="visibility: visible;">
+                                    <div class="row-actions">
                                         <span class="edit"><a href="<?php echo get_edit_term_link($term->term_id, $taxonomy); ?>">
                                                 <?php _e('Edit', 'content-core'); ?>
                                             </a> | </span>
                                         <span class="trash">
-                                            <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline;">
+                                            <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
                                                 <input type="hidden" name="action" value="cc_lm_action">
                                                 <?php wp_nonce_field('cc_lang_mapping_action', 'cc_lang_mapping_nonce'); ?>
                                                 <input type="hidden" name="cc_action" value="unlink_term">
                                                 <input type="hidden" name="term_id" value="<?php echo $term->term_id; ?>">
                                                 <button type="submit" class="button-link-delete"
-                                                    style="padding:0; min-height:0; line-height:inherit;"
+                                                   
                                                     onclick="return confirm('<?php _e('Unlink this term?', 'content-core'); ?>')">
                                                     <?php _e('Unlink', 'content-core'); ?>
                                                 </button>
@@ -610,13 +635,22 @@ class LanguageMappingAdmin
                                     </div>
                                     <?php
                                 else: ?>
-                                    <div style="display: flex; gap: 4px;">
-                                        <button type="button" class="button button-small"
-                                            onclick="openCreateModal('<?php echo $g['id']; ?>', '<?php echo $l['code']; ?>')">
+                                    <div>
+                                        <button
+                                            type="button"
+                                            class="button button-small"
+                                            data-cc-lm-open="create"
+                                            data-group="<?php echo esc_attr($g['id']); ?>"
+                                            data-lang="<?php echo esc_attr($l['code']); ?>">
                                             <?php _e('Create', 'content-core'); ?>
                                         </button>
-                                        <button type="button" class="button button-small"
-                                            onclick="openLinkModal('<?php echo $g['id']; ?>', '<?php echo $l['code']; ?>', '<?php echo esc_js($l['label']); ?>')">
+                                        <button
+                                            type="button"
+                                            class="button button-small"
+                                            data-cc-lm-open="link"
+                                            data-group="<?php echo esc_attr($g['id']); ?>"
+                                            data-lang="<?php echo esc_attr($l['code']); ?>"
+                                            data-lang-label="<?php echo esc_attr($l['label']); ?>">
                                             <?php _e('Link', 'content-core'); ?>
                                         </button>
                                     </div>
@@ -626,7 +660,7 @@ class LanguageMappingAdmin
                             <?php
                         endforeach; ?>
                         <td>
-                            <span style="font-size: 11px; color: #646970;">
+                            <span>
                                 <?php echo count($g['terms']) > 0 ? __('Grouped', 'content-core') : __('Empty Group', 'content-core'); ?>
                             </span>
                         </td>
@@ -637,7 +671,7 @@ class LanguageMappingAdmin
                 <?php if (!empty($unlinked)): ?>
                     <tr class="unlinked-header">
                         <td colspan="<?php echo count($languages) + 2; ?>"
-                            style="background: #f6f7f7; font-weight: 600; padding: 12px; border-top: 2px solid #ccd0d4;">
+                           >
                             <?php _e('Unlinked Terms (Candidates for new Groups)', 'content-core'); ?>
                         </td>
                     </tr>
@@ -652,10 +686,10 @@ class LanguageMappingAdmin
                                         <strong>
                                             <?php echo esc_html($ut->name); ?>
                                         </strong><br>
-                                        <code style="font-size: 10px;"><?php echo esc_html($ut->slug); ?></code>
+                                        <code><?php echo esc_html($ut->slug); ?></code>
                                         <?php
                                     else: ?>
-                                        <span style="color: #a0a5aa;">-</span>
+                                        <span>-</span>
                                         <?php
                                     endif; ?>
                                 </td>
@@ -721,21 +755,21 @@ class LanguageMappingAdmin
         }
 
         ?>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+        <div>
             <div class="cc-card">
                 <h3>
                     <?php _e('Overview', 'content-core'); ?>
                 </h3>
-                <ul style="margin:0; padding:0; list-style:none;">
-                    <li style="padding:10px 0; border-bottom:1px solid #f0f0f1; display:flex; justify-content:space-between;">
+                <ul>
+                    <li>
                         <span>
                             <?php _e('Missing Language', 'content-core'); ?>
                         </span>
-                        <strong style="color:<?php echo count($stats['terms_missing_lang']) ? '#d32f2f' : '#2e7d32'; ?>">
+                        <strong>
                             <?php echo count($stats['terms_missing_lang']); ?>
                         </strong>
                     </li>
-                    <li style="padding:10px 0; border-bottom:1px solid #f0f0f1; display:flex; justify-content:space-between;">
+                    <li>
                         <span>
                             <?php _e('Missing Group ID', 'content-core'); ?>
                         </span>
@@ -743,11 +777,11 @@ class LanguageMappingAdmin
                             <?php echo count($stats['terms_missing_group']); ?>
                         </strong>
                     </li>
-                    <li style="padding:10px 0; display:flex; justify-content:space-between;">
+                    <li>
                         <span>
                             <?php _e('Duplicate Mappings', 'content-core'); ?>
                         </span>
-                        <strong style="color:<?php echo count($stats['duplicate_groups']) ? '#d32f2f' : '#2e7d32'; ?>">
+                        <strong>
                             <?php echo count($stats['duplicate_groups']); ?>
                         </strong>
                     </li>
@@ -755,12 +789,12 @@ class LanguageMappingAdmin
             </div>
 
             <?php if (!empty($stats['duplicate_groups'])): ?>
-                <div class="cc-card" style="border-left: 4px solid #d32f2f;">
-                    <h3 style="color: #d32f2f;">
+                <div class="cc-card">
+                    <h3>
                         <?php _e('Duplicate Languages in Groups', 'content-core'); ?>
                     </h3>
                     <?php foreach ($stats['duplicate_groups'] as $dup): ?>
-                        <div style="padding:8px; border-bottom:1px solid #f0f0f1; font-size:12px;">
+                        <div>
                             <strong>
                                 <?php echo strtoupper($dup['lang']); ?>
                             </strong> - <code><?php echo esc_html($dup['group']); ?></code><br>

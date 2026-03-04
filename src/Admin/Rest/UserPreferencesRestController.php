@@ -24,6 +24,19 @@ class UserPreferencesRestController extends BaseRestController
                 'state' => ['required' => true, 'sanitize_callback' => 'sanitize_text_field'],
             ],
         ]);
+
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/dark-mode', [
+            'methods' => \WP_REST_Server::EDITABLE,
+            'callback' => [$this, 'save_dark_mode'],
+            'permission_callback' => function (): bool {
+                return is_user_logged_in();
+            },
+            'args' => [
+                'enabled' => [
+                    'required' => true,
+                ],
+            ],
+        ]);
     }
 
     /**
@@ -46,5 +59,29 @@ class UserPreferencesRestController extends BaseRestController
         update_user_meta($user_id, $meta_key, $current_states);
 
         return new WP_REST_Response(['success' => true], 200);
+    }
+
+    /**
+     * Save dark mode preference for the current user.
+     */
+    public function save_dark_mode(WP_REST_Request $request): WP_REST_Response
+    {
+        $user_id = get_current_user_id();
+        $enabled_raw = $request->get_param('enabled');
+        $enabled = false;
+
+        if (is_bool($enabled_raw)) {
+            $enabled = $enabled_raw;
+        } else {
+            $value = strtolower(trim((string) $enabled_raw));
+            $enabled = in_array($value, ['1', 'true', 'yes', 'on'], true);
+        }
+
+        update_user_meta($user_id, 'cc_dark_mode', $enabled ? '1' : '0');
+
+        return new WP_REST_Response([
+            'success' => true,
+            'enabled' => $enabled,
+        ], 200);
     }
 }

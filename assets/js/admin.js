@@ -3,7 +3,14 @@
  * Handles field interactions: Repeaters, Media, Galleries.
  */
 
+console.log("CC DEBUG LOADED", document.body.className);
+
 jQuery(document).ready(function ($) {
+    // 1. Annihilate any rogue split-arrows natively injected by WordPress/Polylang
+    if ($('.page-title-action').length) {
+        $('.page-title-action').nextUntil('.wp-header-end, hr, form, .notice, table, .subsubsub, #screen-meta-links, .wp-list-table, h2').remove();
+    }
+
     var fileFrame;
 
     // --- Media Uploader Logic ---
@@ -497,74 +504,324 @@ jQuery(document).ready(function ($) {
     function initMediaLibraryInspector() {
         var body = document.body;
         if (!body || !body.classList.contains('upload-php')) return;
+        body.classList.remove('cc-media-has-selection');
+        body.classList.remove('cc-media-bulk-mode');
 
-        var bind = function () {
-            var sidebars = document.querySelectorAll('.media-modal .media-sidebar, .media-frame .media-sidebar');
-            sidebars.forEach(function (sidebar) {
-                var title = sidebar.querySelector('.media-frame-title h1');
-                if (title) {
-                    title.textContent = 'Asset Details';
-                }
+        var scheduled = false;
+        var rafId = 0;
 
-                if (!sidebar.classList.contains('cc-media-inspector-ready')) {
-                    sidebar.classList.add('cc-media-inspector-ready');
-                }
+        var updateSelectionState = function () {
+            scheduled = false;
+            rafId = 0;
 
-                var details = sidebar.querySelector('.attachment-details');
-                if (!details) return;
+            var selected = document.querySelectorAll(
+                '.media-frame .attachments-browser .attachments .attachment.selected, ' +
+                '.media-frame .attachments-browser .attachments .attachment.details, ' +
+                '.media-frame .attachments-browser .attachments .attachment[aria-checked="true"], ' +
+                '.media-frame .attachments-browser .attachments .attachment[aria-selected="true"]'
+            );
 
-                var actionsRow = details.querySelector('.cc-media-field-actions');
-                if (!actionsRow) {
-                    actionsRow = document.createElement('div');
-                    actionsRow.className = 'cc-media-field-actions';
-                    actionsRow.innerHTML = '<button type="button" class="button button-primary cc-media-save">Save Changes</button><button type="button" class="button ui-button--danger cc-media-delete">Delete Asset</button>';
-                    details.appendChild(actionsRow);
-                }
+            var isBulkMode = !!document.querySelector(
+                '.media-frame.mode-select, ' +
+                '.media-frame .attachments-browser.mode-select, ' +
+                '.media-frame .media-toolbar .select-mode-toggle-button.active'
+            );
 
-                var altInput = details.querySelector('.setting[data-setting="alt"] textarea, .setting[data-setting="alt"] input');
-                var titleInput = details.querySelector('.setting[data-setting="title"] input, .setting[data-setting="title"] textarea');
-                var deleteLink = details.querySelector('.delete-attachment, .delete-permanently');
+            var hasSelection = !isBulkMode && selected.length > 0;
 
-                var saveBtn = actionsRow.querySelector('.cc-media-save');
-                var deleteBtn = actionsRow.querySelector('.cc-media-delete');
-
-                if (saveBtn && !saveBtn.dataset.ccBound) {
-                    saveBtn.dataset.ccBound = '1';
-                    saveBtn.addEventListener('click', function () {
-                        [altInput, titleInput].forEach(function (input) {
-                            if (!input) return;
-                            input.dispatchEvent(new Event('input', { bubbles: true }));
-                            input.dispatchEvent(new Event('change', { bubbles: true }));
-                            input.blur();
-                        });
-                    });
-                }
-
-                if (deleteBtn && !deleteBtn.dataset.ccBound) {
-                    deleteBtn.dataset.ccBound = '1';
-                    deleteBtn.addEventListener('click', function () {
-                        if (deleteLink) deleteLink.click();
-                    });
-                }
-            });
+            body.classList.toggle('cc-media-has-selection', hasSelection);
+            body.classList.toggle('cc-media-bulk-mode', isBulkMode);
         };
 
-        bind();
+        var scheduleUpdate = function () {
+            if (scheduled) return;
+            scheduled = true;
+            rafId = window.requestAnimationFrame(updateSelectionState);
+        };
 
-        var observer = new MutationObserver(function () {
-            bind();
+        scheduleUpdate();
+        document.addEventListener('click', scheduleUpdate, true);
+        document.addEventListener('keyup', scheduleUpdate, true);
+
+        var root = document.querySelector('.media-frame') || document.documentElement;
+        var observer = new MutationObserver(scheduleUpdate);
+        observer.observe(root, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['class', 'aria-selected', 'aria-checked']
         });
-        observer.observe(document.documentElement, { childList: true, subtree: true });
+
+        window.addEventListener('beforeunload', function () {
+            if (rafId) {
+                window.cancelAnimationFrame(rafId);
+            }
+            observer.disconnect();
+        });
     }
 
-    // Delay a bit to ensure WP has rendered everything
-    setTimeout(function () {
-        initSidebarCollapse();
-        initSidebarSectionLabels();
-        initTopLevelMenuToggle();
-        initSidebarCollapseToggleButton();
-        initDarkModeToggle();
-        initMediaLibraryInspector();
-    }, 100);
+    initSidebarCollapse();
+    initSidebarSectionLabels();
+    initTopLevelMenuToggle();
+    initSidebarCollapseToggleButton();
+    initDarkModeToggle();
+    initMediaLibraryInspector();
 
+    /**
+     * Unified List Topbar
+     */
+    function initUnifiedListTopbar() {
+        var $listTable = $('.wp-list-table');
+        if (!$listTable.length) {
+            $('.wrap').addClass('cc-ready');
+            return;
+        }
+        if ($('.cc-list-topbar').length) {
+            $('.wrap').addClass('cc-ready');
+            return; // Dedupe
+        }
+
+        var $wrap = $listTable.closest('.wrap');
+        if (!$wrap.length) return;
+
+        var $topbar = $('<div class="cc-list-topbar"></div>');
+        var $left = $('<div class="cc-list-topbar-left"></div>');
+        var $right = $('<div class="cc-list-topbar-right"></div>');
+
+        var $subsubsub = $wrap.find('.subsubsub').first();
+        if ($subsubsub.length) {
+            $left.append($subsubsub);
+        }
+
+        // Setup Filter button with a native Screen Options dropdown proxy
+        var $nativeScreenOptions = $('#adv-settings');
+        if ($nativeScreenOptions.length) {
+            var $filterWrap = $('<div class="cc-filter-wrap"></div>');
+            var $filterBtn = $('<button type="button" class="button cc-filter-trigger">Filter</button>');
+            var $filterDropdown = $('<div class="cc-filter-dropdown" style="display: none;"></div>');
+
+            var $columns = $nativeScreenOptions.find('.metabox-prefs').clone();
+
+            if ($columns.length) {
+                // Remove IDs to avoid conflict with native hidden DOM
+                $columns.find('input').removeAttr('id');
+                $columns.find('label').removeAttr('for');
+
+                $filterDropdown.append($columns);
+
+                // Sync click events back to native
+                $filterDropdown.on('change', 'input[type="checkbox"]', function () {
+                    var $nativeCheckbox = $nativeScreenOptions.find('input[name="' + $(this).attr('name') + '"]');
+                    if ($nativeCheckbox.length) {
+                        $nativeCheckbox.prop('checked', $(this).prop('checked')).trigger('change');
+                        // Some WP events listen to standard click
+                        $nativeCheckbox.trigger('click');
+                    }
+                });
+
+                // Sync initial state
+                $filterDropdown.find('input[type="checkbox"]').each(function () {
+                    var $nativeCheckbox = $nativeScreenOptions.find('input[name="' + $(this).attr('name') + '"]');
+                    if ($nativeCheckbox.length) {
+                        $(this).prop('checked', $nativeCheckbox.prop('checked'));
+                    }
+                });
+
+                $filterBtn.on('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    $filterDropdown.toggle();
+                });
+
+                $(document).on('click', function (e) {
+                    if (!$(e.target).closest('.cc-filter-wrap').length) {
+                        $filterDropdown.hide();
+                    }
+                });
+
+                $filterWrap.append($filterBtn).append($filterDropdown);
+                $right.append($filterWrap);
+            }
+        }
+
+        var $searchBox = $wrap.find('.search-box, p.search-box').first();
+        if ($searchBox.length) {
+            // Remove submit buttons explicitly
+            $searchBox.find('input[type="submit"], button[type="submit"], #search-submit').remove();
+
+            // Re-enforce enter submits form natively
+            $searchBox.find('input[type="search"], input[name="s"]').on('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    $(this).closest('form').submit();
+                }
+            });
+
+            $right.append($searchBox); // Then append Search
+        }
+
+        // Ensure "Search References" or similar wrongly injected buttons are completely removed from DOM
+        $('input[value="Search References"], button:contains("Search References")').remove();
+
+        $topbar.append($left).append($right);
+        $listTable.before($topbar);
+
+        // Reveal safely without massive shift
+        requestAnimationFrame(function () {
+            $wrap.addClass('cc-ready');
+        });
+    }
+
+    /**
+     * List Table Cleanup and Unified Delete Action
+     */
+    function initUnifiedListTableDelete() {
+        var $listTable = $('.wp-list-table');
+        if (!$listTable.length) return;
+
+        function injectDeleteColumn() {
+            $('.wp-list-table').each(function () {
+                var $table = $(this);
+                if ($table.data('cc-delete-injected')) return;
+                $table.data('cc-delete-injected', true);
+
+                // Add header/footer columns
+                $table.find('thead tr, tfoot tr').each(function () {
+                    $(this).append('<th scope="col" class="cc-delete-column manage-column"></th>');
+                });
+
+                // Add row delete action
+                $table.find('tbody tr').each(function () {
+                    var $row = $(this);
+
+                    if ($row.hasClass('no-items')) {
+                        var colSpan = parseInt($row.find('td').attr('colspan') || 1, 10);
+                        $row.find('td').attr('colspan', colSpan + 1);
+                        return;
+                    }
+
+                    // WordPress uses 'trash' for posts/pages, 'delete' for plugins/users/terms
+                    var deleteUrl = $row.find('.row-actions .trash a, .row-actions .delete a').attr('href');
+
+                    var $td = $('<td class="cc-delete-column"></td>');
+                    if (deleteUrl) {
+                        var $btn = $('<button type="button" class="cc-delete-row-btn" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>');
+                        $btn.data('delete-url', deleteUrl);
+                        $td.append($btn);
+                    }
+                    $row.append($td);
+                });
+            });
+        }
+
+        injectDeleteColumn();
+
+        // Safe re-init for ajax contexts
+        $(document).ajaxComplete(function (event, xhr, settings) {
+            clearTimeout(window.ccDeleteInitTimer);
+            window.ccDeleteInitTimer = setTimeout(function () {
+                initUnifiedListTopbar();
+                injectDeleteColumn();
+            }, 50);
+        });
+
+        $(document).on('click', '.cc-delete-row-btn', function (e) {
+            e.preventDefault();
+            var $btn = $(this);
+            var url = $btn.data('delete-url');
+
+            if (confirm('Are you sure you want to delete this item?')) {
+                var $row = $btn.closest('tr');
+                $row.css({ 'opacity': '0.5', 'pointer-events': 'none' });
+
+                $.get(url, function () {
+                    // Success or follow-up redirect completed
+                    $row.fadeOut(300, function () {
+                        $(this).remove();
+                    });
+                }).fail(function () {
+                    // Fallback to regular navigation
+                    window.location.href = url;
+                });
+            }
+        });
+    }
+
+    /**
+     * List Table Date Formatting
+     */
+    function initListDateFormatter() {
+        var $listTable = $('.wp-list-table');
+        if (!$listTable.length) return;
+
+        function formatDates($ctx) {
+            $ctx.find('td.column-date, td.date').each(function () {
+                var $cell = $(this);
+
+                // Keep .post-state span (like User Status or Draft) but we'll hide it via CSS.
+                // We just want to find the text that looks like a date.
+
+                var dateFormatted = false;
+
+                // 1. Try <abbr title="YYYY/MM/DD">
+                var $abbr = $cell.find('abbr');
+                if ($abbr.length) {
+                    var title = $abbr.attr('title') || '';
+                    var match = title.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})/);
+                    if (match) {
+                        $abbr.text(match[3] + '.' + match[2] + '.' + match[1]);
+                        dateFormatted = true;
+                    }
+                }
+
+                // 2. Try <time> tag
+                if (!dateFormatted) {
+                    var $time = $cell.find('time');
+                    if ($time.length) {
+                        var datetime = $time.attr('datetime') || $time.text() || '';
+                        var match = datetime.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})/);
+                        if (match) {
+                            $time.text(match[3] + '.' + match[2] + '.' + match[1]);
+                            dateFormatted = true;
+                        }
+                    }
+                }
+
+                // 3. Fallback to raw text replacement
+                if (!dateFormatted) {
+                    var html = $cell.html();
+                    // Strip the "Last Modified" or "Published" strings and breaks
+                    html = html.replace(/^(Published|Last Modified|Veröffentlicht|Zuletzt geändert|Veröffentlichen)[^<]*<br\s*\/?>\s*/i, '');
+                    // Strip times like " at 11:54 pm" or " um 15:00"
+                    html = html.replace(/\s+(at|um)\s+\d{1,2}:\d{2}\s*(am|pm|Uhr)?/i, '');
+                    // Ensure the slash-based YYYY/MM/DD gets cleaned up if it hasn't successfully
+                    var newHtml = html.replace(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})/g, function (fullMatch, y, m, d) {
+                        return d + '.' + m + '.' + y;
+                    });
+                    $cell.html(newHtml);
+                }
+            });
+        }
+
+        // Initial run
+        formatDates($listTable);
+
+        // Setup MutationObserver for row updates
+        var tbody = $listTable.find('tbody').get(0);
+        if (tbody) {
+            var observer = new MutationObserver(function (mutations) {
+                var hasNewRows = mutations.some(function (m) {
+                    return m.addedNodes.length > 0;
+                });
+                if (hasNewRows) {
+                    formatDates($(tbody));
+                }
+            });
+            observer.observe(tbody, { childList: true, subtree: true });
+        }
+    }
+
+    initUnifiedListTopbar();
+    initUnifiedListTableDelete();
+    initListDateFormatter();
 });

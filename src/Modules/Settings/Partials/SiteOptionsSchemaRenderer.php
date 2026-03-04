@@ -28,12 +28,12 @@ class SiteOptionsSchemaRenderer
             <input type="hidden" name="settings_group" value="site_settings">
 
             <div class="cc-card">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                <div>
                     <div>
-                        <h2 style="margin-top: 0;">
+                        <h2>
                             <?php _e('Site Options Schema', 'content-core'); ?>
                         </h2>
-                        <p style="color: #646970;">
+                        <p>
                             <?php _e('Define groups and fields for global business information. These fields will appear on the Site Options page.', 'content-core'); ?>
                         </p>
                     </div>
@@ -43,47 +43,47 @@ class SiteOptionsSchemaRenderer
                     </button>
                 </div>
 
-                <div id="cc-schema-editor" style="margin-top: 24px;">
+                <div id="cc-schema-editor">
                     <?php foreach ($schema as $section_id => $section): ?>
                         <div class="cc-schema-section cc-card"
-                            style="background: #f8f9fa; margin-bottom: 20px; border: 1px solid #dcdcde;"
+                           
                             data-id="<?php echo esc_attr($section_id); ?>">
                             <div
-                                style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #dcdcde; padding-bottom: 15px;">
-                                <span class="dashicons dashicons-menu" style="color: #a0a5aa; cursor: grab;"></span>
-                                <div style="flex-grow: 1;">
+                               >
+                                <span class="dashicons dashicons-menu"></span>
+                                <div>
                                     <input type="text" name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][title]"
                                         value="<?php echo esc_attr($section['title'] ?? ''); ?>" class="large-text"
-                                        style="font-weight: 600;" placeholder="<?php esc_attr_e('Group title', 'content-core'); ?>">
+                                        placeholder="<?php esc_attr_e('Group title', 'content-core'); ?>">
                                 </div>
                                 <button type="button" class="button button-link-delete cc-remove-section">
                                     <span class="dashicons dashicons-trash"></span>
                                 </button>
                             </div>
 
-                            <div class="cc-schema-fields" style="padding-left: 20px;">
+                            <div class="cc-schema-fields">
                                 <?php foreach ($section['fields'] ?? [] as $field_id => $field): ?>
                                     <div class="cc-schema-field" data-id="<?php echo esc_attr($field_id); ?>"
-                                        style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 15px; padding: 12px; background: #fff; border: 1px solid #dcdcde; border-radius: 4px;">
+                                       >
                                         <span class="dashicons dashicons-menu"
-                                            style="color: #a0a5aa; cursor: grab; margin-top: 8px;"></span>
-                                        <div style="flex-grow: 1;">
+                                           ></span>
+                                        <div>
                                             <div
-                                                style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                               >
                                                 <div>
-                                                    <label style="display: block; font-size: 11px; margin-bottom: 3px;">
+                                                    <label>
                                                         <?php _e('Stable Key', 'content-core'); ?>
                                                     </label>
                                                     <input type="text" value="<?php echo esc_attr($field_id); ?>" class="regular-text"
-                                                        style="width: 100%; font-family: monospace;" readonly disabled>
+                                                        readonly disabled>
                                                 </div>
                                                 <div>
-                                                    <label style="display: block; font-size: 11px; margin-bottom: 3px;">
+                                                    <label>
                                                         <?php _e('Type', 'content-core'); ?>
                                                     </label>
                                                     <select
                                                         name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][type]"
-                                                        style="width: 100%;">
+                                                       >
                                                         <option value="text" <?php selected($field['type'], 'text'); ?>>Text</option>
                                                         <option value="email" <?php selected($field['type'], 'email'); ?>>Email
                                                         </option>
@@ -94,7 +94,7 @@ class SiteOptionsSchemaRenderer
                                                         </option>
                                                     </select>
                                                 </div>
-                                                <div style="display: flex; gap: 15px; align-items: center; padding-top: 20px;">
+                                                <div>
                                                     <label><input type="checkbox"
                                                             name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][client_visible]"
                                                             value="1" <?php checked(!empty($field['client_visible'])); ?>>
@@ -109,24 +109,24 @@ class SiteOptionsSchemaRenderer
                                             </div>
 
                                             <div
-                                                style="display: grid; grid-template-columns: repeat(<?php echo count($languages) ?: 1; ?>, 1fr); gap: 10px;">
+                                               >
                                                 <?php foreach ($languages as $lang):
                                                     $label_val = is_array($field['label']) ? ($field['label'][$lang['code']] ?? '') : ($lang['code'] === 'de' ? $field['label'] : '');
                                                     ?>
                                                     <div>
-                                                        <label style="display: block; font-size: 11px; margin-bottom: 3px;">
+                                                        <label>
                                                             <?php echo esc_html($lang['label']); ?>
                                                             <?php _e('Label', 'content-core'); ?>
                                                         </label>
                                                         <input type="text"
                                                             name="cc_site_options_schema[<?php echo esc_attr($section_id); ?>][fields][<?php echo esc_attr($field_id); ?>][label][<?php echo esc_attr($lang['code']); ?>]"
-                                                            value="<?php echo esc_attr($label_val); ?>" style="width: 100%;">
+                                                            value="<?php echo esc_attr($label_val); ?>">
                                                     </div>
                                                 <?php endforeach; ?>
                                             </div>
                                         </div>
                                         <button type="button" class="button button-link-delete cc-remove-field"
-                                            style="margin-top: 5px;">
+                                           >
                                             <span class="dashicons dashicons-no-alt"></span>
                                         </button>
                                     </div>
@@ -144,7 +144,7 @@ class SiteOptionsSchemaRenderer
                 </div>
             </div>
 
-            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #dcdcde;">
+            <div>
                 <?php submit_button(__('Save Site Options Schema', 'content-core'), 'primary', 'submit', false); ?>
             </div>
         </form>

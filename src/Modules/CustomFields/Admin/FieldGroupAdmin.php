@@ -98,7 +98,7 @@ class FieldGroupAdmin
 													<option value="page_template" <# if(data.type==='page_template') print('selected'); #>><?php esc_html_e('Page Template', 'content-core'); ?></option>
 													<option value="taxonomy_term" <# if(data.type==='taxonomy_term') print('selected'); #>><?php esc_html_e('Taxonomy Term', 'content-core'); ?></option>
 												</select>
-												<div class="cc-rule-value-wrap" style="flex-grow:1;">
+												<div class="cc-rule-value-wrap">
 													<!-- Value inputs will be swapped via JS based on type -->
 												</div>
 											</div>
@@ -106,7 +106,7 @@ class FieldGroupAdmin
 
 		<!-- Rule Value Templates -->
 		<script type="text/html" id="tmpl-cc-rule-value-post_type">
-													<select class="cc-rule-value" style="width:100%;">
+													<select class="cc-rule-value">
 														<?php foreach ($post_types as $pt):
 															if ($pt->name === FieldGroupPostType::POST_TYPE)
 																continue; ?>
@@ -127,7 +127,7 @@ class FieldGroupAdmin
 												</script>
 
 		<script type="text/html" id="tmpl-cc-rule-value-page">
-													<select class="cc-rule-value" style="width:100%;">
+													<select class="cc-rule-value">
 														<?php
 														$pages = get_pages(['sort_column' => 'post_title']);
 														foreach ($pages as $p):
@@ -139,7 +139,7 @@ class FieldGroupAdmin
 												</script>
 
 		<script type="text/html" id="tmpl-cc-rule-value-page_template">
-													<select class="cc-rule-value" style="width:100%;">
+													<select class="cc-rule-value">
 														<option value="default"><?php esc_html_e('Default Template', 'content-core'); ?></option>
 														<?php foreach ($templates as $label => $file): ?>
 																				<option value="<?php echo esc_attr($file); ?>" <# if(data.value==='<?php echo $file; ?>') print('selected'); #>><?php echo esc_html($label); ?></option>
@@ -149,14 +149,14 @@ class FieldGroupAdmin
 												</script>
 
 		<script type="text/html" id="tmpl-cc-rule-value-taxonomy_term">
-													<div style="display:flex; gap:5px;">
-														<select class="cc-rule-taxonomy" style="width:50%;">
+													<div>
+														<select class="cc-rule-taxonomy">
 															<?php foreach ($taxonomies as $tax): ?>
 																					<option value="<?php echo esc_attr($tax->name); ?>" <# if(data.taxonomy==='<?php echo $tax->name; ?>') print('selected'); #>><?php echo esc_html($tax->label); ?></option>
 																				<?php
 															endforeach; ?>
 														</select>
-														<select class="cc-rule-value" style="width:50%;">
+														<select class="cc-rule-value">
 															<# 
 															var currentTax = data.taxonomy || '<?php echo current(array_keys($taxonomies)); ?>';
 															var terms = ccTaxTerms[currentTax] || [];
@@ -203,22 +203,22 @@ class FieldGroupAdmin
 	{
 		?>
 		<script type="text/html" id="tmpl-cc-field-row">
-											<div class="cc-field-definition cc-field-row cc-card" data-key="{{data.key}}" style="margin-bottom: 15px; border: 1px solid #ccd0d4; background: #fff; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
-												<div class="cc-field-definition-header cc-field-header" style="padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; background: #fafafa;">
-													<div style="display: flex; align-items: center; gap: 10px;">
-														<span class="dashicons dashicons-menu cc-drag-handle" style="color: #a0a5aa; cursor: grab;" title="<?php esc_attr_e('Drag to reorder', 'content-core'); ?>"></span>
+											<div class="cc-field-definition cc-field-row cc-card" data-key="{{data.key}}">
+												<div class="cc-field-definition-header cc-field-header">
+													<div>
+														<span class="dashicons dashicons-menu cc-drag-handle" title="<?php esc_attr_e('Drag to reorder', 'content-core'); ?>"></span>
 														<strong>
-															<span class="cc-field-label-display" style="font-size: 14px;">{{data.label || '<?php esc_html_e('New Field', 'content-core'); ?>'}}</span> 
-															<small class="cc-field-name-display" style="color: #646970; font-weight: normal; margin-left: 8px;">{{data.name ? '(' + data.name + ')' : ''}}</small>
+															<span class="cc-field-label-display">{{data.label || '<?php esc_html_e('New Field', 'content-core'); ?>'}}</span> 
+															<small class="cc-field-name-display">{{data.name ? '(' + data.name + ')' : ''}}</small>
 														</strong>
 													</div>
-													<div class="cc-field-actions" style="display: flex; align-items: center; gap: 10px;">
-														<span class="cc-field-type-display" style="color: #646970; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; background: #f0f0f1; padding: 3px 6px; border-radius: 3px;">{{data.type}}</span>
-														<button type="button" class="button button-small cc-remove-field-btn" data-cc-action="remove-field" style="color: #d63638; border-color: transparent; background: transparent;"><?php esc_html_e('Remove', 'content-core'); ?></button>
+													<div class="cc-field-actions">
+														<span class="cc-field-type-display">{{data.type}}</span>
+														<button type="button" class="button button-small cc-remove-field-btn" data-cc-action="remove-field"><?php esc_html_e('Remove', 'content-core'); ?></button>
 													</div>
 												</div>
-												<div class="cc-field-definition-content cc-field-settings" style="padding: 15px;">
-													<table class="form-table" style="margin-top: 0;">
+												<div class="cc-field-definition-content cc-field-settings">
+													<table class="form-table">
 																<tr class="cc-setting-label">
 																	<th><label>Field Label</label></th>
 																	<td><input type="text" class="regular-text cc-input-label" value="{{data.label}}"></td>
@@ -265,13 +265,13 @@ class FieldGroupAdmin
 																	<th><label>Required?</label></th>
 																	<td><input type="checkbox" class="cc-input-required" value="1" <# if(data.required) print('checked'); #>> Yes</td>
 																</tr>
-																<tr class="cc-setting-section" style="display:none;">
+																<tr class="cc-setting-section">
 																	<th><label>Collapsible?</label></th>
 																	<td>
 																		<label><input type="checkbox" class="cc-input-collapsible" value="1" <# if(data.collapsible) print('checked'); #>> Allow this section to be collapsed</label>
 																	</td>
 																</tr>
-																<tr class="cc-setting-section-default-state" style="display:none;">
+																<tr class="cc-setting-section-default-state">
 																	<th><label>Default State</label></th>
 																	<td>
 																		<select class="cc-input-default-state">
@@ -283,14 +283,14 @@ class FieldGroupAdmin
 															</table>
 					
 															<!-- Sub-fields Builder -->
-															<div class="cc-sub-fields-wrap cc-card" style="<# if(data.type!=='section' && data.type!=='repeater' && data.type!=='group') print('display:none;'); #> margin-top: 20px; background: var(--cc-bg-soft);">
-																<h4 style="margin-top: 0; padding: 15px 15px 0 15px;"><?php esc_html_e('Child Fields', 'content-core'); ?></h4>
+															<div class="cc-sub-fields-wrap cc-card">
+																<h4><?php esc_html_e('Child Fields', 'content-core'); ?></h4>
 						
-																<div class="cc-sub-fields-container inner-sortable-list" style="min-height: 60px; padding: 15px; border: 2px dashed #c3c4c7; background: #f6f7f7; margin: 15px;">
+																<div class="cc-sub-fields-container inner-sortable-list">
 																	<!-- Children injected here by renderNode logic -->
 																</div>
 
-																<div style="padding: 0 15px 15px 15px;">
+																<div>
 																	<button type="button" class="button cc-add-inner-field-btn" data-cc-action="add-inner-field">+ Add Field Here</button>
 																</div>
 															</div>
@@ -392,7 +392,7 @@ class FieldGroupAdmin
 		wp_enqueue_script('wp-util');
 
 		// Use globally registered handles from Admin\Assets
-		wp_enqueue_style('cc-admin-modern');
+		wp_enqueue_style('cc-admin-ui');
 		wp_enqueue_script('cc-admin-js');
 
 		// Pass taxonomy terms to JS for Assignment Builder

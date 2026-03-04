@@ -17,7 +17,7 @@ class BrandingTabRenderer
         $enabled = !empty($settings['enabled']);
         $exclude_admins = !empty($settings['exclude_admins']);
         $remove_wp_mentions = !empty($settings['remove_wp_mentions']);
-        $primary = (string) ($settings['custom_primary_color'] ?? $settings['login_bg_color'] ?? '#1e1e1e');
+        $primary = (string) ($settings['login_bg_color'] ?? $settings['custom_primary_color'] ?? '#1e1e1e');
         $accent = (string) ($settings['custom_accent_color'] ?? $settings['login_btn_color'] ?? '#2271b1');
         $footer = (string) ($settings['custom_footer_text'] ?? '');
         $login_logo = $settings['login_logo'] ?? '';
@@ -70,9 +70,8 @@ class BrandingTabRenderer
                         </div>
 
                         <div class="cc-field">
-                            <label class="cc-field-label"><?php _e('Background Color', 'content-core'); ?></label>
-                            <input type="color" name="cc_branding_settings[custom_primary_color]" value="<?php echo esc_attr($primary); ?>" class="cc-branding-background-color">
-                            <input type="hidden" name="cc_branding_settings[login_bg_color]" value="<?php echo esc_attr($primary); ?>" class="cc-branding-login-bg-sync">
+                            <label class="cc-field-label"><?php _e('Login Background Color', 'content-core'); ?></label>
+                            <input type="color" name="cc_branding_settings[login_bg_color]" value="<?php echo esc_attr($primary); ?>" class="cc-branding-background-color">
                         </div>
 
                         <div class="cc-field">
@@ -81,7 +80,7 @@ class BrandingTabRenderer
                             <input type="hidden" name="cc_branding_settings[login_btn_color]" value="<?php echo esc_attr($accent); ?>" class="cc-branding-login-btn-sync">
                         </div>
 
-                        <div class="cc-field" style="grid-column:1 / -1;">
+                        <div class="cc-field">
                             <label class="cc-field-label"><?php _e('Login Logo', 'content-core'); ?></label>
                             <input type="hidden" name="cc_branding_settings[login_logo_link_url]" value="">
                             <input type="hidden" name="cc_branding_settings[use_site_icon_for_admin_bar]" value="1">
@@ -92,16 +91,16 @@ class BrandingTabRenderer
                                 <input type="hidden" name="cc_branding_settings[login_logo]" value="<?php echo esc_attr((string) $login_logo); ?>" class="cc-media-target-id">
                                 <input type="hidden" name="cc_branding_settings[login_logo_url]" value="<?php echo esc_attr($login_logo_url); ?>" class="cc-media-target-url">
                             </div>
-                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;">
+                            <div>
                                 <button type="button" class="cc-button-secondary cc-open-media"><?php echo $login_logo_url !== '' ? esc_html__('Replace Logo', 'content-core') : esc_html__('Select Logo', 'content-core'); ?></button>
                                 <button type="button" class="cc-button-secondary cc-clear-media"><?php _e('Remove Logo', 'content-core'); ?></button>
                             </div>
-                            <div class="cc-media-preview-wrap" style="margin-top:10px;min-height:56px;">
-                                <img class="cc-media-preview" src="<?php echo esc_url($login_logo_url); ?>" alt="" style="<?php echo $login_logo_url !== '' ? 'max-height:56px;max-width:220px;display:block;' : 'display:none;'; ?>">
+                            <div class="cc-media-preview-wrap">
+                                <img class="cc-media-preview" src="<?php echo esc_url($login_logo_url); ?>" alt="">
                             </div>
                         </div>
 
-                        <div class="cc-field" style="grid-column:1 / -1;">
+                        <div class="cc-field">
                             <label class="cc-field-label"><?php _e('Footer Text (HTML allowed)', 'content-core'); ?></label>
                             <div class="cc-field-input">
                                 <textarea rows="3" name="cc_branding_settings[custom_footer_text]"><?php echo esc_textarea($footer); ?></textarea>
@@ -158,11 +157,9 @@ class BrandingTabRenderer
                     });
 
                 $(document)
-                    .off('change.ccBrandingColors', '#cc-settings-branding .cc-branding-background-color, #cc-settings-branding .cc-branding-accent-color')
-                    .on('change.ccBrandingColors', '#cc-settings-branding .cc-branding-background-color, #cc-settings-branding .cc-branding-accent-color', function () {
-                        var bg = $('#cc-settings-branding .cc-branding-background-color').val() || '#1e1e1e';
+                    .off('change.ccBrandingColors', '#cc-settings-branding .cc-branding-accent-color')
+                    .on('change.ccBrandingColors', '#cc-settings-branding .cc-branding-accent-color', function () {
                         var accent = $('#cc-settings-branding .cc-branding-accent-color').val() || '#2271b1';
-                        $('#cc-settings-branding .cc-branding-login-bg-sync').val(bg);
                         $('#cc-settings-branding .cc-branding-login-btn-sync').val(accent);
                     });
             })(jQuery);

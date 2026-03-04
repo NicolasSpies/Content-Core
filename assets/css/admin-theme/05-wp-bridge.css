@@ -1,0 +1,184 @@
+/* WordPress bridge layer: map core selectors to the unified component system */
+
+:where(body.cc-admin-theme .postbox, body.cc-admin-theme .stuffbox) {
+    border: var(--ui-border-default);
+    border-radius: var(--ui-radius-lg);
+    background: var(--ui-color-bg-surface);
+    box-shadow: var(--ui-shadow-none);
+    overflow: hidden;
+}
+
+:where(body.cc-admin-theme .postbox .postbox-header, body.cc-admin-theme .postbox .hndle, body.cc-admin-theme .stuffbox .hndle) {
+    margin: 0;
+    padding: var(--ui-space-6);
+    border-bottom: var(--ui-border-muted);
+    background: var(--ui-color-bg-surface);
+    font-size: var(--ui-text-title-size);
+    line-height: var(--ui-text-title-line);
+    font-weight: var(--ui-font-weight-semibold);
+}
+
+:where(body.cc-admin-theme .postbox .inside, body.cc-admin-theme .stuffbox .inside) {
+    margin: 0;
+    padding: var(--ui-space-6);
+}
+
+:where(body.cc-admin-theme .wp-list-table, body.cc-admin-theme .widefat) {
+    border: var(--ui-border-default);
+    border-radius: var(--ui-radius-lg);
+    background: var(--ui-color-bg-surface);
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+}
+
+:where(body.cc-admin-theme .wp-list-table thead th, body.cc-admin-theme .wp-list-table tfoot th, body.cc-admin-theme .widefat thead th, body.cc-admin-theme .widefat tfoot th) {
+    height: 48px;
+    background: var(--ui-color-bg-surface-muted);
+    color: var(--ui-color-text-muted);
+    border-bottom: var(--ui-border-muted);
+    font-size: var(--ui-text-table-head-size);
+    line-height: var(--ui-text-table-head-line);
+    letter-spacing: var(--ui-text-table-head-tracking);
+    text-transform: uppercase;
+    font-weight: var(--ui-font-weight-semibold);
+    padding: var(--ui-space-3) var(--ui-space-4);
+}
+
+:where(body.cc-admin-theme .wp-list-table td, body.cc-admin-theme .wp-list-table th, body.cc-admin-theme .widefat td, body.cc-admin-theme .widefat th) {
+    border-bottom: var(--ui-border-muted);
+    padding: var(--ui-space-3) var(--ui-space-4);
+    vertical-align: middle;
+}
+
+:where(body.cc-admin-theme .wp-list-table tbody tr, body.cc-admin-theme .widefat tbody tr) {
+    height: 56px;
+}
+
+:where(body.cc-admin-theme .wp-list-table tbody tr:hover td, body.cc-admin-theme .widefat tbody tr:hover td) {
+    background: var(--ui-color-accent-50);
+}
+
+:where(body.cc-admin-theme .form-table) {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: var(--ui-border-default);
+    border-radius: var(--ui-radius-lg);
+    overflow: hidden;
+    background: var(--ui-color-bg-surface);
+}
+
+:where(body.cc-admin-theme .form-table th, body.cc-admin-theme .form-table td) {
+    padding: var(--ui-space-4);
+    border-top: var(--ui-border-muted);
+    vertical-align: top;
+}
+
+:where(body.cc-admin-theme .form-table tr:first-child th, body.cc-admin-theme .form-table tr:first-child td) {
+    border-top: 0;
+}
+
+:where(body.cc-admin-theme .form-table th) {
+    width: 240px;
+    background: var(--ui-color-bg-surface-muted);
+}
+
+:where(body.cc-admin-theme .notice, body.cc-admin-theme .notice.notice, body.cc-admin-theme .updated, body.cc-admin-theme .error) {
+    box-shadow: var(--ui-shadow-none);
+}
+
+:where(body.cc-admin-theme .subsubsub) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ui-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+:where(body.cc-admin-theme .subsubsub li) {
+    margin: 0;
+}
+
+:where(body.cc-admin-theme .subsubsub a) {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--ui-size-chip);
+    padding: 0 10px;
+    border-radius: var(--ui-radius-pill);
+    border: var(--ui-border-default);
+    color: var(--ui-color-text-secondary);
+    background: var(--ui-color-bg-surface);
+    text-decoration: none;
+}
+
+:where(body.cc-admin-theme .subsubsub a.current) {
+    color: var(--ui-color-accent-600);
+    background: var(--ui-color-accent-100);
+    border-color: transparent;
+}
+
+:where(body.cc-admin-theme .tablenav) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--ui-space-3);
+    margin: 0;
+    padding: var(--ui-space-4) 0;
+    min-height: var(--ui-size-toolbar-control);
+}
+
+:where(body.cc-admin-theme .tablenav .bulkactions, body.cc-admin-theme .bulkactions, body.cc-admin-theme .tablenav .actions) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ui-space-2);
+}
+
+:where(body.cc-admin-theme .tablenav .tablenav-pages) {
+    margin-left: auto;
+}
+
+:where(body.cc-admin-theme .search-box) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ui-space-2);
+}
+
+:where(body.cc-admin-theme .search-box input[type="search"]) {
+    width: clamp(220px, 24vw, 360px);
+}
+
+:where(body.cc-admin-theme .media-frame, body.cc-admin-theme .media-modal-content) {
+    background: var(--ui-color-bg-canvas);
+}
+
+:where(body.cc-admin-theme .media-frame .media-frame-content, body.cc-admin-theme .media-frame .attachments-browser) {
+    background: var(--ui-color-bg-canvas);
+}
+
+:where(body.cc-admin-theme .media-frame .media-toolbar, body.cc-admin-theme .media-frame .media-sidebar, body.cc-admin-theme .media-frame .attachment-details) {
+    background: var(--ui-color-bg-surface);
+    border-color: var(--ui-color-border-default);
+}
+
+:where(body.cc-admin-theme .media-frame .attachment, body.cc-admin-theme .media-frame .attachment-preview) {
+    border-radius: var(--ui-radius-md);
+}
+
+:where(body.cc-admin-theme .wp-heading-inline) {
+    font-size: var(--ui-text-display-size);
+    line-height: var(--ui-text-display-line);
+    font-weight: var(--ui-font-weight-bold);
+    letter-spacing: -0.02em;
+}
+
+:where(body.cc-admin-theme #adminmenu .wp-submenu li a, body.cc-admin-theme #adminmenu li a.menu-top) {
+    border-radius: var(--ui-radius-md);
+}
+
+:where(body.cc-admin-theme #adminmenu li.current a.menu-top, body.cc-admin-theme #adminmenu li.wp-has-current-submenu > a.menu-top, body.cc-admin-theme #adminmenu .wp-submenu li.current a) {
+    background: var(--ui-color-accent-100);
+    color: var(--ui-color-accent-600);
+}

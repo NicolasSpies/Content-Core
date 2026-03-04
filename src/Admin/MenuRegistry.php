@@ -86,7 +86,7 @@ class MenuRegistry
             __('Structure', 'content-core'),
             'manage_options',
             'cc-structure-root',
-            '__return_null'
+            [$this->admin_menu_handler, 'render_structure_root_page']
         );
 
         if ($plugin->is_module_active('content_types')) {
@@ -107,7 +107,7 @@ class MenuRegistry
             __('Settings', 'content-core'),
             'manage_options',
             'cc-settings-root',
-            '__return_null'
+            [$this->admin_menu_handler, 'render_settings_root_page']
         );
 
         $settings_module = $plugin->get_module('settings');
@@ -122,6 +122,7 @@ class MenuRegistry
                 $site_profile_callback = [$settings_module, 'render_settings_page'];
             }
 
+            // Site Profile must be a standalone customer-facing entry in CONTENT.
             add_menu_page(
                 __('Site Profile', 'content-core'),
                 __('Site Profile', 'content-core'),
@@ -129,7 +130,7 @@ class MenuRegistry
                 'cc-site-options',
                 $site_profile_callback,
                 'dashicons-admin-generic',
-                31
+                29
             );
 
             add_submenu_page(
@@ -172,7 +173,7 @@ class MenuRegistry
             __('System', 'content-core'),
             'manage_options',
             'cc-system-root',
-            '__return_null'
+            [$this->admin_menu_handler, 'render_system_root_page']
         );
 
         add_submenu_page('content-core', __('Diagnostics', 'content-core'), __('Diagnostics', 'content-core'), 'manage_options', 'cc-diagnostics', [$this->admin_menu_handler, 'render_diagnostics_page']);

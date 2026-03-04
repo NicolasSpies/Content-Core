@@ -138,7 +138,7 @@ jQuery(function ($) {
             $input.val(attachment.id);
             $removeBtn.show();
             var flagCol = $row.find('.flag-col');
-            flagCol.html('<img src="' + attachment.url + '" style="width:18px; height:12px; object-fit:cover; vertical-align:middle; border-radius:1px; margin-right:4px;" />');
+            flagCol.html('<img src="' + attachment.url + '" class="cc-media-thumb-small" />');
         });
 
         mediaFrame.open();
@@ -211,7 +211,7 @@ jQuery(function ($) {
             var attachment = seoMediaFrame.state().get('selection').first().toJSON();
             $('#cc-seo-image-id').val(attachment.id);
             var imgUrl = attachment.sizes && attachment.sizes.thumbnail ? attachment.sizes.thumbnail.url : attachment.url;
-            $('#cc-seo-image-preview').html('<img src="' + imgUrl + '" style="max-width: 150px; height: auto; border: 1px solid #ddd; padding: 3px; border-radius: 4px;" />').show();
+            $('#cc-seo-image-preview').html('<img src="' + imgUrl + '" class="cc-seo-preview-image" />').show();
             $('#cc-seo-image-remove').show();
         });
         seoMediaFrame.open();
@@ -261,7 +261,7 @@ jQuery(function ($) {
         }
 
         if (!CC_SETTINGS.restUrl || !CC_SETTINGS.nonce) {
-            $form.before('<div class="notice notice-error" style="margin: 20px 0;"><p><strong>Content Core config missing.</strong> Assets not localized. Please check admin enqueue + caching plugins.</p></div>');
+            $form.before('<div class="notice notice-error cc-notice-inline"><p><strong>Content Core config missing.</strong> Assets not localized. Please check admin enqueue + caching plugins.</p></div>');
             return;
         }
         $form.on('submit', function (e) {

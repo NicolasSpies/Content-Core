@@ -70,13 +70,13 @@ class RuntimeAuditRenderer
                 <div class="cc-card-body">
                     <div class="cc-data-group">
                         <span class="cc-data-label"><?php _e('REST Namespaces', 'content-core'); ?></span>
-                        <div class="cc-data-scroll" style="max-height: 160px; overflow-y: auto; background: var(--cc-bg-soft); padding: 12px; border-radius: 6px; font-family: monospace; font-size: 11px; margin-top: 8px;">
+                        <div class="cc-data-scroll">
                             <?php
                             if (empty($namespaces)) {
                                 echo '<em>' . __('No namespaces found.', 'content-core') . '</em>';
                             } else {
                                 foreach ($namespaces as $ns) {
-                                    echo '<div style="margin-bottom:4px;">' . esc_html($ns) . '</div>';
+                                    echo '<div>' . esc_html($ns) . '</div>';
                                 }
                             }
                             ?>
@@ -87,16 +87,16 @@ class RuntimeAuditRenderer
 
                     <div class="cc-data-group">
                         <span class="cc-data-label"><?php _e('Active MU Plugins', 'content-core'); ?></span>
-                        <div style="margin-top: 8px;">
+                        <div>
                             <?php
                             $mu_plugins = get_mu_plugins();
                             if (empty($mu_plugins)) {
                                 echo '<div class="cc-help">' . __('None detected', 'content-core') . '</div>';
                             } else {
                                 foreach ($mu_plugins as $file => $data) {
-                                    echo '<div style="font-size:11px; margin-bottom:6px; display:flex; flex-direction:column;">';
-                                    echo '<code style="font-weight:700;">' . esc_html($file) . '</code>';
-                                    echo '<span class="cc-help" style="margin:0;">' . esc_html($data['Name'] ?? 'No Name') . '</span>';
+                                    echo '<div>';
+                                    echo '<code>' . esc_html($file) . '</code>';
+                                    echo '<span class="cc-help">' . esc_html($data['Name'] ?? 'No Name') . '</span>';
                                     echo '</div>';
                                 }
                             }
@@ -116,9 +116,9 @@ class RuntimeAuditRenderer
                 </div>
                 <div class="cc-card-body">
                     <?php if (empty($redirect_interference)): ?>
-                        <div style="display:flex; align-items:center; gap:8px; color:var(--cc-success);">
+                        <div>
                             <span class="dashicons dashicons-yes-alt"></span>
-                            <span style="font-size:13px; font-weight:600;"><?php _e('No rules targeting system paths.', 'content-core'); ?></span>
+                            <span><?php _e('No rules targeting system paths.', 'content-core'); ?></span>
                         </div>
                     <?php else: ?>
                         <table class="cc-table">
@@ -126,7 +126,7 @@ class RuntimeAuditRenderer
                                 <tr>
                                     <th>From</th>
                                     <th>To</th>
-                                    <th style="width:50px;">Code</th>
+                                    <th>Code</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -134,13 +134,13 @@ class RuntimeAuditRenderer
                                     <tr>
                                         <td><code><?php echo esc_html($rule['from_path']); ?></code></td>
                                         <td><code><?php echo esc_html($rule['to_path'] ?? '-'); ?></code></td>
-                                        <td style="text-align:center;"><?php echo esc_html($rule['status_code'] ?? '301'); ?></td>
+                                        <td><?php echo esc_html($rule['status_code'] ?? '301'); ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
                     <?php endif; ?>
-                    <p class="cc-help" style="margin-top:16px;">
+                    <p class="cc-help">
                         <?php _e('Monitors rules that might conflict with /wp-json or /wp-admin paths.', 'content-core'); ?>
                     </p>
                 </div>
@@ -154,20 +154,20 @@ class RuntimeAuditRenderer
                         <?php _e('Content Core v1 Route Registry', 'content-core'); ?>
                     </h2>
                 </div>
-                <div class="cc-card-body" style="padding:0;">
+                <div class="cc-card-body">
                     <?php if (empty($routes_info)): ?>
-                        <div style="padding:40px; text-align:center;">
-                            <span class="dashicons dashicons-warning" style="font-size:48px; width:48px; height:48px; color:var(--cc-error); opacity:0.3; margin-bottom:16px; display:block; margin-left:auto; margin-right:auto;"></span>
-                            <h3 style="color:var(--cc-error); margin:0;"><?php _e('CRITICAL: No CC routes found.', 'content-core'); ?></h3>
+                        <div>
+                            <span class="dashicons dashicons-warning"></span>
+                            <h3><?php _e('CRITICAL: No CC routes found.', 'content-core'); ?></h3>
                             <p class="cc-help"><?php _e('The WP Registry does not contain any /content-core/v1 routes.', 'content-core'); ?></p>
                         </div>
                     <?php else: ?>
                         <table class="cc-table cc-table-flush">
                             <thead>
                                 <tr>
-                                    <th style="width:40%;"><?php _e('Route', 'content-core'); ?></th>
+                                    <th><?php _e('Route', 'content-core'); ?></th>
                                     <th><?php _e('Methods', 'content-core'); ?></th>
-                                    <th style="width:180px; text-align:center;"><?php _e('Permission Check', 'content-core'); ?></th>
+                                    <th><?php _e('Permission Check', 'content-core'); ?></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -175,11 +175,11 @@ class RuntimeAuditRenderer
                                     <tr>
                                         <td><strong><code><?php echo esc_html($route); ?></code></strong></td>
                                         <td><code><?php echo esc_html(implode(', ', $info['methods'])); ?></code></td>
-                                        <td style="text-align:center;">
+                                        <td>
                                             <?php if ($info['permission_callback']): ?>
-                                                <span class="cc-status-pill cc-status-healthy" style="font-size:9px;">PRESENT</span>
+                                                <span class="cc-status-pill cc-status-healthy">PRESENT</span>
                                             <?php else: ?>
-                                                <span class="cc-status-pill cc-status-warning" style="font-size:9px;">MISSING</span>
+                                                <span class="cc-status-pill cc-status-warning">MISSING</span>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
@@ -211,14 +211,14 @@ class RuntimeAuditRenderer
         }
 
         ?>
-        <div id="cc-runtime-audit-footer" class="cc-page" style="margin-top: 40px; padding: 0 20px 40px 180px;">
-            <div class="cc-card" style="border: 2px solid var(--cc-accent-color); box-shadow: var(--cc-shadow-lg);">
-                <div class="cc-card-header" style="background: rgba(var(--cc-accent-color-rgb), 0.05);">
-                    <h2 style="color: var(--cc-accent-color);">
-                        <span class="dashicons dashicons-visibility" style="color: inherit;"></span>
+        <div id="cc-runtime-audit-footer" class="cc-page">
+            <div class="cc-card">
+                <div class="cc-card-header">
+                    <h2>
+                        <span class="dashicons dashicons-visibility"></span>
                         <?php _e('Page-Level Audit Report', 'content-core'); ?>
                     </h2>
-                    <span class="cc-status-pill cc-status-healthy" style="opacity: 0.8;">
+                    <span class="cc-status-pill cc-status-healthy">
                         <?php echo esc_html($page_slug); ?>
                     </span>
                 </div>
@@ -229,8 +229,8 @@ class RuntimeAuditRenderer
                             <h3 class="cc-section-title"><?php _e('UI & Asset Context', 'content-core'); ?></h3>
                             <div class="cc-data-group">
                                 <span class="cc-data-label"><?php _e('Screen Context', 'content-core'); ?></span>
-                                <div style="font-size: 11px; margin-top: 4px;">
-                                    <code style="display:block; margin-bottom:4px;">ID: <?php echo esc_html($screen->id); ?></code>
+                                <div>
+                                    <code>ID: <?php echo esc_html($screen->id); ?></code>
                                     <code>Namespace: <?php echo esc_html($expected_namespace); ?></code>
                                 </div>
                             </div>
@@ -239,17 +239,17 @@ class RuntimeAuditRenderer
 
                             <div class="cc-data-group">
                                 <span class="cc-data-label"><?php _e('Enqueued Scripts', 'content-core'); ?></span>
-                                <div class="cc-data-scroll" style="height: 180px; overflow-y: auto; background: var(--cc-bg-soft); padding: 12px; border-radius: 6px; font-family: monospace; font-size: 10px; margin-top: 8px;">
+                                <div class="cc-data-scroll">
                                     <?php
                                     foreach ($wp_scripts->queue as $handle) {
                                         $data = $wp_scripts->get_data($handle, 'data');
                                         $is_localized = !empty($data);
-                                        echo '<div style="margin-bottom:6px; padding-bottom:4px; border-bottom:1px solid rgba(0,0,0,0.05);">';
-                                        echo '<strong>' . esc_html($handle) . '</strong>' . ($is_localized ? ' <span style="color:var(--cc-success); font-weight:800;">[Localized]</span>' : '');
+                                        echo '<div>';
+                                        echo '<strong>' . esc_html($handle) . '</strong>' . ($is_localized ? ' <span>[Localized]</span>' : '');
                                         
                                         if (in_array($handle, ['cc-settings-js', 'cc-site-settings-app', 'cc-terms-manager', 'cc-admin-js', 'wp-api-fetch'])) {
-                                            echo '<div style="margin-top:4px; padding:6px; background:#fff; border-left:2px solid var(--cc-accent-color); overflow:hidden; text-overflow:ellipsis;">';
-                                            echo '<pre style="margin:0; white-space:pre-wrap; font-size:9px;">' . esc_html(substr($data, 0, 500)) . (strlen($data) > 500 ? '...' : '') . '</pre>';
+                                            echo '<div>';
+                                            echo '<pre>' . esc_html(substr($data, 0, 500)) . (strlen($data) > 500 ? '...' : '') . '</pre>';
                                             echo '</div>';
                                         }
                                         echo '</div>';
@@ -286,24 +286,24 @@ class RuntimeAuditRenderer
                             <div class="cc-data-group">
                                 <span class="cc-data-label"><?php _e('Registry Status', 'content-core'); ?></span>
                                 <?php if ($route_found): ?>
-                                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px; color: var(--cc-success);">
+                                    <div>
                                         <span class="dashicons dashicons-yes-alt"></span>
-                                        <span style="font-weight: 700; font-size: 13px;"><?php _e('Namespace discovered', 'content-core'); ?></span>
+                                        <span><?php _e('Namespace discovered', 'content-core'); ?></span>
                                     </div>
-                                    <div class="cc-data-scroll" style="max-height: 200px; overflow-y: auto; background: var(--cc-bg-soft); padding: 12px; border-radius: 6px; font-family: monospace; font-size: 10px; margin-top: 12px;">
+                                    <div class="cc-data-scroll">
                                         <?php foreach ($matching_routes as $r => $m): ?>
-                                            <div style="margin-bottom:4px;">
-                                                <code style="color:var(--cc-accent-color); font-weight:700;"><?php echo esc_html($r); ?></code>
-                                                <span style="opacity:0.6;">(<?php echo esc_html(implode(', ', $m)); ?>)</span>
+                                            <div>
+                                                <code><?php echo esc_html($r); ?></code>
+                                                <span>(<?php echo esc_html(implode(', ', $m)); ?>)</span>
                                             </div>
                                         <?php endforeach; ?>
                                     </div>
                                 <?php else: ?>
-                                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px; color: var(--cc-error); padding: 12px; background: rgba(var(--cc-error-rgb), 0.05); border-radius: 6px;">
+                                    <div>
                                         <span class="dashicons dashicons-warning"></span>
                                         <div>
-                                            <span style="font-weight: 700; font-size: 13px; display: block;"><?php _e('Namespace NOT discovered', 'content-core'); ?></span>
-                                            <span style="font-size: 11px;"><?php _e('REST operations will likely fail.', 'content-core'); ?></span>
+                                            <span><?php _e('Namespace NOT discovered', 'content-core'); ?></span>
+                                            <span><?php _e('REST operations will likely fail.', 'content-core'); ?></span>
                                         </div>
                                     </div>
                                 <?php endif; ?>
@@ -313,16 +313,16 @@ class RuntimeAuditRenderer
                             
                             <div class="cc-data-group">
                                 <span class="cc-data-label"><?php _e('Diagnostic Indicators', 'content-core'); ?></span>
-                                <div style="margin-top: 8px; font-size: 11px; display: flex; flex-direction: column; gap: 6px;">
-                                    <div style="display:flex; justify-content:space-between;">
+                                <div>
+                                    <div>
                                         <span><?php _e('REST Init Fired', 'content-core'); ?></span>
-                                        <span class="cc-status-pill <?php echo did_action('rest_api_init') ? 'cc-status-healthy' : 'cc-status-warning'; ?>" style="font-size:8px;">
+                                        <span class="cc-status-pill <?php echo did_action('rest_api_init') ? 'cc-status-healthy' : 'cc-status-warning'; ?>">
                                             <?php echo did_action('rest_api_init') ? 'YES' : 'NO'; ?>
                                         </span>
                                     </div>
-                                    <div style="display:flex; justify-content:space-between;">
+                                    <div>
                                         <span><?php _e('Admin Capability', 'content-core'); ?></span>
-                                        <span class="cc-status-pill <?php echo current_user_can('manage_options') ? 'cc-status-healthy' : 'cc-status-error'; ?>" style="font-size:8px;">
+                                        <span class="cc-status-pill <?php echo current_user_can('manage_options') ? 'cc-status-healthy' : 'cc-status-error'; ?>">
                                             <?php echo current_user_can('manage_options') ? 'OK' : 'DENIED'; ?>
                                         </span>
                                     </div>
@@ -331,7 +331,7 @@ class RuntimeAuditRenderer
                         </div>
                     </div>
                 </div>
-                <div class="cc-card-footer" style="padding: 16px 24px; background: var(--cc-bg-soft); border-top: 1px solid var(--cc-border); text-align: right;">
+                <div class="cc-card-footer">
                     <a href="<?php echo esc_url(admin_url('admin.php?page=cc-diagnostics&tab=runtime-audit')); ?>" class="cc-button-secondary">
                         <?php _e('Go to Full System Registry', 'content-core'); ?>
                     </a>

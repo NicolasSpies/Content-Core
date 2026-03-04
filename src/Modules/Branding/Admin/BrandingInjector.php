@@ -57,9 +57,9 @@ class BrandingInjector
         $accent = !empty($settings['custom_accent_color'])
             ? sanitize_hex_color($settings['custom_accent_color'])
             : (!empty($settings['login_btn_color']) ? sanitize_hex_color($settings['login_btn_color']) : '#2271b1');
-        $bg = !empty($settings['custom_primary_color'])
-            ? sanitize_hex_color($settings['custom_primary_color'])
-            : (!empty($settings['login_bg_color']) ? sanitize_hex_color($settings['login_bg_color']) : '#0f172a');
+        $bg = !empty($settings['login_bg_color'])
+            ? sanitize_hex_color($settings['login_bg_color'])
+            : (!empty($settings['custom_primary_color']) ? sanitize_hex_color($settings['custom_primary_color']) : '#0f172a');
 
         // 1. Branding Module Logo (Attachment ID or URL)
         $logo_url = '';
@@ -339,7 +339,7 @@ class BrandingInjector
 
             $wp_admin_bar->add_node([
                 'id' => 'cc-client-logo',
-                'title' => "<img src='{$logo_img_url}' alt='Client Logo' style='max-height: 20px; vertical-align: middle;' />",
+                'title' => "<img src='{$logo_img_url}' alt='Client Logo' class='cc-admin-bar-logo-img' />",
                 'href' => $link_url,
                 'meta' => [
                     'class' => 'cc-admin-bar-logo'
@@ -350,50 +350,7 @@ class BrandingInjector
 
     public function inject_admin_css(): void
     {
-        $settings = $this->module->get_settings();
-        $css = [];
-
-        if (!empty($settings['custom_primary_color'])) {
-            $primary = sanitize_hex_color($settings['custom_primary_color']);
-            if ($primary) {
-                $css[] = ":root { --cc-brand-primary: {$primary}; }";
-                // Gentle CSS overrides using CSS variables inside admin panels
-                $css[] = "#wpadminbar { background-color: var(--cc-brand-primary) !important; }";
-                $css[] = "#adminmenu .wp-menu-arrow div { background-color: var(--cc-brand-primary) !important; }";
-            }
-        }
-
-        if (!empty($settings['custom_accent_color'])) {
-            $accent = sanitize_hex_color($settings['custom_accent_color']);
-            if ($accent) {
-                $css[] = ":root { --cc-brand-accent: {$accent}; }";
-                $css[] = ".wp-core-ui .button-primary { background: var(--cc-brand-accent) !important; border-color: var(--cc-brand-accent) !important; color: #fff !important; }";
-                $css[] = ".wp-core-ui .button-primary:hover { filter: brightness(0.9) !important; }";
-
-                // Active menu item and submenus
-                $css[] = "#adminmenu li.wp-has-current-submenu a.wp-has-current-submenu, #adminmenu li.current a.menu-top, #adminmenu .wp-menu-arrow div { background-color: var(--cc-brand-accent) !important; color: #fff !important; }";
-                $css[] = "#adminmenu li.wp-has-current-submenu a.wp-has-current-submenu .wp-menu-image:before, #adminmenu li.current a.menu-top .wp-menu-image:before { color: #fff !important; }";
-
-                // Admin menu hover states
-                $css[] = "#adminmenu a:hover, #adminmenu li.menu-top:hover, #adminmenu .wp-submenu a:hover { color: var(--cc-brand-accent) !important; }";
-                $css[] = "#adminmenu li.menu-top:hover .wp-menu-image:before { color: var(--cc-brand-accent) !important; }";
-
-                // Submenu panel styling and positioning fix
-                $css[] = "#adminmenu .wp-has-current-submenu .wp-submenu, #adminmenu .wp-has-current-submenu .wp-submenu.sub-open, #adminmenu .wp-has-current-submenu.opened .wp-submenu { background-color: #2F363D !important; border-left: 4px solid var(--cc-brand-accent) !important; box-sizing: border-box; }";
-                // Only use left offset for fly-outs when the menu is NOT expanded
-                $css[] = "body.folded #adminmenu .wp-has-current-submenu .wp-submenu, body.folded #adminmenu .opensub .wp-submenu { left: 160px !important; }";
-
-                // Remove tiny top gap in admin sidebar under the top toolbar.
-                $css[] = "#adminmenuback, #adminmenuwrap, #adminmenu { margin-top: 0 !important; padding-top: 0 !important; }";
-                $css[] = "#adminmenu > li#toplevel_page_cc-site-options, #adminmenu > li#toplevel_page_content-core { margin-top: 0 !important; }";
-                $css[] = "#adminmenu > li.wp-first-item { margin-top: 0 !important; }";
-                $css[] = "#adminmenu > li.wp-menu-separator:first-child { display: none !important; }";
-            }
-        }
-
-        if (!empty($css)) {
-            wp_add_inline_style('common', ":root { --cc-brand-active: 1; }\n" . implode("\n", $css));
-        }
+        wp_enqueue_style('cc-admin-ui');
     }
 
     public function override_footer_text(string $text): string

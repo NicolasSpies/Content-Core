@@ -322,9 +322,9 @@ class PostEditAdmin
             }
         }
         echo '</div>';
-        echo '<div class="cc-media-actions" style="margin-top: 10px;">';
+        echo '<div class="cc-media-actions">';
         echo '<button type="button" class="button cc-media-upload-btn">' . esc_html($bt) . '</button> ';
-        echo '<button type="button" class="button cc-media-remove-btn" style="' . (!$value ? 'display:none;' : '') . '">' . esc_html__('Remove', 'content-core') . '</button>';
+        echo '<button type="button" class="button cc-media-remove-btn' . (!$value ? ' hidden' : '') . '"' . (!$value ? ' hidden' : '') . '>' . esc_html__('Remove', 'content-core') . '</button>';
         echo '</div>';
         echo '</div>';
     }
@@ -659,16 +659,11 @@ class PostEditAdmin
 
         $plugin_root = dirname(dirname(dirname(__DIR__)));
 
-        // Enqueue legacy/base post-edit styles (already registered in AdminMenu)
-        wp_enqueue_style('cc-post-edit');
-
-        // Enqueue the improved client UI styles (already registered in AdminMenu)
-        wp_enqueue_style('cc-metabox-ui');
+        // Enqueue unified admin UI stylesheet.
+        wp_enqueue_style('cc-admin-ui');
 
         // Debug diagnostic probe
         if (defined('WP_DEBUG') && WP_DEBUG) {
-            wp_add_inline_style('cc-metabox-ui', '/* Content Core metabox UI Loaded */ .cc-metabox-debug { display: none; }');
-
             $probe_script = sprintf(
                 "window.ContentCoreHealth = window.ContentCoreHealth || {};
                 window.ContentCoreHealth.postEditMetaBoxCssLoaded = true;
@@ -687,9 +682,7 @@ class PostEditAdmin
         $script = "
         window.ccRepeaterTemplates = window.ccRepeaterTemplates || {};
         ";
-        // We use jquery-ui-sortable as the handle here or another enqueued script
-        // In the original it was cc-admin-modern but that's only on cc pages.
-        // Let's use jquery as the base for this inline script too if needed.
+        // We use jquery-ui-sortable as a guaranteed enqueued handle on post screens.
         wp_add_inline_script('jquery-ui-sortable', $script);
     }
 }

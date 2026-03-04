@@ -40,21 +40,21 @@ class MultilingualTabRenderer
                         <table class="cc-table cc-table-flush" id="cc-ml-languages-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 44px; text-align: center;"></th>
-                                    <th style="width: 60px; text-align: center;"><?php _e('Flag', 'content-core'); ?></th>
-                                    <th style="width: 100px;"><?php _e('Code', 'content-core'); ?></th>
+                                    <th></th>
+                                    <th><?php _e('Flag', 'content-core'); ?></th>
+                                    <th><?php _e('Code', 'content-core'); ?></th>
                                     <th><?php _e('Label', 'content-core'); ?></th>
-                                    <th style="width: 180px;"><?php _e('Custom Flag', 'content-core'); ?></th>
-                                    <th style="width: 50px;"></th>
+                                    <th><?php _e('Custom Flag', 'content-core'); ?></th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($ml_settings['languages'] as $index => $lang): ?>
                                     <tr data-index="<?php echo $index; ?>" data-code="<?php echo esc_attr($lang['code']); ?>">
-                                        <td style="text-align:center;">
+                                        <td>
                                             <span class="dashicons dashicons-menu cc-drag-handle cc-ml-drag-handle" title="<?php esc_attr_e('Drag to reorder', 'content-core'); ?>"></span>
                                         </td>
-                                        <td class="flag-col" style="text-align: center;">
+                                        <td class="flag-col">
                                             <?php echo $ml_instance->get_flag_html($lang['code'], $lang['flag_id'] ?? 0); ?>
                                         </td>
                                         <td>
@@ -63,13 +63,13 @@ class MultilingualTabRenderer
                                                 value="<?php echo esc_attr($lang['code']); ?>" class="language-code">
                                         </td>
                                         <td>
-                                            <div style="font-weight:700; font-size:14px;"><?php echo esc_html($lang['label']); ?>
+                                            <div><?php echo esc_html($lang['label']); ?>
                                             </div>
                                             <input type="hidden" name="cc_languages[languages][<?php echo $index; ?>][label]"
                                                 value="<?php echo esc_attr($lang['label']); ?>" class="language-label">
                                         </td>
                                         <td>
-                                            <div style="display: flex; gap: 8px; align-items: center;">
+                                            <div>
                                                 <input type="hidden" name="cc_languages[languages][<?php echo $index; ?>][flag_id]"
                                                     value="<?php echo esc_attr($lang['flag_id'] ?? 0); ?>" class="flag-id-input">
                                                 <button type="button"
@@ -81,9 +81,9 @@ class MultilingualTabRenderer
                                                 <?php endif; ?>
                                             </div>
                                         </td>
-                                        <td style="text-align: right;">
+                                        <td>
                                             <button type="button" class="cc-button-secondary button-small remove-row"
-                                                style="color:var(--cc-error); border-color:transparent;"><span
+                                               ><span
                                                     class="dashicons dashicons-trash"></span></button>
                                         </td>
                                     </tr>
@@ -92,8 +92,8 @@ class MultilingualTabRenderer
                         </table>
                     </div>
 
-                    <div style="display: flex; gap: 12px; align-items: center; margin-top: 24px; padding: 0 4px;">
-                        <select id="cc-ml-add-selector" style="flex:1; max-width:300px;">
+                    <div>
+                        <select id="cc-ml-add-selector">
                             <option value=""><?php _e('Select a language...', 'content-core'); ?></option>
                             <?php foreach ($catalog as $code => $data): ?>
                                 <option value="<?php echo esc_attr($code); ?>" data-label="<?php echo esc_attr($data['label']); ?>">
@@ -103,7 +103,7 @@ class MultilingualTabRenderer
                         </select>
                         <button type="button" class="cc-button-secondary add-language-row">
                             <span class="dashicons dashicons-plus-alt2"
-                                style="font-size:16px; width:16px; height:16px; margin-right:4px;"></span>
+                               ></span>
                             <?php _e('Add Language', 'content-core'); ?>
                         </button>
                     </div>
@@ -244,7 +244,7 @@ class MultilingualTabRenderer
 
             <!-- ═══ Localized Permalinks ═══ -->
             <div id="cc-ml-permalink-config" class="cc-card"
-                style="<?php echo empty($ml_settings['permalink_enabled']) ? 'display:none;' : ''; ?>">
+               >
                 <div class="cc-card-header">
                     <h2>
                         <span class="dashicons dashicons-admin-links"></span>
@@ -262,7 +262,7 @@ class MultilingualTabRenderer
                                 <tr>
                                     <th><?php _e('Post Type', 'content-core'); ?></th>
                                     <?php foreach ($ml_settings['languages'] as $lang): ?>
-                                        <th style="width: 150px; text-align: center;"><?php echo esc_html($lang['label']); ?></th>
+                                        <th><?php echo esc_html($lang['label']); ?></th>
                                     <?php endforeach; ?>
                                 </tr>
                             </thead>
@@ -278,16 +278,16 @@ class MultilingualTabRenderer
                                     ?>
                                     <tr>
                                         <td>
-                                            <div style="font-weight:700;"><?php echo esc_html($pt->label); ?></div>
-                                            <code style="font-size: 11px; opacity:0.6;"><?php echo esc_html($pt->name); ?></code>
+                                            <div><?php echo esc_html($pt->label); ?></div>
+                                            <code><?php echo esc_html($pt->name); ?></code>
                                         </td>
                                         <?php foreach ($ml_settings['languages'] as $lang): ?>
-                                            <td style="text-align: center;">
+                                            <td>
                                                 <input type="text"
                                                     name="cc_languages[permalink_bases][<?php echo esc_attr($pt->name); ?>][<?php echo esc_attr($lang['code']); ?>]"
                                                     value="<?php echo esc_attr($ml_settings['permalink_bases'][$pt->name][$lang['code']] ?? ''); ?>"
                                                     placeholder="<?php echo esc_attr($default_base); ?>"
-                                                    style="width: 100%; text-align: center;">
+                                                   >
                                             </td>
                                         <?php endforeach; ?>
                                     </tr>
@@ -300,7 +300,7 @@ class MultilingualTabRenderer
 
             <!-- ═══ Localized Taxonomy Bases ═══ -->
             <div id="cc-ml-tax-config" class="cc-card"
-                style="<?php echo empty($ml_settings['enable_localized_taxonomies']) ? 'display:none;' : ''; ?>">
+               >
                 <div class="cc-card-header">
                     <h2>
                         <span class="dashicons dashicons-category"></span>
@@ -318,7 +318,7 @@ class MultilingualTabRenderer
                                 <tr>
                                     <th><?php _e('Taxonomy', 'content-core'); ?></th>
                                     <?php foreach ($ml_settings['languages'] as $lang): ?>
-                                        <th style="width: 150px; text-align: center;"><?php echo esc_html($lang['label']); ?></th>
+                                        <th><?php echo esc_html($lang['label']); ?></th>
                                     <?php endforeach; ?>
                                 </tr>
                             </thead>
@@ -332,16 +332,16 @@ class MultilingualTabRenderer
                                     ?>
                                     <tr>
                                         <td>
-                                            <div style="font-weight:700;"><?php echo esc_html($tax->label); ?></div>
-                                            <code style="font-size: 11px; opacity:0.6;"><?php echo esc_html($tax->name); ?></code>
+                                            <div><?php echo esc_html($tax->label); ?></div>
+                                            <code><?php echo esc_html($tax->name); ?></code>
                                         </td>
                                         <?php foreach ($ml_settings['languages'] as $lang): ?>
-                                            <td style="text-align: center;">
+                                            <td>
                                                 <input type="text"
                                                     name="cc_languages[taxonomy_bases][<?php echo esc_attr($tax->name); ?>][<?php echo esc_attr($lang['code']); ?>]"
                                                     value="<?php echo esc_attr($ml_settings['taxonomy_bases'][$tax->name][$lang['code']] ?? ''); ?>"
                                                     placeholder="<?php echo esc_attr($default_base); ?>"
-                                                    style="width: 100%; text-align: center;">
+                                                   >
                                             </td>
                                         <?php endforeach; ?>
                                     </tr>
@@ -355,27 +355,27 @@ class MultilingualTabRenderer
             <!-- Template Script -->
             <script type="text/template" id="cc-ml-row-template">
                         <tr data-index="{index}" data-code="{code}">
-                            <td style="text-align:center;">
+                            <td>
                                 <span class="dashicons dashicons-menu cc-drag-handle cc-ml-drag-handle" title="<?php esc_attr_e('Drag to reorder', 'content-core'); ?>"></span>
                             </td>
-                            <td class="flag-col" style="text-align: center;">{flag}</td>
+                            <td class="flag-col">{flag}</td>
                             <td>
                                 <code>{code}</code>
                                 <input type="hidden" name="cc_languages[languages][{index}][code]" value="{code}" class="language-code">
                             </td>
                             <td>
-                                <div style="font-weight:700; font-size:14px;">{label}</div>
+                                <div>{label}</div>
                                 <input type="hidden" name="cc_languages[languages][{index}][label]" value="{label}" class="language-label">
                             </td>
                             <td>
-                                <div style="display: flex; gap: 8px; align-items: center;">
+                                <div>
                                     <input type="hidden" name="cc_languages[languages][{index}][flag_id]" value="0" class="flag-id-input">
                                     <button type="button" class="cc-button-secondary button-small select-custom-flag"><?php _e('Select', 'content-core'); ?></button>
-                                    <button type="button" class="cc-button-secondary button-small remove-custom-flag" style="display:none;"><span class="dashicons dashicons-no-alt"></span></button>
+                                    <button type="button" class="cc-button-secondary button-small remove-custom-flag"><span class="dashicons dashicons-no-alt"></span></button>
                                 </div>
                             </td>
-                            <td style="text-align: right;">
-                                <button type="button" class="cc-button-secondary button-small remove-row" style="color:var(--cc-error); border-color:transparent;"><span class="dashicons dashicons-trash"></span></button>
+                            <td>
+                                <button type="button" class="cc-button-secondary button-small remove-row"><span class="dashicons dashicons-trash"></span></button>
                             </td>
                         </tr>
                     </script>

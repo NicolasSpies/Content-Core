@@ -60,12 +60,7 @@ class TermsManagerAdmin
             'default' => $this->module->get_settings()['default_lang'] ?? 'de',
         ]);
 
-        wp_enqueue_style(
-            'cc-terms-manager',
-            $plugin_url . 'assets/css/terms-manager.css',
-            [],
-            $version
-        );
+        wp_enqueue_style('cc-admin-ui');
     }
 
     // -------------------------------------------------------------------------
@@ -84,7 +79,7 @@ class TermsManagerAdmin
         <div class="wrap content-core-admin cc-terms-manager" id="cc-terms-manager">
             <h1><?php _e('Manage Multilingual Terms', 'content-core'); ?></h1>
 
-            <div id="cc-tm-notice" class="cc-tm-notice" style="display:none;"></div>
+            <div id="cc-tm-notice" class="cc-tm-notice" hidden></div>
 
             <!-- ── Accordions Container ────────────────────────────────────── -->
             <div id="cc-tm-accordions" class="cc-tm-accordions">
@@ -92,7 +87,7 @@ class TermsManagerAdmin
             </div>
 
             <!-- ── Delete-group confirm modal ──────────────────────────────── -->
-            <div id="cc-tm-modal" class="cc-tm-modal" style="display:none;" role="dialog" aria-modal="true">
+            <div id="cc-tm-modal" class="cc-tm-modal" hidden role="dialog" aria-modal="true">
                 <div class="cc-tm-modal-box">
                     <h2><?php _e('Delete Translation Group', 'content-core'); ?></h2>
                     <p id="cc-tm-modal-msg"></p>

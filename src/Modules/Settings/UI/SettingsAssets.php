@@ -31,7 +31,7 @@ class SettingsAssets
         // Generic settings UI assets (shared)
         wp_enqueue_media();
         wp_enqueue_script('jquery-ui-sortable');
-        wp_enqueue_style('cc-admin-modern');
+        wp_enqueue_style('cc-admin-ui');
         wp_enqueue_script('cc-settings-js');
 
         $rest_base = rest_url('content-core/v1/settings');

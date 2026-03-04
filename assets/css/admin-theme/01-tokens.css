@@ -1,0 +1,185 @@
+:where(body.cc-admin-theme) {
+    --ui-color-bg-canvas: #f3f4f6;
+    --ui-color-bg-surface: #ffffff;
+    --ui-color-bg-surface-muted: #f8fafc;
+    --ui-color-bg-subtle: #eef2f7;
+    --ui-color-text-primary: #0f172a;
+    --ui-color-text-secondary: #475569;
+    --ui-color-text-muted: #64748b;
+    --ui-color-text-inverse: #ffffff;
+    --ui-color-border-default: #d9e0e8;
+    --ui-color-border-strong: #c3ceda;
+    --ui-color-border-muted: #e7edf3;
+    --ui-color-accent-500: #10b981;
+    --ui-color-accent-600: #059669;
+    --ui-color-accent-100: #d1fae5;
+    --ui-color-accent-50: #ecfdf5;
+    --ui-color-info-fg: #1e40af;
+    --ui-color-info-bg: #dbeafe;
+    --ui-color-info-border: #93c5fd;
+    --ui-color-success-fg: #166534;
+    --ui-color-success-bg: #dcfce7;
+    --ui-color-success-border: #86efac;
+    --ui-color-warning-fg: #92400e;
+    --ui-color-warning-bg: #fef3c7;
+    --ui-color-warning-border: #fcd34d;
+    --ui-color-danger-fg: #991b1b;
+    --ui-color-danger-bg: #fee2e2;
+    --ui-color-danger-border: #fca5a5;
+    --ui-color-overlay-scrim: rgba(15, 23, 42, 0.32);
+
+    --ui-font-family-base: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --ui-font-weight-regular: 400;
+    --ui-font-weight-medium: 500;
+    --ui-font-weight-semibold: 600;
+    --ui-font-weight-bold: 700;
+
+    --ui-text-display-size: 56px;
+    --ui-text-display-line: 64px;
+    --ui-text-h1-size: 56px;
+    --ui-text-h1-line: 64px;
+    --ui-text-h2-size: 32px;
+    --ui-text-h2-line: 40px;
+    --ui-text-h3-size: 24px;
+    --ui-text-h3-line: 32px;
+    --ui-text-title-size: 20px;
+    --ui-text-title-line: 28px;
+    --ui-text-body-size: 16px;
+    --ui-text-body-line: 24px;
+    --ui-text-body-sm-size: 15px;
+    --ui-text-body-sm-line: 22px;
+    --ui-text-label-size: 14px;
+    --ui-text-label-line: 20px;
+    --ui-text-meta-size: 14px;
+    --ui-text-meta-line: 20px;
+    --ui-text-table-head-size: 13px;
+    --ui-text-table-head-line: 18px;
+    --ui-text-table-head-tracking: 0.06em;
+
+    --ui-space-0: 0;
+    --ui-space-1: 4px;
+    --ui-space-2: 8px;
+    --ui-space-3: 12px;
+    --ui-space-4: 16px;
+    --ui-space-5: 20px;
+    --ui-space-6: 24px;
+    --ui-space-8: 32px;
+    --ui-space-10: 40px;
+    --ui-space-12: 48px;
+    --ui-space-16: 64px;
+
+    --ui-radius-sm: 8px;
+    --ui-radius-md: 10px;
+    --ui-radius-lg: 14px;
+    --ui-radius-pill: 9999px;
+
+    --ui-size-control-sm: 36px;
+    --ui-size-control-md: 44px;
+    --ui-size-control-lg: 48px;
+    --ui-size-button-sm: 36px;
+    --ui-size-button-md: 44px;
+    --ui-size-button-lg: 44px;
+    --ui-size-chip: 24px;
+    --ui-size-toolbar-control: 40px;
+    --ui-size-sidebar-item: 44px;
+    --ui-size-sidebar-width: 280px;
+    --ui-size-sidebar-width-folded: 64px;
+    --ui-size-sidebar-icon: 20px;
+    --ui-size-sidebar-icon-glyph: 18px;
+    --ui-size-sidebar-subitem: 36px;
+    --ui-size-search-input: clamp(220px, 24vw, 360px);
+    --ui-size-toolbar-select-min: 160px;
+    --ui-size-textarea-min: 120px;
+    --ui-size-table-header: 52px;
+    --ui-size-table-check-column: 48px;
+    --ui-size-media-grid-item-min: 120px;
+    --ui-size-table-row: 80px;
+    --ui-size-table-row-media: 88px;
+
+    --ui-layout-wrap-max: 1600px;
+    --ui-layout-form-max: 1200px;
+    --ui-layout-split-aside: 320px;
+
+    --ui-border-width-default: 1px;
+    --ui-border-width-strong: 1px;
+    --ui-border-default: 1px solid var(--ui-color-border-default);
+    --ui-border-strong: 1px solid var(--ui-color-border-strong);
+    --ui-border-muted: 1px solid var(--ui-color-border-muted);
+
+    --ui-shadow-none: none;
+    --ui-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+    --ui-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.1);
+    --ui-shadow-selection: 0 0 0 2px var(--ui-color-accent-100);
+
+    --ui-focus-ring-width: 2px;
+    --ui-focus-ring-color: var(--ui-color-accent-500);
+    --ui-focus-ring-offset: 2px;
+
+    --ui-z-modal: 99999;
+
+    /* Legacy aliases for existing plugin markup during migration. */
+    --cc-color-bg-app: var(--ui-color-bg-canvas);
+    --cc-color-bg-surface: var(--ui-color-bg-surface);
+    --cc-color-bg-subtle: var(--ui-color-bg-surface-muted);
+    --cc-color-bg-muted: var(--ui-color-bg-subtle);
+    --cc-color-border: var(--ui-color-border-default);
+    --cc-color-border-strong: var(--ui-color-border-strong);
+    --cc-color-text: var(--ui-color-text-primary);
+    --cc-color-text-muted: var(--ui-color-text-secondary);
+    --cc-color-text-soft: var(--ui-color-text-muted);
+    --cc-color-accent: var(--ui-color-accent-500);
+    --cc-color-success: var(--ui-color-success-fg);
+    --cc-color-warning: var(--ui-color-warning-fg);
+    --cc-color-danger: var(--ui-color-danger-fg);
+    --cc-color-info: var(--ui-color-info-fg);
+    --cc-font-family: var(--ui-font-family-base);
+    --cc-radius-sm: var(--ui-radius-sm);
+    --cc-radius-md: var(--ui-radius-md);
+    --cc-radius-lg: var(--ui-radius-lg);
+    --cc-radius-xl: var(--ui-radius-lg);
+    --cc-radius-pill: var(--ui-radius-pill);
+    --cc-h-control: var(--ui-size-control-md);
+    --cc-h-control-sm: var(--ui-size-control-sm);
+    --cc-focus-ring: 0 0 0 2px rgba(16, 185, 129, 0.22);
+    --cc-shadow-1: var(--ui-shadow-sm);
+    --cc-shadow-2: var(--ui-shadow-md);
+
+    /* Specific tokens for the refined UI */
+    --ui-color-pill-bg: var(--ui-color-bg-surface);
+    --ui-color-pill-bg-active: var(--ui-color-bg-surface);
+    --ui-color-pill-text: var(--ui-color-text-secondary);
+    --ui-color-pill-text-active: var(--ui-color-text-primary);
+    --ui-size-table-row-refined: 92px;
+    --ui-icon-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+}
+
+:where(body.cc-admin-theme.cc-admin-theme-dark) {
+    --ui-color-bg-canvas: #0f141d;
+    --ui-color-bg-surface: #151d2a;
+    --ui-color-bg-surface-muted: #1c2738;
+    --ui-color-bg-subtle: #223044;
+    --ui-color-text-primary: #e7edf6;
+    --ui-color-text-secondary: #c0cbdc;
+    --ui-color-text-muted: #95a5be;
+    --ui-color-text-inverse: #0f141d;
+    --ui-color-border-default: #2c3b53;
+    --ui-color-border-strong: #3a4d69;
+    --ui-color-border-muted: #243247;
+    --ui-color-accent-100: #103627;
+    --ui-color-accent-50: #0d2a1f;
+    --ui-color-info-fg: #a8c6ff;
+    --ui-color-info-bg: #1b2f4e;
+    --ui-color-info-border: #345486;
+    --ui-color-success-fg: #9ce0b3;
+    --ui-color-success-bg: #173626;
+    --ui-color-success-border: #2f6a4a;
+    --ui-color-warning-fg: #ffd39c;
+    --ui-color-warning-bg: #3f2b12;
+    --ui-color-warning-border: #8d6330;
+    --ui-color-danger-fg: #ffb8b8;
+    --ui-color-danger-bg: #432323;
+    --ui-color-danger-border: #8e4747;
+    --ui-color-overlay-scrim: rgba(8, 11, 17, 0.62);
+    --cc-focus-ring: 0 0 0 2px rgba(16, 185, 129, 0.3);
+    --ui-icon-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2395a5be' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+}

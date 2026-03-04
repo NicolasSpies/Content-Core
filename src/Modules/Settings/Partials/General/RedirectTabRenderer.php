@@ -85,29 +85,29 @@ class RedirectTabRenderer
 
                         <div class="cc-field cc-grid-full">
                             <label class="cc-field-label"><?php _e('Exclusions', 'content-core'); ?></label>
-                            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; mt:8px;">
-                                <label style="display:flex; align-items:center; gap:8px;">
+                            <div>
+                                <label>
                                     <input type="checkbox" name="cc_redirect_settings[exclusions][admin]" value="1" <?php checked($red_settings['exclusions']['admin']); ?>>
                                     <?php _e('Admin Area (/wp-admin)', 'content-core'); ?>
                                 </label>
-                                <label style="display:flex; align-items:center; gap:8px;">
+                                <label>
                                     <input type="checkbox" name="cc_redirect_settings[exclusions][ajax]" value="1" <?php checked($red_settings['exclusions']['ajax']); ?>>
                                     <?php _e('AJAX Requests', 'content-core'); ?>
                                 </label>
-                                <label style="display:flex; align-items:center; gap:8px;">
+                                <label>
                                     <input type="checkbox" name="cc_redirect_settings[exclusions][rest]" value="1" <?php checked($red_settings['exclusions']['rest']); ?>>
                                     <?php _e('REST API', 'content-core'); ?>
                                 </label>
-                                <label style="display:flex; align-items:center; gap:8px;">
+                                <label>
                                     <input type="checkbox" name="cc_redirect_settings[exclusions][cron]" value="1" <?php checked($red_settings['exclusions']['cron']); ?>>
                                     <?php _e('WP Cron', 'content-core'); ?>
                                 </label>
-                                <label style="display:flex; align-items:center; gap:8px;">
+                                <label>
                                     <input type="checkbox" name="cc_redirect_settings[exclusions][cli]" value="1" <?php checked($red_settings['exclusions']['cli']); ?>>
                                     <?php _e('WP CLI', 'content-core'); ?>
                                 </label>
                             </div>
-                            <span class="cc-help" style="margin-top:12px;">
+                            <span class="cc-help">
                                 <?php _e('Requests matching these criteria will NEVER be redirected, even if the From Path matches.', 'content-core'); ?>
                             </span>
                         </div>

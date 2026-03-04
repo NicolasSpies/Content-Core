@@ -1,0 +1,56 @@
+:where(body.cc-admin-theme) {
+    margin: 0;
+    background: var(--ui-color-bg-canvas);
+    color: var(--ui-color-text-primary);
+    font-family: var(--ui-font-family-base);
+    font-size: var(--ui-text-body-sm-size);
+    line-height: var(--ui-text-body-sm-line);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+:where(body.cc-admin-theme *, body.cc-admin-theme *::before, body.cc-admin-theme *::after) {
+    box-sizing: border-box;
+}
+
+:where(body.cc-admin-theme h1, body.cc-admin-theme h2, body.cc-admin-theme h3, body.cc-admin-theme h4, body.cc-admin-theme h5, body.cc-admin-theme h6, body.cc-admin-theme p, body.cc-admin-theme ul, body.cc-admin-theme ol, body.cc-admin-theme dl, body.cc-admin-theme figure) {
+    margin: 0;
+}
+
+:where(body.cc-admin-theme ul, body.cc-admin-theme ol) {
+    padding-left: var(--ui-space-6);
+}
+
+:where(body.cc-admin-theme a) {
+    color: var(--ui-color-accent-600);
+}
+
+:where(body.cc-admin-theme a:hover, body.cc-admin-theme a:focus-visible) {
+    color: var(--ui-color-accent-500);
+}
+
+:where(body.cc-admin-theme h1, body.cc-admin-theme h2, body.cc-admin-theme h3, body.cc-admin-theme h4, body.cc-admin-theme h5, body.cc-admin-theme h6) {
+    color: var(--ui-color-text-primary);
+    font-family: var(--ui-font-family-base);
+}
+
+:where(body.cc-admin-theme button, body.cc-admin-theme input, body.cc-admin-theme select, body.cc-admin-theme textarea) {
+    font-family: inherit;
+}
+
+:where(body.cc-admin-theme :focus) {
+    outline: none;
+}
+
+:where(body.cc-admin-theme :focus-visible) {
+    outline: var(--ui-focus-ring-width) solid var(--ui-focus-ring-color);
+    outline-offset: var(--ui-focus-ring-offset);
+}
+
+:where(body.cc-admin-theme :disabled) {
+    cursor: not-allowed;
+}
+
+:where(body.cc-admin-theme .hidden, body.cc-admin-theme [hidden]) {
+    display: none !important;
+}

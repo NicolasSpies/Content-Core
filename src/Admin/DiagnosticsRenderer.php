@@ -92,7 +92,7 @@ class DiagnosticsRenderer
                                 </span>
                             </div>
                             <div class="cc-card-body">
-                                <p style="font-size:13px; margin-bottom:12px; color:var(--cc-text-muted);">
+                                <p>
                                     <?php echo esc_html($sub['message']); ?>
                                 </p>
 
@@ -103,7 +103,7 @@ class DiagnosticsRenderer
                                             <div class="cc-data-item">
                                                 <span
                                                     class="cc-data-label-sm"><?php echo esc_html(ucwords(str_replace('_', ' ', $key))); ?></span>
-                                                <code style="font-size:11px;"><?php
+                                                <code><?php
                                                 if (is_bool($val))
                                                     echo $val ? 'true' : 'false';
                                                 elseif (is_array($val))
@@ -117,7 +117,7 @@ class DiagnosticsRenderer
                                 <?php endif; ?>
 
                                 <?php if (!empty($sub['actions'])): ?>
-                                    <div style="margin-top:16px; display:flex; gap:8px;">
+                                    <div>
                                         <?php foreach ($sub['actions'] as $action): ?>
                                             <button type="button" class="cc-button-secondary"
                                                 onclick="if(confirm('<?php echo esc_js($action['confirm'] ?? ''); ?>')) { ccHandleDiagnosticAction('<?php echo esc_js($action['callback']); ?>'); }">
@@ -224,7 +224,7 @@ class DiagnosticsRenderer
                                         <span class="cc-status-pill cc-status-<?php echo esc_attr($check['status']); ?>">
                                             <?php echo esc_html(strtoupper($check['status'])); ?>
                                         </span>
-                                        <code style="font-size:11px;"><?php echo esc_html($check['detail']); ?></code>
+                                        <code><?php echo esc_html($check['detail']); ?></code>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
@@ -261,7 +261,7 @@ class DiagnosticsRenderer
                                 $missing = $plugin->get_missing_modules();
                                 foreach ($missing as $id): ?>
                                     <div class="cc-data-item">
-                                        <span class="cc-data-label-sm" style="color:var(--cc-error);">
+                                        <span class="cc-data-label-sm">
                                             <?php echo esc_html(ucwords(str_replace('_', ' ', $id))); ?>
                                         </span>
                                         <span class="cc-status-pill cc-status-critical">
@@ -286,11 +286,11 @@ class DiagnosticsRenderer
                                 <span class="cc-data-label">
                                     <?php _e('Registered Routes', 'content-core'); ?>
                                 </span>
-                                <div class="cc-code-block" style="max-height:200px; overflow-y:auto;">
+                                <div class="cc-code-block">
                                     <?php
                                     $routes = \ContentCore\Modules\RestApi\RestApiModule::get_registered_routes();
                                     if (empty($routes) && \ContentCore\Modules\RestApi\RestApiModule::get_last_error()):
-                                        echo '<span style="color:var(--cc-error);">' . esc_html(\ContentCore\Modules\RestApi\RestApiModule::get_last_error()) . '</span>';
+                                        echo '<span>' . esc_html(\ContentCore\Modules\RestApi\RestApiModule::get_last_error()) . '</span>';
                                     elseif (empty($routes)):
                                         _e('No routes found in this namespace.', 'content-core');
                                     else:
@@ -329,7 +329,7 @@ class DiagnosticsRenderer
                         </div>
                         <div class="cc-card-body">
                             <textarea id="cc-raw-report" readonly class="cc-code-area"
-                                style="height:200px;"><?php echo esc_textarea(json_encode($report, JSON_PRETTY_PRINT)); ?></textarea>
+                               ><?php echo esc_textarea(json_encode($report, JSON_PRETTY_PRINT)); ?></textarea>
                             <p class="cc-help">
                                 <?php _e('This JSON report contains all gathered health data. Useful for debugging or providing to support.', 'content-core'); ?>
                             </p>
@@ -412,7 +412,7 @@ class DiagnosticsRenderer
             $asset_paths = [
                 $plugin_dir . 'assets/js/toast.js',
                 $plugin_dir . 'assets/js/settings.js',
-                $plugin_dir . 'assets/css/admin.css',
+                $plugin_dir . 'assets/css/admin-theme/index.css',
             ];
             $assets_ok = true;
             foreach ($asset_paths as $path) {

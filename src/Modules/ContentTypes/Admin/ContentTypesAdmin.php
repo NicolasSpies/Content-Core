@@ -238,7 +238,7 @@ class ContentTypesAdmin
                     <label><?php _e('Core Settings', 'content-core'); ?></label>
                 </div>
                 <div class="cc-field-input">
-                    <div style="margin-bottom: 12px;">
+                    <div>
                         <label><input name="cc_pt_public" type="checkbox" value="1" <?php checked($public); ?>> <strong><?php _e('Public', 'content-core'); ?></strong> — <?php _e('Visible on frontend and in admin menu.', 'content-core'); ?></label>
                     </div>
                     <div>
@@ -252,7 +252,7 @@ class ContentTypesAdmin
                     <label><?php _e('Supports', 'content-core'); ?></label>
                 </div>
                 <div class="cc-field-input">
-                    <div class="cc-grid-options" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+                    <div class="cc-grid-options">
                         <?php foreach ($all_supports as $key => $label) : ?>
                             <label>
                                 <input name="cc_pt_supports[]" type="checkbox" value="<?php echo esc_attr($key); ?>" <?php checked(in_array($key, $supports)); ?>>
@@ -295,75 +295,6 @@ class ContentTypesAdmin
                 </div>
             </div>
         </div>
-        <style>
-            .cc-dashicon-groups {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-                gap: 14px;
-                width: 100%;
-            }
-            .cc-dashicon-group {
-                border: 1px solid #dcdcde;
-                border-radius: 10px;
-                padding: 10px;
-                background: #fff;
-            }
-            .cc-dashicon-group-title {
-                font-size: 11px;
-                font-weight: 700;
-                text-transform: uppercase;
-                letter-spacing: .06em;
-                color: #646970;
-                margin: 0 0 10px 0;
-            }
-            .cc-dashicon-picker {
-                display: grid;
-                grid-template-columns: repeat(3, minmax(90px, 1fr));
-                gap: 8px;
-                width: 100%;
-            }
-            .cc-dashicon-option {
-                position: relative;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                min-height: 52px;
-                border: 1px solid #dcdcde;
-                border-radius: 8px;
-                background: #fff;
-                cursor: pointer;
-                transition: border-color .15s ease, background .15s ease, transform .1s ease;
-            }
-            .cc-dashicon-option:hover {
-                border-color: #8c8f94;
-                background: #f6f7f7;
-            }
-            .cc-dashicon-option input {
-                position: absolute;
-                opacity: 0;
-                width: 0;
-                height: 0;
-            }
-            .cc-dashicon-option .cc-dashicon-swatch {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 8px;
-                font-size: 20px;
-                color: #50575e;
-            }
-            .cc-dashicon-option input:checked + .cc-dashicon-swatch {
-                color: #008a20;
-            }
-            .cc-dashicon-option:focus-within {
-                box-shadow: 0 0 0 2px #8ccf9f inset;
-            }
-            @media (max-width: 900px) {
-                .cc-dashicon-groups {
-                    grid-template-columns: 1fr;
-                }
-            }
-        </style>
         <?php
     }
 
@@ -420,7 +351,7 @@ class ContentTypesAdmin
                     <label><?php _e('Assign to Post Types', 'content-core'); ?></label>
                 </div>
                 <div class="cc-field-input">
-                    <div class="cc-grid-options" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+                    <div class="cc-grid-options">
                         <?php foreach ($all_post_types as $pt) : if ($pt->name === PostTypeDefinition::POST_TYPE || $pt->name === TaxonomyDefinition::POST_TYPE) continue; ?>
                             <label>
                                 <input name="cc_tax_object_types[]" type="checkbox" value="<?php echo esc_attr($pt->name); ?>" <?php checked(in_array($pt->name, $object_types)); ?>>
