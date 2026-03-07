@@ -79,11 +79,10 @@ class LanguageEditor
         if (!$current_lang) {
             $current_lang = $default_lang;
         }
-        $allow_custom_slug = (bool) get_post_meta($post->ID, '_cc_allow_custom_slug', true);
 
         $group_id = get_post_meta($post->ID, '_cc_translation_group', true);
 
-        echo '<div class="cc-language-selector">';
+        echo '<div class="cc-language-selector cc-language-selector--current">';
         echo '<label>' . __('Current Language', 'content-core') . '</label>';
         echo '<select name="cc_language">';
         foreach ($settings['languages'] as $l) {
@@ -92,28 +91,9 @@ class LanguageEditor
         echo '</select>';
         echo '</div>';
 
-        if ($current_lang !== $default_lang) {
-            echo '<div class="cc-language-selector">';
-            echo '<label>';
-            echo '<input type="hidden" name="cc_allow_custom_slug" value="0">';
-            echo '<input type="checkbox" name="cc_allow_custom_slug" value="1" ' . checked($allow_custom_slug, true, false) . '>';
-            echo esc_html__('Allow custom slug for this translation', 'content-core');
-            echo '</label>';
-            echo '<p>';
-            echo esc_html__('Disabled by default. When disabled, slug is auto-synced from this translation title on save.', 'content-core');
-            echo '</p>';
-            echo '</div>';
-        }
-
         if ($group_id) {
-            echo '<div>';
-            echo '<strong>' . __('Translation Group ID', 'content-core') . '</strong>';
-            echo '<code>' . esc_html($group_id) . '</code>';
-            echo '</div>';
-
             $translations = $this->module->get_translation_manager()->get_translations($group_id);
             echo '<div class="cc-translations-list">';
-            echo '<label>' . __('Translations', 'content-core') . '</label>';
             echo '<ul>';
             foreach ($settings['languages'] as $l) {
                 $lang = $l['code'];
@@ -132,12 +112,12 @@ class LanguageEditor
 
                 if (isset($translations[$lang])) {
                     $translated_post = get_post($translations[$lang]);
-                    $status_color = $translated_post->post_status === 'publish' ? '#2271b1' : '#646970';
-                    $status_label = get_post_status_object($translated_post->post_status)->label;
+                    $status = $translated_post->post_status;
+                    $status_obj = get_post_status_object($status);
+                    $status_label = $status_obj ? $status_obj->label : $status;
 
-                    echo '<a href="' . get_edit_post_link($translations[$lang]) . '" title="' . esc_attr($translated_post->post_title) . '">';
-                    echo '<span class="dashicons dashicons-edit"></span>';
-                    echo '<span>' . esc_html($status_label) . '</span>';
+                    echo '<a href="' . get_edit_post_link($translations[$lang]) . '" class="cc-translation-link" title="' . esc_attr($translated_post->post_title) . '">';
+                    echo '<span class="cc-status-badge cc-status-badge--' . esc_attr($status) . '">' . esc_html($status_label) . '</span>';
                     echo '</a>';
                 } else {
                     $create_url = add_query_arg([
@@ -147,7 +127,7 @@ class LanguageEditor
                         'nonce' => wp_create_nonce('cc_create_translation_' . $post->ID)
                     ], admin_url('admin.php'));
 
-                    echo '<a href="' . esc_url($create_url) . '" class="button button-small"><span class="dashicons dashicons-plus-alt2"></span> ' . __('Create', 'content-core') . '</a>';
+                    echo '<a href="' . esc_url($create_url) . '" class="button button-small cc-translation-create"><span class="dashicons dashicons-plus-alt2"></span> ' . __('Create', 'content-core') . '</a>';
                 }
                 echo '</li>';
             }

@@ -1,473 +1,835 @@
 /* Content Core Admin Theme - Layout: List Tables */
-/* Scoped to list table screens (.edit-php, .users-php, .plugins-php, etc.) */
-/* Final list-screen rebuild: reference/posts tables should follow product card layout */
-body.cc-admin-theme.edit-php .wrap {
-    max-width: 1280px !important;
-    margin: var(--ui-space-6) auto 0 !important;
-    padding-bottom: 0 !important;
-    align-items: stretch !important;
-    display: grid !important;
-    gap: var(--ui-space-5) !important;
+
+:root {
+    --cc-list-header-height: 56px;
+    --cc-list-search-width: clamp(220px, 26vw, 360px);
+    --cc-list-row-action-size: 30px;
+    --cc-list-row-action-gap: 6px;
+    --cc-list-title-padding-right: 168px;
 }
 
-body.cc-admin-theme.edit-php .wrap .wp-heading-inline,
-body.cc-admin-theme.edit-php .wrap h1 {
-    text-align: left !important;
-    margin: 0 !important;
+/* Shared list screen shell */
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap {
+    display: grid;
+    column-gap: var(--ui-space-4);
+    row-gap: 0;
+    align-content: start;
 }
 
-body.cc-admin-theme.edit-php .wrap>.page-title-action,
-body.cc-admin-theme.edit-php .wrap>.add-new-h2 {
-    position: absolute !important;
-    top: 0 !important;
-    right: 0 !important;
-    height: 40px !important;
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>hr.wp-header-end {
+    display: none !important;
 }
 
-body.cc-admin-theme.edit-php .wrap>.subsubsub {
-    margin: 0 !important;
-    width: fit-content !important;
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>h1,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>.wp-heading-inline {
+    margin: 0;
+    justify-self: start;
+    text-align: left;
+    order: 1;
 }
 
-body.cc-admin-theme.edit-php form#posts-filter {
-    display: grid !important;
-    gap: 0 !important;
-    width: 100% !important;
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>.page-title-action,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>.add-new-h2 {
+    margin: 0 0 0 auto;
+    justify-self: end;
+    order: 2;
+    min-height: 46px;
+    height: 46px;
+    padding: 0 var(--ui-space-5);
+    border-radius: var(--ui-radius-md);
+    border: 1px solid var(--ui-color-accent-500) !important;
+    background: var(--ui-color-accent-500) !important;
+    color: var(--ui-color-text-inverse) !important;
+    font-size: var(--ui-text-label-size);
+    font-weight: var(--ui-font-weight-semibold);
+    box-shadow: var(--ui-shadow-sm);
+    opacity: 1 !important;
+    filter: none !important;
+    text-decoration: none;
 }
 
-body.cc-admin-theme.edit-php .tablenav.top {
-    display: flex !important;
-    align-items: center !important;
-    gap: var(--ui-space-3) !important;
-    padding: var(--ui-space-4) var(--ui-space-5) !important;
-    margin: 0 !important;
-    border: var(--ui-border-default) !important;
-    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0 !important;
-    background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>.page-title-action:hover,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>.page-title-action:focus-visible,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>.add-new-h2:hover,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>.add-new-h2:focus-visible {
+    background: var(--ui-color-accent-600) !important;
+    border-color: var(--ui-color-accent-600) !important;
+    color: var(--ui-color-text-inverse) !important;
 }
 
-body.cc-admin-theme.edit-php .tablenav.top .actions {
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>.subsubsub {
+    margin-top: var(--ui-space-4);
+}
+
+/* Custom list toolbar */
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-row {
+    order: 3;
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    left: auto !important;
+    margin: var(--ui-space-4) 0 0;
+    width: 100%;
+    min-height: var(--cc-list-header-height);
+    padding: var(--ui-space-3) var(--ui-space-4);
+    border: var(--ui-border-default);
+    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0;
+    border-bottom: 0;
+    background: var(--ui-color-bg-surface);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ui-space-3);
+}
+
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-center,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-right {
+    display: inline-flex;
+    align-items: center;
+}
+
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-center {
+    flex: 0 0 auto;
+}
+
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-right {
+    width: var(--cc-list-search-width);
+    flex: 0 0 var(--cc-list-search-width);
+    justify-content: flex-end;
+}
+
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub {
     display: inline-flex !important;
     align-items: center !important;
     gap: var(--ui-space-2) !important;
     margin: 0 !important;
     padding: 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top .actions.bulkactions {
-    margin-right: var(--ui-space-2) !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav .tablenav-pages {
-    margin-left: auto !important;
-    order: 2 !important;
-}
-
-body.cc-admin-theme.edit-php .search-box {
-    position: static !important;
-    top: auto !important;
-    right: auto !important;
-    margin: 0 0 0 var(--ui-space-2) !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: var(--ui-space-2) !important;
-    order: 3 !important;
-    z-index: auto !important;
-}
-
-body.cc-admin-theme.edit-php .search-box input[type="search"] {
-    min-width: 280px !important;
-    width: 320px !important;
-    height: 42px !important;
-    border-radius: var(--ui-radius-pill) !important;
-    background-position: 12px center !important;
-}
-
-body.cc-admin-theme.edit-php .wp-list-table {
-    margin: 0 !important;
-    border: var(--ui-border-default) !important;
-    border-top: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.bottom {
-    margin: 0 !important;
-    padding: var(--ui-space-4) var(--ui-space-5) !important;
-    border: var(--ui-border-default) !important;
-    border-top: 0 !important;
-    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg) !important;
-    background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
-}
-
-@media (max-width: 1200px) {
-    body.cc-admin-theme.edit-php .tablenav.top {
-        flex-wrap: wrap !important;
-    }
-
-    body.cc-admin-theme.edit-php .tablenav .tablenav-pages {
-        order: 4 !important;
-        margin-left: 0 !important;
-    }
-
-    body.cc-admin-theme.edit-php .search-box {
-        margin-left: auto !important;
-    }
-}
-
-/* Final parity pass for list screens (Pages/Posts/Users) */
-body.cc-admin-theme.edit-php #screen-meta-links,
-body.cc-admin-theme.edit-php #screen-meta,
-body.cc-admin-theme.edit-php #contextual-help-link-wrap,
-body.cc-admin-theme.edit-php #screen-options-link-wrap,
-body.cc-admin-theme.users-php #screen-meta-links,
-body.cc-admin-theme.users-php #screen-meta,
-body.cc-admin-theme.users-php #contextual-help-link-wrap,
-body.cc-admin-theme.users-php #screen-options-link-wrap {
-    display: none !important;
-}
-
-body.cc-admin-theme.edit-php .wrap,
-body.cc-admin-theme.users-php .wrap {
-    max-width: 1280px !important;
-    margin: var(--ui-space-6) auto 0 !important;
-    display: grid !important;
-    gap: var(--ui-space-5) !important;
-    align-items: stretch !important;
-}
-
-body.cc-admin-theme.edit-php .wrap .wp-heading-inline,
-body.cc-admin-theme.edit-php .wrap h1,
-body.cc-admin-theme.users-php .wrap .wp-heading-inline,
-body.cc-admin-theme.users-php .wrap h1 {
-    text-align: left !important;
-    margin: 0 !important;
-}
-
-body.cc-admin-theme.edit-php .wrap>.page-title-action,
-body.cc-admin-theme.edit-php .wrap>.add-new-h2,
-body.cc-admin-theme.users-php .wrap>.page-title-action,
-body.cc-admin-theme.users-php .wrap>.add-new-h2 {
-    position: absolute !important;
-    top: 0 !important;
-    right: 0 !important;
-    height: 40px !important;
-}
-
-body.cc-admin-theme.edit-php form#posts-filter,
-body.cc-admin-theme.users-php form#users-filter {
-    display: grid !important;
-    gap: 0 !important;
-    width: 100% !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top,
-body.cc-admin-theme.users-php .tablenav.top {
-    display: flex !important;
-    align-items: center !important;
-    flex-wrap: nowrap !important;
-    gap: var(--ui-space-3) !important;
-    margin: 0 !important;
-    padding: var(--ui-space-4) var(--ui-space-5) !important;
-    border: var(--ui-border-default) !important;
-    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0 !important;
-    background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top .actions,
-body.cc-admin-theme.users-php .tablenav.top .actions {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: var(--ui-space-2) !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    float: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav .tablenav-pages,
-body.cc-admin-theme.users-php .tablenav .tablenav-pages {
-    margin-left: auto !important;
-    order: 2 !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.top .search-box,
-body.cc-admin-theme.users-php .tablenav.top .search-box {
-    position: static !important;
-    top: auto !important;
-    right: auto !important;
-    margin: 0 0 0 var(--ui-space-2) !important;
-    order: 3 !important;
-    z-index: auto !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: var(--ui-space-2) !important;
-    float: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.bottom .search-box,
-body.cc-admin-theme.users-php .tablenav.bottom .search-box,
-body.cc-admin-theme.edit-php .wrap>.search-box,
-body.cc-admin-theme.users-php .wrap>.search-box {
-    display: none !important;
-}
-
-body.cc-admin-theme.edit-php .search-box input[type="search"],
-body.cc-admin-theme.users-php .search-box input[type="search"] {
-    min-width: 280px !important;
-    width: 320px !important;
-    height: 42px !important;
-    border-radius: var(--ui-radius-pill) !important;
-    background-position: 12px center !important;
-}
-
-body.cc-admin-theme.edit-php .wp-list-table,
-body.cc-admin-theme.users-php .wp-list-table {
-    margin: 0 !important;
-    border: var(--ui-border-default) !important;
-    border-top: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.bottom,
-body.cc-admin-theme.users-php .tablenav.bottom {
-    margin: 0 !important;
-    padding: var(--ui-space-4) var(--ui-space-5) !important;
-    border: var(--ui-border-default) !important;
-    border-top: 0 !important;
-    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg) !important;
-    background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
-}
-
-@media (max-width: 1200px) {
-
-    body.cc-admin-theme.edit-php .tablenav.top,
-    body.cc-admin-theme.users-php .tablenav.top {
-        flex-wrap: wrap !important;
-    }
-
-    body.cc-admin-theme.edit-php .tablenav .tablenav-pages,
-    body.cc-admin-theme.users-php .tablenav .tablenav-pages {
-        order: 4 !important;
-        margin-left: 0 !important;
-    }
-
-    body.cc-admin-theme.edit-php .tablenav.top .search-box,
-    body.cc-admin-theme.users-php .tablenav.top .search-box {
-        margin-left: auto !important;
-    }
-}
-
-/* Centralized lock: list UIs must match the product shell on edit/users/plugins */
-body.cc-admin-theme.edit-php #screen-meta-links,
-body.cc-admin-theme.edit-php #screen-meta,
-body.cc-admin-theme.edit-php #contextual-help-link-wrap,
-body.cc-admin-theme.edit-php #screen-options-link-wrap,
-body.cc-admin-theme.users-php #screen-meta-links,
-body.cc-admin-theme.users-php #screen-meta,
-body.cc-admin-theme.users-php #contextual-help-link-wrap,
-body.cc-admin-theme.users-php #screen-options-link-wrap,
-body.cc-admin-theme.plugins-php #screen-meta-links,
-body.cc-admin-theme.plugins-php #screen-meta,
-body.cc-admin-theme.plugins-php #contextual-help-link-wrap,
-body.cc-admin-theme.plugins-php #screen-options-link-wrap,
-body.cc-admin-theme .screen-meta-toggle {
-    display: none !important;
-}
-
-body.cc-admin-theme.edit-php .wrap,
-body.cc-admin-theme.users-php .wrap,
-body.cc-admin-theme.plugins-php .wrap {
-    max-width: 1280px !important;
-    margin: var(--ui-space-6) auto 0 !important;
-    display: grid !important;
-    gap: var(--ui-space-5) !important;
-    align-items: stretch !important;
-}
-
-body.cc-admin-theme.edit-php .wrap .wp-heading-inline,
-body.cc-admin-theme.edit-php .wrap h1,
-body.cc-admin-theme.users-php .wrap .wp-heading-inline,
-body.cc-admin-theme.users-php .wrap h1,
-body.cc-admin-theme.plugins-php .wrap .wp-heading-inline,
-body.cc-admin-theme.plugins-php .wrap h1 {
-    text-align: left !important;
-    margin: 0 !important;
-}
-
-body.cc-admin-theme.edit-php .wrap>.page-title-action,
-body.cc-admin-theme.edit-php .wrap>.add-new-h2,
-body.cc-admin-theme.users-php .wrap>.page-title-action,
-body.cc-admin-theme.users-php .wrap>.add-new-h2,
-body.cc-admin-theme.plugins-php .wrap>.page-title-action,
-body.cc-admin-theme.plugins-php .wrap>.add-new-h2 {
-    position: absolute !important;
-    top: 0 !important;
-    right: 0 !important;
-    height: 40px !important;
-}
-
-body.cc-admin-theme.edit-php form#posts-filter,
-body.cc-admin-theme.users-php form#users-filter,
-body.cc-admin-theme.plugins-php form#plugins-filter {
-    width: 100% !important;
-    margin: 0 !important;
-    display: grid !important;
-    grid-template-columns: 1fr auto !important;
-    grid-template-areas:
-        "views search"
-        "toolbar toolbar"
-        "table table"
-        "footer footer" !important;
-    gap: var(--ui-space-4) !important;
-}
-
-body.cc-admin-theme.edit-php form#posts-filter>.subsubsub,
-body.cc-admin-theme.users-php form#users-filter>.subsubsub,
-body.cc-admin-theme.plugins-php form#plugins-filter>.subsubsub {
-    grid-area: views !important;
+    list-style: none !important;
     width: auto !important;
+    max-width: 100% !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub li {
     margin: 0 !important;
-    justify-self: start !important;
+    width: auto !important;
+    max-width: max-content !important;
+    white-space: nowrap !important;
 }
 
-body.cc-admin-theme.edit-php form#posts-filter>p.search-box,
-body.cc-admin-theme.users-php form#users-filter>p.search-box,
-body.cc-admin-theme.plugins-php form#plugins-filter>p.search-box {
-    grid-area: search !important;
-    position: static !important;
-    top: auto !important;
-    right: auto !important;
-    clear: none !important;
-    float: none !important;
-    margin: 0 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-self: end !important;
-    gap: var(--ui-space-2) !important;
-    z-index: auto !important;
-}
-
-body.cc-admin-theme.edit-php .search-box,
-body.cc-admin-theme.users-php .search-box,
-body.cc-admin-theme.plugins-php .search-box {
-    position: static !important;
-    top: auto !important;
-    right: auto !important;
-    float: none !important;
-}
-
-body.cc-admin-theme.edit-php .search-box input[type="search"],
-body.cc-admin-theme.users-php .search-box input[type="search"],
-body.cc-admin-theme.plugins-php .search-box input[type="search"] {
-    min-width: 280px !important;
-    width: 320px !important;
-    height: 42px !important;
-    border-radius: var(--ui-radius-pill) !important;
-    background-position: 12px center !important;
-}
-
-body.cc-admin-theme.edit-php .search-box input[type="submit"],
-body.cc-admin-theme.users-php .search-box input[type="submit"],
-body.cc-admin-theme.plugins-php .search-box input[type="submit"] {
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub li:empty {
     display: none !important;
 }
 
-body.cc-admin-theme.edit-php .tablenav.top,
-body.cc-admin-theme.users-php .tablenav.top,
-body.cc-admin-theme.plugins-php .tablenav.top {
-    grid-area: toolbar !important;
-    display: flex !important;
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub a {
+    display: inline-flex !important;
     align-items: center !important;
-    gap: var(--ui-space-3) !important;
-    margin: 0 !important;
-    padding: var(--ui-space-4) var(--ui-space-5) !important;
+    min-height: 28px !important;
+    padding: 0 12px !important;
     border: var(--ui-border-default) !important;
-    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0 !important;
+    border-radius: var(--ui-radius-pill) !important;
+    color: var(--ui-color-text-secondary) !important;
     background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
+    text-decoration: none !important;
 }
 
-body.cc-admin-theme.edit-php .tablenav.top .search-box,
-body.cc-admin-theme.users-php .tablenav.top .search-box,
-body.cc-admin-theme.plugins-php .tablenav.top .search-box,
-body.cc-admin-theme.edit-php .tablenav.bottom .search-box,
-body.cc-admin-theme.users-php .tablenav.bottom .search-box,
-body.cc-admin-theme.plugins-php .tablenav.bottom .search-box {
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub a:hover,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub a:focus-visible {
+    background: var(--ui-color-bg-surface) !important;
+    border-color: var(--ui-color-border-default) !important;
+    color: var(--ui-color-accent-600) !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub a.current,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub a[aria-current="page"],
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub a.cc-active-view,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub li.cc-active-view>a,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub li.current>a,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub span.current,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub strong.current,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub li.current>span,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub li.current>strong {
+    display: inline-flex !important;
+    align-items: center !important;
+    min-height: 28px !important;
+    padding: 0 12px !important;
+    border: var(--ui-border-default) !important;
+    border-radius: var(--ui-radius-pill) !important;
+    color: var(--ui-color-accent-600) !important;
+    background: var(--ui-color-bg-surface) !important;
+    border-color: var(--ui-color-accent-500) !important;
+    outline: none !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub a.current .count,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub a[aria-current="page"] .count,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub a.cc-active-view .count,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub li.cc-active-view>a .count,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub li.current>a .count,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub span.current .count,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub strong.current .count,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-left .subsubsub .current .count {
+    color: inherit !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen #cc-filter-btn {
+    min-height: 36px;
+    height: 36px;
+    border: var(--ui-border-default);
+    border-radius: var(--ui-radius-pill);
+    background: var(--ui-color-bg-surface);
+    color: var(--ui-color-text-secondary);
+}
+
+body.cc-admin-theme.cc-list-table-screen #cc-filter-btn:hover,
+body.cc-admin-theme.cc-list-table-screen #cc-filter-btn:focus-visible {
+    border-color: var(--ui-color-border-active);
+    color: var(--ui-color-accent-600);
+    background: var(--ui-color-accent-50);
+}
+
+body.cc-admin-theme.cc-list-table-screen #cc-filter-btn[aria-expanded="true"] {
+    color: var(--ui-color-accent-600);
+    border-color: var(--ui-color-border-active);
+    background: var(--ui-color-accent-50);
+}
+
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-right form,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-right .search-box {
+    width: 100%;
+    margin: 0;
+}
+
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-right .search-box {
+    display: flex;
+    align-items: center;
+}
+
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-right .search-box label,
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-right .search-box input[type="submit"] {
+    display: none;
+}
+
+body.cc-admin-theme.cc-list-table-screen .cc-list-header-right .search-box input[type="search"] {
+    width: 100%;
+    min-height: 36px;
+    height: 36px;
+    border: var(--ui-border-default);
+    border-radius: var(--ui-radius-pill);
+    padding-right: 40px;
+    background-color: var(--ui-color-bg-subtle);
+    background-image: var(--ui-icon-search);
+    background-repeat: no-repeat;
+    background-position: calc(100% - 12px) center;
+    background-size: 16px;
+}
+
+/* Attach header to table */
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>form {
+    order: 4;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>form>.tablenav.top {
+    display: none;
+}
+
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap .wp-list-table {
+    margin-top: 0 !important;
+    margin-bottom: 0;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>form>.wp-list-table,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>form[method="get"]>.wp-list-table,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content>.wrap>form#bulk-action-form>.wp-list-table {
+    margin-top: 0 !important;
+}
+
+/* Table system */
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th {
+    height: 49px !important;
+    min-height: 49px !important;
+    max-height: 49px !important;
+    padding: 6px 12px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    font-size: 11px !important;
+    line-height: 1.1 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+}
+
+/* Force compact header metrics on edit.php + custom post types against legacy overrides. */
+body.cc-admin-theme.cc-list-table-screen.edit-php .wp-list-table thead th,
+body.cc-admin-theme.cc-list-table-screen.edit-php .wp-list-table tfoot th,
+body.cc-admin-theme.cc-list-table-screen.edit-php[class*="post-type-"] .wp-list-table thead th,
+body.cc-admin-theme.cc-list-table-screen.edit-php[class*="post-type-"] .wp-list-table tfoot th {
+    height: 49px !important;
+    min-height: 49px !important;
+    max-height: 49px !important;
+    padding: 6px 12px !important;
+    line-height: 1.1 !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen.edit-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wp-list-table thead th,
+body.cc-admin-theme.cc-list-table-screen.edit-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wp-list-table tfoot th {
+    height: 49px !important;
+    min-height: 49px !important;
+    max-height: 49px !important;
+    padding: 6px 12px !important;
+    line-height: 1.1 !important;
+}
+
+/* Sort indicators: show one arrow only on the currently sorted column. */
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.sortable a,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.sorted a,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.sortable a,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.sorted a {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+/* Hide all native WP indicator glyphs globally to prevent duplicates. */
+body.cc-admin-theme.cc-list-table-screen .wp-list-table th .sorting-indicators,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table th .sorting-indicator {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border: 0 !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table th .sorting-indicators::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table th .sorting-indicators::after,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table th .sorting-indicator::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table th .sorting-indicator::after {
+    content: none !important;
     display: none !important;
 }
 
-body.cc-admin-theme.edit-php .tablenav.top .actions,
-body.cc-admin-theme.users-php .tablenav.top .actions,
-body.cc-admin-theme.plugins-php .tablenav.top .actions {
+/* No custom arrow on unsorted columns. */
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.sortable a::after,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.sorted a::after,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.sortable a::after,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.sorted a::after {
+    content: none !important;
+}
+
+/* Custom arrow only where sorting is active. */
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th[aria-sort="descending"] a::after,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th[aria-sort="descending"] a::after {
+    content: "↓" !important;
+    font-size: 20px !important;
+    line-height: 1 !important;
+    color: var(--ui-color-accent-500) !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th[aria-sort="ascending"] a::after,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th[aria-sort="ascending"] a::after {
+    content: "↑" !important;
+    font-size: 20px !important;
+    line-height: 1 !important;
+    color: var(--ui-color-accent-500) !important;
+}
+
+/* Keep TITLE sorting anchor left-aligned. */
+body.cc-admin-theme.cc-list-table-screen .wp-list-table th.column-title a,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table th.column-primary a,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table th.column-name a,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table th.column-username a {
+    justify-content: flex-start !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tbody td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .column-title,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .column-primary,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .column-name,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .column-username {
+    text-align: left;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.column-title,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.column-primary,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.column-name,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.column-username,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.column-title,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.column-primary,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.column-name,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.column-username {
+    text-align: left;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .column-date {
+    width: 150px !important;
+    min-width: 140px !important;
+    max-width: 160px !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table th.column-date,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table td.column-date {
+    width: 150px !important;
+    min-width: 140px !important;
+    max-width: 160px !important;
+    text-align: center !important;
+}
+
+/* Row action icon system (CSS only) */
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .column-title,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .column-primary,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .column-name,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .column-username {
+    position: static;
+    padding-right: 0 !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tbody tr {
+    position: relative !important;
+}
+
+/* Dedicated right-side action zone, always visible. */
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tbody tr .row-actions {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Keep native row-actions hidden in all states; use cc-row-action-zone instead. */
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions,
+body.cc-admin-theme.cc-list-table-screen .wrap .row-actions,
+body.cc-admin-theme.cc-list-table-screen .wrap tr:hover .row-actions,
+body.cc-admin-theme.cc-list-table-screen .wrap tr:focus-within .row-actions {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    max-height: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .wrap .wp-list-table .row-actions,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .wrap .wp-list-table tbody tr:hover .row-actions,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .wrap .wp-list-table tbody tr:focus-within .row-actions {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+}
+
+/* Reserve horizontal room so right action icon never overlays the last data column. */
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tbody td.cc-last-visible-cell,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tbody th.cc-last-visible-cell {
+    padding-right: 96px !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions>span {
     display: inline-flex !important;
     align-items: center !important;
-    gap: var(--ui-space-2) !important;
+    justify-content: center !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    color: transparent !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions>span::after {
+    display: none !important;
+    content: none !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .edit::after,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .inline::after,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .trash::after,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .delete::after,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .untrash::after,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .view::after {
+    display: none !important;
+    content: none !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .inline,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .inline.hide-if-no-js,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .inline .editinline,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .inline button,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .edit,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .view {
+    display: none !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions a {
+    width: var(--cc-list-row-action-size);
+    height: var(--cc-list-row-action-size);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--ui-radius-pill);
+    color: transparent !important;
+    text-decoration: none;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    text-indent: 0 !important;
+    overflow: hidden;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions a:hover,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions a:focus-visible {
+    background: var(--ui-color-accent-50);
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .edit a::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .inline a::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .view a::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .trash a::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .delete a::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .untrash a::before {
+    font-family: dashicons;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--ui-color-text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    text-indent: 0;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .edit a::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .inline a::before {
+    content: "\f464";
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .inline {
+    display: none !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .view a::before {
+    content: "\f177";
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .trash a::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .delete a::before {
+    content: "\f182";
+    color: var(--ui-color-danger-fg);
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions .untrash a::before {
+    content: "\f171";
+    color: var(--ui-color-accent);
+}
+
+/* Final cross-browser action slot (Safari/Chrome consistent). */
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tbody td.cc-last-visible-cell,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tbody th.cc-last-visible-cell {
+    position: relative !important;
+    padding-right: 178px !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .row-actions {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    align-items: center;
+    justify-content: center;
+    z-index: 4;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 160ms ease;
+}
+
+body.cc-admin-theme.cc-list-table-screen.cc-row-actions-ready .wp-list-table .cc-row-action-zone {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--ui-radius-pill);
+    text-decoration: none;
+    font-size: 0;
+    line-height: 0;
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+    text-shadow: none !important;
+    opacity: 0.68;
+    transition: opacity 120ms ease, background-color 120ms ease;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link:hover,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link:focus-visible {
+    background: var(--ui-color-bg-subtle);
+    opacity: 1;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link::before {
+    content: "";
+    width: 14px;
+    height: 14px;
+    display: block;
+    margin: 0 auto;
+    background-color: currentColor;
+    -webkit-text-fill-color: currentColor !important;
+    text-shadow: none !important;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-delete::before {
+    color: var(--ui-color-text-muted) !important;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h18'/%3E%3Cpath d='M8 6V4h8v2'/%3E%3Cpath d='M19 6l-1 14H6L5 6'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h18'/%3E%3Cpath d='M8 6V4h8v2'/%3E%3Cpath d='M19 6l-1 14H6L5 6'/%3E%3C/svg%3E");
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-restore::before {
+    color: var(--ui-color-text-muted) !important;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12a9 9 0 1 0 3-6.7'/%3E%3Cpath d='M3 4v5h5'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12a9 9 0 1 0 3-6.7'/%3E%3Cpath d='M3 4v5h5'/%3E%3C/svg%3E");
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-edit::before {
+    color: var(--ui-color-text-muted) !important;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/%3E%3Cpath d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/%3E%3Cpath d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'/%3E%3C/svg%3E");
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-view::before {
+    color: var(--ui-color-text-muted) !important;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+}
+
+/* Hide edit/view quick icons in right action zone. */
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-edit,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-view {
+    display: none !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-activate::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-approve::before {
+    color: var(--ui-color-text-muted) !important;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-deactivate::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-unapprove::before {
+    color: var(--ui-color-text-muted) !important;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='15' y1='9' x2='9' y2='15'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='15' y1='9' x2='9' y2='15'/%3E%3C/svg%3E");
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-spam::before {
+    color: var(--ui-color-text-muted) !important;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/%3E%3Cline x1='12' y1='9' x2='12' y2='13'/%3E%3Cline x1='12' y1='17' x2='12.01' y2='17'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/%3E%3Cline x1='12' y1='9' x2='12' y2='13'/%3E%3Cline x1='12' y1='17' x2='12.01' y2='17'/%3E%3C/svg%3E");
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-delete:visited::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-delete:hover::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-delete:focus-visible::before {
+    color: var(--ui-color-danger-fg) !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-restore:visited::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-restore:hover::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-restore:focus-visible::before {
+    color: var(--ui-color-accent) !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-edit:visited::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-edit:hover::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-edit:focus-visible::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-view:visited::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-view:hover::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-view:focus-visible::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-deactivate:visited::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-deactivate:hover::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-deactivate:focus-visible::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-unapprove:visited::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-unapprove:hover::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-unapprove:focus-visible::before {
+    color: var(--ui-color-text-secondary) !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-activate:visited::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-activate:hover::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-activate:focus-visible::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-approve:visited::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-approve:hover::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-approve:focus-visible::before {
+    color: var(--ui-color-accent) !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-spam:visited::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-spam:hover::before,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .cc-row-action-zone .cc-row-action-link.cc-action-spam:focus-visible::before {
+    color: var(--ui-color-warning-fg) !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table .toggle-row,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table button.toggle-row {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     border: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    float: none !important;
 }
 
-body.cc-admin-theme.edit-php .tablenav .tablenav-pages,
-body.cc-admin-theme.users-php .tablenav .tablenav-pages,
-body.cc-admin-theme.plugins-php .tablenav .tablenav-pages {
-    margin-left: auto !important;
+/* Footer nav alignment */
+body.cc-admin-theme.cc-list-table-screen .tablenav.bottom {
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ui-space-3);
+    padding: var(--ui-space-3) var(--ui-space-4);
+    border-left: var(--ui-border-default);
+    border-right: var(--ui-border-default);
+    border-bottom: var(--ui-border-default);
+    border-top: 0;
+    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg);
+    background: var(--ui-color-bg-surface);
 }
 
-body.cc-admin-theme.edit-php .wp-list-table,
-body.cc-admin-theme.users-php .wp-list-table,
-body.cc-admin-theme.plugins-php .wp-list-table {
-    grid-area: table !important;
+body.cc-admin-theme.cc-list-table-screen .tablenav.bottom .displaying-num {
+    margin: 0;
+    color: var(--ui-color-text-muted);
+}
+
+body.cc-admin-theme.cc-list-table-screen .tablenav.bottom .tablenav-pages {
+    margin-left: 0;
+}
+
+body.cc-admin-theme.cc-list-table-screen .tablenav.bottom .tablenav-pages a:hover,
+body.cc-admin-theme.cc-list-table-screen .tablenav.bottom .tablenav-pages a:focus-visible {
+    border-color: var(--ui-color-border-active);
+    color: var(--ui-color-accent-600);
+}
+
+/* Screen options panel override for custom Columns button.
+   Must beat global hide rules from 06-control-overrides.css. */
+body.cc-admin-theme.cc-list-table-screen #screen-meta.cc-is-open {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    position: absolute !important;
+    right: var(--ui-space-4) !important;
+    top: 120px !important;
+    width: min(420px, calc(100vw - 48px)) !important;
+    height: auto !important;
     margin: 0 !important;
+    padding: var(--ui-space-5) !important;
     border: var(--ui-border-default) !important;
-    border-top: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-}
-
-body.cc-admin-theme.edit-php .tablenav.bottom,
-body.cc-admin-theme.users-php .tablenav.bottom,
-body.cc-admin-theme.plugins-php .tablenav.bottom {
-    grid-area: footer !important;
-    margin: 0 !important;
-    padding: var(--ui-space-4) var(--ui-space-5) !important;
-    border: var(--ui-border-default) !important;
-    border-top: 0 !important;
-    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg) !important;
+    border-radius: var(--ui-radius-lg) !important;
     background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
+    z-index: 99999 !important;
 }
 
-@media (max-width: 1200px) {
-
-    body.cc-admin-theme.edit-php form#posts-filter,
-    body.cc-admin-theme.users-php form#users-filter,
-    body.cc-admin-theme.plugins-php form#plugins-filter {
-        grid-template-columns: 1fr !important;
-        grid-template-areas:
-            "views"
-            "search"
-            "toolbar"
-            "table"
-            "footer" !important;
+@media (max-width: 960px) {
+    body.cc-admin-theme.cc-list-table-screen .cc-list-header-row {
+        flex-wrap: wrap;
+        min-height: auto;
     }
 
-    body.cc-admin-theme.edit-php form#posts-filter>p.search-box,
-    body.cc-admin-theme.users-php form#users-filter>p.search-box,
-    body.cc-admin-theme.plugins-php form#plugins-filter>p.search-box {
-        justify-self: stretch !important;
+    body.cc-admin-theme.cc-list-table-screen .cc-list-header-left,
+    body.cc-admin-theme.cc-list-table-screen .cc-list-header-center,
+    body.cc-admin-theme.cc-list-table-screen .cc-list-header-right {
+        width: 100%;
+        flex: 1 1 100%;
+        justify-content: flex-start;
     }
+
+    body.cc-admin-theme.cc-list-table-screen .cc-list-header-right {
+        max-width: none;
+    }
+
+    body.cc-admin-theme.cc-list-table-screen .wp-list-table .column-title,
+    body.cc-admin-theme.cc-list-table-screen .wp-list-table .column-primary,
+    body.cc-admin-theme.cc-list-table-screen .wp-list-table .column-name,
+    body.cc-admin-theme.cc-list-table-screen .wp-list-table .column-username {
+        padding-right: 132px;
+    }
+}
+
+/* Final lock: primary title header must stay left-aligned. */
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.column-title,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.column-primary,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.column-name,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.column-username,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.column-title,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.column-primary,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.column-name,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.column-username {
+    text-align: left !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.column-title a,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.column-primary a,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.column-name a,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table thead th.column-username a,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.column-title a,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.column-primary a,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.column-name a,
+body.cc-admin-theme.cc-list-table-screen .wp-list-table tfoot th.column-username a {
+    justify-content: flex-start !important;
+    text-align: left !important;
 }

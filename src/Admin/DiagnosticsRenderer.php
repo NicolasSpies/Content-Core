@@ -88,7 +88,7 @@ class DiagnosticsRenderer
                             <div class="cc-card-header">
                                 <h2><?php echo esc_html($sub['label']); ?></h2>
                                 <span class="cc-status-pill <?php echo $status_class; ?>">
-                                    <?php echo esc_html(strtoupper($sub['status'])); ?>
+                                    <?php echo esc_html(ucfirst($sub['status'])); ?>
                                 </span>
                             </div>
                             <div class="cc-card-body">
@@ -222,7 +222,7 @@ class DiagnosticsRenderer
                                     <div class="cc-data-item">
                                         <span class="cc-data-label-sm"><?php echo esc_html($check['label']); ?></span>
                                         <span class="cc-status-pill cc-status-<?php echo esc_attr($check['status']); ?>">
-                                            <?php echo esc_html(strtoupper($check['status'])); ?>
+                                            <?php echo esc_html(ucfirst($check['status'])); ?>
                                         </span>
                                         <code><?php echo esc_html($check['detail']); ?></code>
                                     </div>
@@ -328,8 +328,8 @@ class DiagnosticsRenderer
                             </button>
                         </div>
                         <div class="cc-card-body">
-                            <textarea id="cc-raw-report" readonly class="cc-code-area"
-                               ><?php echo esc_textarea(json_encode($report, JSON_PRETTY_PRINT)); ?></textarea>
+                            <textarea id="cc-raw-report" readonly
+                                class="cc-code-area"><?php echo esc_textarea(json_encode($report, JSON_PRETTY_PRINT)); ?></textarea>
                             <p class="cc-help">
                                 <?php _e('This JSON report contains all gathered health data. Useful for debugging or providing to support.', 'content-core'); ?>
                             </p>

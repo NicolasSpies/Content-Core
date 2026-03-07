@@ -182,3 +182,1164 @@
     background: var(--ui-color-accent-100);
     color: var(--ui-color-accent-600);
 }
+
+/* Global WordPress color neutralization */
+:where(body.cc-admin-theme a, body.cc-admin-theme a:visited) {
+    color: var(--ui-color-text-link) !important;
+}
+
+:where(body.cc-admin-theme a:hover, body.cc-admin-theme a:focus-visible) {
+    color: var(--ui-color-accent) !important;
+}
+
+:where(body.cc-admin-theme .wp-list-table a,
+    body.cc-admin-theme .widefat a,
+    body.cc-admin-theme .row-title,
+    body.cc-admin-theme .column-primary a) {
+    color: var(--ui-color-text-link) !important;
+}
+
+:where(body.cc-admin-theme .wp-list-table .row-title:hover,
+    body.cc-admin-theme .wp-list-table .row-title:focus-visible,
+    body.cc-admin-theme .wp-list-table tbody a:hover) {
+    color: var(--ui-color-accent) !important;
+}
+
+:where(body.cc-admin-theme a:focus-visible,
+    body.cc-admin-theme button:focus-visible,
+    body.cc-admin-theme input:focus-visible,
+    body.cc-admin-theme select:focus-visible,
+    body.cc-admin-theme textarea:focus-visible) {
+    outline: var(--ui-focus-ring-width) solid var(--ui-focus-ring-color) !important;
+    outline-offset: var(--ui-focus-ring-offset) !important;
+    border-color: var(--ui-color-border-active) !important;
+}
+
+:where(body.cc-admin-theme .tablenav-pages a,
+    body.cc-admin-theme .tablenav-pages .paging-input,
+    body.cc-admin-theme .tablenav-pages-navspan) {
+    border-color: var(--ui-color-border-default) !important;
+    color: var(--ui-color-text-secondary) !important;
+}
+
+:where(body.cc-admin-theme .tablenav-pages a:hover,
+    body.cc-admin-theme .tablenav-pages a:focus-visible) {
+    border-color: var(--ui-color-border-active) !important;
+    color: var(--ui-color-accent) !important;
+    background: var(--ui-color-accent-50) !important;
+}
+
+:where(body.cc-admin-theme .wp-list-table th.sorted a,
+    body.cc-admin-theme .wp-list-table th.sortable a) {
+    color: var(--ui-color-text-secondary) !important;
+}
+
+:where(body.cc-admin-theme .wp-list-table th.sorted .sorting-indicators,
+    body.cc-admin-theme .wp-list-table th.sortable .sorting-indicators,
+    body.cc-admin-theme .wp-list-table th.sorting .sorting-indicators,
+    body.cc-admin-theme .wp-list-table th.sorting_asc .sorting-indicators,
+    body.cc-admin-theme .wp-list-table th.sorting_desc .sorting-indicators) {
+    display: inline-flex !important;
+    align-items: center !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+:where(body.cc-admin-theme .wp-list-table th.sorting .sorting-indicator,
+    body.cc-admin-theme .wp-list-table th.sorting_asc .sorting-indicator,
+    body.cc-admin-theme .wp-list-table th.sorting_desc .sorting-indicator,
+    body.cc-admin-theme .wp-list-table th.sorted.asc .sorting-indicator,
+    body.cc-admin-theme .wp-list-table th.sorted.desc .sorting-indicator) {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    color: var(--ui-color-border-active) !important;
+}
+
+:where(body.cc-admin-theme .media-frame .attachments .attachment.selected,
+    body.cc-admin-theme .media-frame .attachments .attachment.details,
+    body.cc-admin-theme .media-frame .attachments .attachment[aria-selected="true"],
+    body.cc-admin-theme .media-frame .attachments .attachment[aria-checked="true"]) {
+    box-shadow: inset 0 0 0 2px var(--ui-color-border-active) !important;
+}
+
+:where(body.cc-admin-theme .media-frame .attachments .attachment.selected .attachment-preview,
+    body.cc-admin-theme .media-frame .attachments .attachment.details .attachment-preview,
+    body.cc-admin-theme .media-frame .attachments .attachment[aria-selected="true"] .attachment-preview,
+    body.cc-admin-theme .media-frame .attachments .attachment[aria-checked="true"] .attachment-preview) {
+    border-color: var(--ui-color-border-active) !important;
+}
+
+/* --- Classic Post Editor Bridge Rules --- */
+.cc-post-edit-screen.cc-admin-theme .wp-heading-inline,
+.cc-post-edit-screen.cc-admin-theme .page-title-action,
+.cc-post-edit-screen.cc-admin-theme #cc_seo_meta_box {
+    display: none !important;
+}
+
+/* Header strip: single action authority and calm chrome. */
+.cc-post-edit-screen.cc-admin-theme .cc-editor-header.v3-tighter {
+    min-height: 54px !important;
+    display: grid !important;
+    grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr) !important;
+    align-items: center !important;
+    gap: var(--ui-space-4) !important;
+    padding: 0 clamp(20px, 2.2vw, 34px) !important;
+    margin-bottom: var(--ui-space-8) !important;
+    background: var(--ui-color-bg-surface) !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--ui-color-border-muted) 82%, transparent) !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme .cc-editor-header.v3-tighter .cc-editor-header-left {
+    justify-self: start !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme .cc-editor-header.v3-tighter .cc-editor-header-center {
+    justify-self: center !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme .cc-editor-header.v3-tighter .cc-editor-header-right {
+    justify-self: end !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme .cc-editor-header.v3-tighter .cc-editor-back {
+    color: var(--ui-color-text-muted) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.01em !important;
+    text-decoration: none !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme .cc-editor-header.v3-tighter .cc-editor-save-status {
+    color: color-mix(in srgb, var(--ui-color-text-muted) 88%, transparent) !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.01em !important;
+    font-style: normal !important;
+}
+
+/* Taxonomy cleanup: keep only the final checklist panel. */
+.cc-post-edit-screen.cc-admin-theme #referenzen-tabs,
+.cc-post-edit-screen.cc-admin-theme #referenzen-pop-tabs,
+.cc-post-edit-screen.cc-admin-theme #referenzen-add-toggle {
+    display: none !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #referenzen-all {
+    display: block !important;
+}
+
+/* Title + permalink hierarchy */
+.cc-post-edit-screen.cc-admin-theme #titlediv {
+    margin-bottom: var(--ui-space-12) !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #title {
+    font-size: clamp(48px, 5vw, 68px) !important;
+    line-height: 1.03 !important;
+    font-weight: 680 !important;
+    letter-spacing: -0.03em !important;
+    color: var(--ui-color-text-primary) !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #title-prompt-text {
+    font-size: clamp(44px, 4.6vw, 62px) !important;
+    line-height: 1.04 !important;
+    font-weight: 620 !important;
+    color: var(--ui-color-text-muted) !important;
+    opacity: 0.38 !important;
+    padding: 0 !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #edit-slug-box {
+    margin: var(--ui-space-3) 0 0 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    font-size: 12px !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 84%, transparent) !important;
+    line-height: 1.4 !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #edit-slug-box a {
+    color: color-mix(in srgb, var(--ui-color-text-secondary) 82%, transparent) !important;
+    text-decoration: none !important;
+    border-bottom: 0 !important;
+}
+
+/* Main-column metabox header chrome reduction while keeping native handles. */
+.cc-post-edit-screen.cc-admin-theme #postbox-container-2 .postbox > .postbox-header {
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 0 var(--ui-space-3) 0 !important;
+    margin: 0 !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #postbox-container-2 .postbox > .postbox-header .hndle,
+.cc-post-edit-screen.cc-admin-theme #postbox-container-2 .postbox > .postbox-header h2 {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 22px !important;
+    line-height: 1.22 !important;
+    font-weight: 640 !important;
+    color: var(--ui-color-text-primary) !important;
+    letter-spacing: -0.015em !important;
+    text-transform: none !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #postbox-container-2 .postbox > .postbox-header .handle-actions {
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #postbox-container-2 .postbox > .inside {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Sidebar module treatment */
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 .postbox > .postbox-header {
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 0 0 var(--ui-space-3) 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: var(--ui-space-2) !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 .postbox > .postbox-header .hndle,
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 .postbox > .postbox-header h2,
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 .postbox > .postbox-header h3 {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    font-weight: 500 !important;
+    color: var(--ui-color-text-muted) !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 .postbox > .postbox-header .handle-actions {
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 .postbox > .postbox-header .handle-actions button,
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 .postbox > .postbox-header .handle-actions .handlediv {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 72%, transparent) !important;
+    opacity: 0.58 !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 .postbox > .postbox-header .handle-actions button:hover,
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 .postbox > .postbox-header .handle-actions .handlediv:hover {
+    color: var(--ui-color-text-secondary) !important;
+    opacity: 0.82 !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 .postbox > .inside {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Post settings metadata rows: quiet structure, not card blocks. */
+.cc-post-edit-screen.cc-admin-theme #submitdiv .misc-pub-section {
+    background: transparent !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--ui-color-border-muted) !important;
+    border-radius: 0 !important;
+    padding: var(--ui-space-3) 0 !important;
+    margin: 0 !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #submitdiv .misc-pub-section:last-of-type {
+    border-bottom: 0 !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #submitdiv #minor-publishing-actions,
+.cc-post-edit-screen.cc-admin-theme #submitdiv #major-publishing-actions,
+.cc-post-edit-screen.cc-admin-theme #submitdiv .submitbox {
+    background: transparent !important;
+    border: 0 !important;
+    margin: 0 !important;
+    padding: var(--ui-space-3) 0 !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #submitdiv #delete-action a.submitdelete {
+    color: var(--ui-color-text-muted) !important;
+}
+
+/* Only direct controls use white surfaces in the tinted rail. */
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 .inside :is(input[type="text"], input[type="url"], input[type="number"], input[type="search"], input[type="date"], input[type="time"], select, textarea) {
+    background: var(--ui-color-bg-surface) !important;
+    border: 1px solid var(--ui-color-border-default) !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 :is(#postimagediv .inside, #categorydiv .tabs-panel) {
+    background: var(--ui-color-bg-surface) !important;
+    border: 1px solid var(--ui-color-border-muted) !important;
+    border-radius: var(--ui-radius-md) !important;
+    padding: var(--ui-space-3) !important;
+}
+
+/* Keep native submit action functional but remove second visible primary action in sidebar. */
+body.cc-post-edit-screen.cc-admin-theme.post-php #postbox-container-1 #submitdiv #publish,
+body.cc-post-edit-screen.cc-admin-theme.post-new-php #postbox-container-1 #submitdiv #publish,
+body.cc-post-edit-screen.cc-admin-theme.post-php #postbox-container-1 #submitdiv #publishing-action .button-primary,
+body.cc-post-edit-screen.cc-admin-theme.post-new-php #postbox-container-1 #submitdiv #publishing-action .button-primary,
+body.cc-post-edit-screen.cc-admin-theme.post-php #postbox-container-1 #submitdiv #major-publishing-actions .button-primary,
+body.cc-post-edit-screen.cc-admin-theme.post-new-php #postbox-container-1 #submitdiv #major-publishing-actions .button-primary {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #submitdiv #minor-publishing-actions #save-action,
+.cc-post-edit-screen.cc-admin-theme #submitdiv #minor-publishing-actions #preview-action {
+    display: none !important;
+}
+
+/* Summary + Language should read as rail modules, not inset white cards. */
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 #referenzendiv .inside,
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 #cc-language-box .inside,
+.cc-post-edit-screen.cc-admin-theme #postbox-container-1 #cc-language-box .cc-language-selector {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Simplify language technical noise. */
+.cc-post-edit-screen.cc-admin-theme #cc-language-box .inside > div:has(> strong):has(> code) {
+    display: none !important;
+}
+
+.cc-post-edit-screen.cc-admin-theme #cc-language-box .cc-language-selector > p {
+    display: none !important;
+}
+
+/* Final classic editor chrome reduction pass */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .postbox .postbox-header .handle-order-higher,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .postbox .postbox-header .handle-order-lower,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .postbox .postbox-header .postbox-arrange-arrow {
+    display: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox > .postbox-header .handle-actions button,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox > .postbox-header .handle-actions .handlediv {
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 70%, transparent) !important;
+    opacity: 0.56 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox > .postbox-header .handle-actions button:hover,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox > .postbox-header .handle-actions .handlediv:hover {
+    color: var(--ui-color-text-secondary) !important;
+    opacity: 0.82 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter {
+    min-height: 52px !important;
+    grid-template-columns: minmax(240px, 1fr) auto minmax(240px, 1fr) !important;
+    gap: var(--ui-space-3) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-header-center {
+    min-width: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 0 8px !important;
+    border-radius: 999px !important;
+    background: color-mix(in srgb, var(--ui-color-bg-subtle) 86%, white) !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 90%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ui-color-text-muted) 52%, transparent);
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #titlediv {
+    margin-bottom: var(--ui-space-14) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #title {
+    font-size: clamp(52px, 5.4vw, 74px) !important;
+    line-height: 1.01 !important;
+    font-weight: 650 !important;
+    letter-spacing: -0.034em !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #title-prompt-text {
+    font-size: clamp(48px, 4.9vw, 66px) !important;
+    line-height: 1.02 !important;
+    font-weight: 580 !important;
+    opacity: 0.3 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box {
+    font-size: 11px !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 72%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box :is(.edit-slug, .save, .cancel, #editable-post-name-full) {
+    font-size: 11px !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 76%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box .edit-slug {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header .hndle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header h2,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header h3 {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 88%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv .misc-pub-section {
+    padding: 10px 0 !important;
+    color: color-mix(in srgb, var(--ui-color-text-secondary) 88%, transparent) !important;
+    font-size: 12px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv .misc-pub-section a {
+    color: color-mix(in srgb, var(--ui-color-text-muted) 88%, transparent) !important;
+}
+
+/* Final classic-editor WP bridge polish. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter {
+    min-height: 50px !important;
+    grid-template-columns: minmax(240px, 1fr) auto minmax(240px, 1fr) !important;
+    gap: var(--ui-space-3) !important;
+    padding: 0 clamp(22px, 2.2vw, 34px) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-back {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 92%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status {
+    min-height: 24px !important;
+    padding: 0 10px !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 92%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #titlediv {
+    margin-top: 0 !important;
+    margin-bottom: var(--ui-space-16) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #titlewrap {
+    min-height: clamp(76px, 8vw, 98px) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #title,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #title-prompt-text {
+    padding: 0 0 4px 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #title {
+    font-size: clamp(54px, 5.5vw, 76px) !important;
+    line-height: 1.01 !important;
+    font-weight: 630 !important;
+    letter-spacing: -0.035em !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #title-prompt-text {
+    font-size: clamp(52px, 5.2vw, 72px) !important;
+    line-height: 1.01 !important;
+    font-weight: 560 !important;
+    letter-spacing: -0.03em !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 64%, transparent) !important;
+    opacity: 1 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box {
+    margin-top: var(--ui-space-4) !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 11px !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 74%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box #editable-post-name {
+    color: color-mix(in srgb, var(--ui-color-text-secondary) 74%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box .edit-slug,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box .save,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box .cancel {
+    font-size: 10px !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 70%, transparent) !important;
+    text-decoration: none !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header {
+    margin-bottom: var(--ui-space-2) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header .hndle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header h2,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header h3 {
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+    font-weight: 500 !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 84%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv .misc-pub-section {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+    color: color-mix(in srgb, var(--ui-color-text-secondary) 82%, transparent) !important;
+    padding: 8px 0 !important;
+    border-bottom-color: color-mix(in srgb, var(--ui-color-border-muted) 56%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv :is(#timestamp, #post-status-display, #post-visibility-display) {
+    color: color-mix(in srgb, var(--ui-color-text-secondary) 84%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv .misc-pub-section a,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv .misc-pub-section .edit-timestamp,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv .misc-pub-section .edit-visibility,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv .misc-pub-section .edit-status {
+    color: color-mix(in srgb, var(--ui-color-text-muted) 80%, transparent) !important;
+}
+
+/* Final polish pass: native WP bridge refinement only. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter {
+    min-height: 48px !important;
+    align-items: center !important;
+    padding-inline: clamp(24px, 2.4vw, 36px) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-header-left,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-header-center,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-header-right {
+    display: flex !important;
+    align-items: center !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-header-right {
+    align-self: flex-start !important;
+    transform: translateY(-2px) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-header-center {
+    justify-content: center !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status {
+    min-height: 25px !important;
+    padding: 0 11px !important;
+    font-size: 11px !important;
+    line-height: 1 !important;
+    border: 1px solid color-mix(in srgb, var(--ui-color-border-muted) 56%, transparent) !important;
+    background: color-mix(in srgb, var(--ui-color-bg-subtle) 82%, white) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #titlewrap {
+    min-height: clamp(62px, 6.8vw, 82px) !important;
+    padding: 0 0 2px 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #title {
+    font-size: clamp(42px, 4.8vw, 58px) !important;
+    line-height: 1.02 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #title-prompt-text {
+    font-size: clamp(40px, 4.6vw, 54px) !important;
+    line-height: 1.03 !important;
+    font-weight: 550 !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 62%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box {
+    margin-top: var(--ui-space-3) !important;
+    gap: 8px !important;
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 68%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box :is(.edit-slug, .save, .cancel) {
+    font-size: 11px !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 66%, transparent) !important;
+}
+
+/* Remove Field Group metabox title rows (e.g. "Seite-Test") in main editorial rail. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .postbox-header,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > h2.hndle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .hndle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .handlediv,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > button.handlediv {
+    display: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header {
+    margin-bottom: var(--ui-space-3) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header .hndle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header h2,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header h3 {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 80%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header .handle-actions button,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header .handle-actions .handlediv {
+    opacity: 0.42 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #submitdiv #major-publishing-actions #publishing-action {
+    display: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #submitdiv #major-publishing-actions {
+    padding-top: 0 !important;
+    min-height: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv .misc-pub-section {
+    padding: 7px 0 !important;
+    border-bottom-color: color-mix(in srgb, var(--ui-color-border-muted) 48%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv .misc-pub-section strong {
+    font-weight: 500 !important;
+    color: color-mix(in srgb, var(--ui-color-text-secondary) 82%, transparent) !important;
+}
+
+/* No metabox moving UI on classic CC edit screens. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .meta-box-sortables .postbox > .postbox-header,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .meta-box-sortables .postbox > .postbox-header .hndle {
+    cursor: default !important;
+}
+
+/* Sidebar grouping + no white surfaces in right rail modules. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .meta-box-sortables > .postbox {
+    padding: var(--ui-space-4) var(--ui-space-4) var(--ui-space-4) !important;
+    border: 1px solid color-mix(in srgb, var(--ui-color-border-muted) 54%, transparent) !important;
+    border-radius: 10px !important;
+    background: color-mix(in srgb, var(--ui-color-bg-subtle) 94%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header .hndle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header h2,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .postbox-header h3 {
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox > .inside {
+    display: grid !important;
+    gap: var(--ui-space-3) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #referenzendiv :is(.inside, .tabs-panel, #referenzen-all),
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #cc-language-box :is(.inside, .cc-language-selector) {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #cc-language-box select,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #cc-language-box input[type="text"],
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #referenzendiv input[type="text"] {
+    background: color-mix(in srgb, var(--ui-color-bg-subtle) 96%, transparent) !important;
+    border-color: color-mix(in srgb, var(--ui-color-border-muted) 62%, transparent) !important;
+}
+
+/* Category pills: enforce left-aligned flex flow in sidebar taxonomy module. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #referenzendiv :is(#referenzen-all, .tabs-panel) {
+    text-align: left !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #referenzendiv .categorychecklist {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+    align-content: flex-start !important;
+    width: 100% !important;
+    margin: 0 !important;
+    margin-left: 0 !important;
+    padding: 0 !important;
+    padding-left: 0 !important;
+    list-style: none !important;
+    gap: 8px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #referenzendiv .categorychecklist > li {
+    float: none !important;
+    clear: none !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    justify-content: flex-start !important;
+}
+
+/* Permalink row: larger text + stable inline edit mode. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box {
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+    margin-top: var(--ui-space-2) !important;
+    margin-bottom: 0 !important;
+    gap: 10px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box :is(#sample-permalink, #sample-permalink a, #editable-post-name, #editable-post-name-full) {
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box #editable-post-name {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    white-space: nowrap !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box #edit-slug-buttons {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box #new-post-slug {
+    width: auto !important;
+    min-width: 220px !important;
+    max-width: min(44vw, 420px) !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 12px !important;
+    border-radius: 10px !important;
+    border: 1px solid color-mix(in srgb, var(--ui-color-border-strong) 78%, transparent) !important;
+    background: color-mix(in srgb, var(--ui-color-bg-surface) 90%, transparent) !important;
+    box-shadow: none !important;
+    vertical-align: middle !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box .save.button.button-small,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box .cancel {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 10px !important;
+    border-radius: 999px !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-decoration: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box #new-post-slug:focus,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box #new-post-slug:focus-visible {
+    outline: none !important;
+    border-color: color-mix(in srgb, var(--ui-color-border-strong) 84%, transparent) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-color-accent-500) 20%, transparent) !important;
+}
+
+/* Hide top WP notice banners on classic post edit; header status chip is the single status surface. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #wpbody-content > .notice,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #wpbody-content > .updated,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #wpbody-content > .error,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #wpbody-content .wrap > .notice,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #wpbody-content .wrap > #message {
+    display: none !important;
+}
+
+/* Header status chip: slightly more present with state colors. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status {
+    min-height: var(--ui-size-chip) !important;
+    height: var(--ui-size-chip) !important;
+    padding: 0 var(--ui-space-3) !important;
+    border-radius: var(--ui-radius-pill) !important;
+    font-size: var(--ui-text-meta-size) !important;
+    line-height: var(--ui-text-meta-line) !important;
+    font-weight: var(--ui-font-weight-medium) !important;
+    border: 1px solid var(--ui-color-border-default) !important;
+    background: var(--ui-color-bg-surface) !important;
+    color: var(--ui-color-text-secondary) !important;
+    transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status.is-saved {
+    color: var(--ui-color-success-fg) !important;
+    background: var(--ui-color-success-bg) !important;
+    border-color: var(--ui-color-success-border) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status.is-saving {
+    color: var(--ui-color-info-fg) !important;
+    background: var(--ui-color-info-bg) !important;
+    border-color: var(--ui-color-info-border) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status.is-draft {
+    color: var(--ui-color-warning-fg) !important;
+    background: var(--ui-color-warning-bg) !important;
+    border-color: var(--ui-color-warning-border) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status.is-warning {
+    color: var(--ui-color-warning-fg) !important;
+    background: var(--ui-color-warning-bg) !important;
+    border-color: var(--ui-color-warning-border) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status.is-error {
+    color: var(--ui-color-danger-fg) !important;
+    background: var(--ui-color-danger-bg) !important;
+    border-color: var(--ui-color-danger-border) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status.is-failed {
+    color: var(--ui-color-danger-fg) !important;
+    background: var(--ui-color-danger-bg) !important;
+    border-color: var(--ui-color-danger-border) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status.is-saved::before {
+    display: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status.is-saving::before {
+    display: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status.is-warning::before {
+    display: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status.is-error::before {
+    display: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-save-status.is-failed::before {
+    display: none !important;
+}
+
+/* Post Settings edit states: status, visibility, date. Keep native behavior, refine UI. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv :is(#post-status-select, #post-visibility-select, #timestampdiv) {
+    margin-top: 8px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv :is(#post-status-select, #post-visibility-select, #timestampdiv) > * + * {
+    margin-top: 8px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv #post-status-select select,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv #post-visibility-select select,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv #timestampdiv :is(input[type="text"], input[type="number"], select) {
+    min-height: 34px !important;
+    height: 34px !important;
+    padding: 0 10px !important;
+    border-radius: 10px !important;
+    border: 1px solid color-mix(in srgb, var(--ui-color-border-muted) 74%, transparent) !important;
+    background: color-mix(in srgb, var(--ui-color-bg-subtle) 96%, transparent) !important;
+    box-shadow: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv #timestampdiv .timestamp-wrap {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    margin: 0 !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 78%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv #timestampdiv #aa {
+    width: 84px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv #timestampdiv :is(#jj, #hh, #mn) {
+    width: 48px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv #timestampdiv #mm {
+    width: 108px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv #post-visibility-select fieldset {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    display: grid !important;
+    gap: 6px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv #post-visibility-select :is(label, legend) {
+    color: color-mix(in srgb, var(--ui-color-text-secondary) 88%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv #post-visibility-select label {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv :is(#post-status-select, #post-visibility-select, #timestampdiv) p {
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv :is(.save-post-status, .save-post-visibility, .save-timestamp) {
+    min-height: 30px !important;
+    height: 30px !important;
+    padding: 0 12px !important;
+    border-radius: 999px !important;
+    border: 1px solid color-mix(in srgb, var(--ui-color-border-muted) 74%, transparent) !important;
+    background: color-mix(in srgb, var(--ui-color-bg-subtle) 96%, transparent) !important;
+    color: color-mix(in srgb, var(--ui-color-text-secondary) 90%, transparent) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv :is(.cancel-post-status, .cancel-post-visibility, .cancel-timestamp) {
+    font-size: 11px !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 84%, transparent) !important;
+    text-decoration: none !important;
+}
+
+/* Final header height + rail attachment fix (classic post editor only). */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #wpbody-content {
+    padding-top: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #wpbody-content > .wrap {
+    margin-top: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter {
+    min-height: 60px !important;
+    padding: 0 clamp(18px, 2vw, 28px) !important;
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-header-right {
+    align-self: center !important;
+    transform: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter + #poststuff {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Post Settings spacing normalization: remove leftover WP utility gaps. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #submitdiv > .inside {
+    display: block !important;
+    gap: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #submitdiv .submitbox {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #submitdiv #minor-publishing,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #submitdiv #misc-publishing-actions {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #submitdiv #minor-publishing-actions {
+    display: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #submitdiv #misc-publishing-actions .misc-pub-section:first-child {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #submitdiv #misc-publishing-actions .misc-pub-section {
+    margin: 0 !important;
+}
+
+/* Header language switcher: compact flag dropdown left of preview. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter .cc-editor-header-right {
+    gap: var(--ui-space-2) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-language-switcher {
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-lang-select {
+    min-height: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    width: 34px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    border: 1px solid color-mix(in srgb, var(--ui-color-border-muted) 72%, transparent) !important;
+    background: var(--ui-color-bg-surface) !important;
+    color: color-mix(in srgb, var(--ui-color-text-secondary) 92%, transparent) !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    line-height: 34px !important;
+    text-align: center !important;
+    text-align-last: center !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    box-shadow: none !important;
+    max-width: 34px !important;
+    cursor: pointer !important;
+}
+
+/* Sidebar language module: hide duplicated current-language selector block. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #cc-language-box .cc-language-selector--current {
+    display: none !important;
+}
+
+/* Content field-group wrapper must stay invisible: show only inner section fields. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"],
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .inside {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .postbox-header,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .hndle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > h2.hndle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .handlediv,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > button.handlediv {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    min-height: 0 !important;
+}
+
+/* Language module: no outer box border and no separators between language rows. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #cc-language-box {
+    border: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #cc-language-box .cc-translations-list > ul > li {
+    border: 0 !important;
+    border-bottom: 0 !important;
+}
+
+/* Field-group metaboxes in main rail are technical wrappers only. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"],
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .inside,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .inside > .cc-metabox-body {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .postbox-header,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .postbox-header .hndle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .hndle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > h2.hndle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .handlediv,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > button.handlediv {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    min-height: 0 !important;
+}
+
+/* Permalink row refinement: calmer and less utility-heavy. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box {
+    margin-top: var(--ui-space-2) !important;
+    gap: 6px !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 72%, transparent) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box :is(.edit-slug, .save, .cancel) {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: color-mix(in srgb, var(--ui-color-text-muted) 78%, transparent) !important;
+    text-decoration: none !important;
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box #new-post-slug {
+    height: 34px !important;
+    min-height: 34px !important;
+    border-radius: 8px !important;
+    border: 1px solid color-mix(in srgb, var(--ui-color-border-muted) 74%, transparent) !important;
+    background: color-mix(in srgb, var(--ui-color-bg-surface) 92%, transparent) !important;
+}

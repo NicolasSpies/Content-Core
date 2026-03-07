@@ -1,8 +1,9 @@
 :where(body.cc-admin-theme) {
     --ui-color-bg-canvas: #f3f4f6;
     --ui-color-bg-surface: #ffffff;
-    --ui-color-bg-surface-muted: #f8fafc;
-    --ui-color-bg-subtle: #eef2f7;
+    --ui-color-surface-subtle: #f8fafc;
+    --ui-color-bg-surface-muted: #f3f4f6;
+    --ui-color-bg-subtle: #f3f4f6;
     --ui-color-text-primary: #0f172a;
     --ui-color-text-secondary: #475569;
     --ui-color-text-muted: #64748b;
@@ -14,6 +15,9 @@
     --ui-color-accent-600: #059669;
     --ui-color-accent-100: #d1fae5;
     --ui-color-accent-50: #ecfdf5;
+    --ui-color-accent: var(--ui-color-accent-500);
+    --ui-color-text-link: var(--ui-color-text-primary);
+    --ui-color-border-active: var(--ui-color-accent-500);
     --ui-color-info-fg: #1e40af;
     --ui-color-info-bg: #dbeafe;
     --ui-color-info-border: #93c5fd;
@@ -82,7 +86,7 @@
     --ui-size-chip: 24px;
     --ui-size-toolbar-control: 40px;
     --ui-size-sidebar-item: 44px;
-    --ui-size-sidebar-width: 280px;
+    --ui-size-sidebar-width: 240px;
     --ui-size-sidebar-width-folded: 64px;
     --ui-size-sidebar-icon: 20px;
     --ui-size-sidebar-icon-glyph: 18px;

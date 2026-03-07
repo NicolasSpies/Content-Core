@@ -159,7 +159,8 @@ class RuntimeAuditRenderer
                         <div>
                             <span class="dashicons dashicons-warning"></span>
                             <h3><?php _e('CRITICAL: No CC routes found.', 'content-core'); ?></h3>
-                            <p class="cc-help"><?php _e('The WP Registry does not contain any /content-core/v1 routes.', 'content-core'); ?></p>
+                            <p class="cc-help">
+                                <?php _e('The WP Registry does not contain any /content-core/v1 routes.', 'content-core'); ?></p>
                         </div>
                     <?php else: ?>
                         <table class="cc-table cc-table-flush">
@@ -177,9 +178,9 @@ class RuntimeAuditRenderer
                                         <td><code><?php echo esc_html(implode(', ', $info['methods'])); ?></code></td>
                                         <td>
                                             <?php if ($info['permission_callback']): ?>
-                                                <span class="cc-status-pill cc-status-healthy">PRESENT</span>
+                                                <span class="cc-status-pill cc-status-healthy">Present</span>
                                             <?php else: ?>
-                                                <span class="cc-status-pill cc-status-warning">MISSING</span>
+                                                <span class="cc-status-pill cc-status-warning">Missing</span>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
@@ -246,7 +247,7 @@ class RuntimeAuditRenderer
                                         $is_localized = !empty($data);
                                         echo '<div>';
                                         echo '<strong>' . esc_html($handle) . '</strong>' . ($is_localized ? ' <span>[Localized]</span>' : '');
-                                        
+
                                         if (in_array($handle, ['cc-settings-js', 'cc-site-settings-app', 'cc-terms-manager', 'cc-admin-js', 'wp-api-fetch'])) {
                                             echo '<div>';
                                             echo '<pre>' . esc_html(substr($data, 0, 500)) . (strlen($data) > 500 ? '...' : '') . '</pre>';
@@ -310,20 +311,22 @@ class RuntimeAuditRenderer
                             </div>
 
                             <div class="cc-divider"></div>
-                            
+
                             <div class="cc-data-group">
                                 <span class="cc-data-label"><?php _e('Diagnostic Indicators', 'content-core'); ?></span>
                                 <div>
                                     <div>
                                         <span><?php _e('REST Init Fired', 'content-core'); ?></span>
-                                        <span class="cc-status-pill <?php echo did_action('rest_api_init') ? 'cc-status-healthy' : 'cc-status-warning'; ?>">
-                                            <?php echo did_action('rest_api_init') ? 'YES' : 'NO'; ?>
+                                        <span
+                                            class="cc-status-pill <?php echo did_action('rest_api_init') ? 'cc-status-healthy' : 'cc-status-warning'; ?>">
+                                            <?php echo did_action('rest_api_init') ? 'Yes' : 'No'; ?>
                                         </span>
                                     </div>
                                     <div>
                                         <span><?php _e('Admin Capability', 'content-core'); ?></span>
-                                        <span class="cc-status-pill <?php echo current_user_can('manage_options') ? 'cc-status-healthy' : 'cc-status-error'; ?>">
-                                            <?php echo current_user_can('manage_options') ? 'OK' : 'DENIED'; ?>
+                                        <span
+                                            class="cc-status-pill <?php echo current_user_can('manage_options') ? 'cc-status-healthy' : 'cc-status-error'; ?>">
+                                            <?php echo current_user_can('manage_options') ? 'OK' : 'Denied'; ?>
                                         </span>
                                     </div>
                                 </div>
@@ -332,7 +335,8 @@ class RuntimeAuditRenderer
                     </div>
                 </div>
                 <div class="cc-card-footer">
-                    <a href="<?php echo esc_url(admin_url('admin.php?page=cc-diagnostics&tab=runtime-audit')); ?>" class="cc-button-secondary">
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=cc-diagnostics&tab=runtime-audit')); ?>"
+                        class="cc-button-secondary">
                         <?php _e('Go to Full System Registry', 'content-core'); ?>
                     </a>
                 </div>

@@ -9,8 +9,14 @@ jQuery(function ($) {
 
     var $table = $('#cc-ml-languages-table tbody');
     var template = $('#cc-ml-row-template').html();
-    var catalog = (typeof CC_SETTINGS !== 'undefined') ? CC_SETTINGS.catalog : {};
+    var catalog = (typeof CC_SETTINGS !== 'undefined' && CC_SETTINGS && CC_SETTINGS.catalog) ? CC_SETTINGS.catalog : {};
     var query = new URLSearchParams(window.location.search);
+    var settingsStrings = (typeof CC_SETTINGS !== 'undefined' && CC_SETTINGS && CC_SETTINGS.strings) ? CC_SETTINGS.strings : {};
+
+    function getSettingString(key, fallback) {
+        var value = settingsStrings[key];
+        return (typeof value === 'string' && value !== '') ? value : fallback;
+    }
 
     function showToast(message, type) {
         if (window.CCToast && typeof window.CCToast.show === 'function') {
@@ -62,12 +68,12 @@ jQuery(function ($) {
         if (!code) return;
 
         if ($table.find('tr[data-code="' + code + '"]').length) {
-            alert(CC_SETTINGS.strings.langAdded);
+            alert(getSettingString('langAdded', 'Language already added.'));
             return;
         }
 
         var index = $table.find('tr').length;
-        var langData = catalog[code];
+        var langData = catalog[code] || { label: code.toUpperCase(), flag: '' };
         var row = template
             .replace(/{index}/g, index)
             .replace(/{code}/g, code)
@@ -79,12 +85,18 @@ jQuery(function ($) {
         updateSelects();
     });
 
-    $table.on('click', '.remove-row', function () {
-        if (confirm(CC_SETTINGS.strings.confirmRemoveLang)) {
-            $(this).closest('tr').remove();
-            reindexLanguageRows();
-            updateSelects();
+    $table.on('click', '.remove-row', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        var confirmText = getSettingString('confirmRemoveLang', 'Remove this language?');
+        if (typeof window.confirm === 'function' && !window.confirm(confirmText)) {
+            return;
         }
+
+        $(this).closest('tr').remove();
+        reindexLanguageRows();
+        updateSelects();
     });
 
     if ($.fn.sortable && $table.length) {
@@ -128,8 +140,8 @@ jQuery(function ($) {
         var $input = $row.find('.flag-id-input');
         var $removeBtn = $row.find('.remove-custom-flag');
         mediaFrame = wp.media({
-            title: CC_SETTINGS.strings.selectFlag,
-            button: { text: CC_SETTINGS.strings.useImage },
+            title: getSettingString('selectFlag', 'Select Flag Image'),
+            button: { text: getSettingString('useImage', 'Use this image') },
             multiple: false
         });
 
@@ -203,8 +215,8 @@ jQuery(function ($) {
             return;
         }
         seoMediaFrame = wp.media({
-            title: CC_SETTINGS.strings.selectOGImage,
-            button: { text: CC_SETTINGS.strings.useImage },
+            title: getSettingString('selectOGImage', 'Select Default OG Image'),
+            button: { text: getSettingString('useImage', 'Use this image') },
             multiple: false
         });
         seoMediaFrame.on('select', function () {

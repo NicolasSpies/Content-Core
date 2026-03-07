@@ -131,30 +131,35 @@ class StandardDashboardCustomizer
                     <?php endif; ?>
                     <?php if ($can_edit_header): ?>
                         <details class="cc-wp-profile-edit cc-wp-profile-edit-icon">
-                            <summary aria-label="<?php echo esc_attr($this->t('edit_header')); ?>" title="<?php echo esc_attr($this->t('edit_header')); ?>">
+                            <summary aria-label="<?php echo esc_attr($this->t('edit_header')); ?>"
+                                title="<?php echo esc_attr($this->t('edit_header')); ?>">
                                 <span class="dashicons dashicons-edit cc-wp-edit-icon-open"></span>
                                 <span class="dashicons dashicons-no-alt cc-wp-edit-icon-close"></span>
                             </summary>
                             <form method="post">
                                 <input type="hidden" name="cc_dashboard_action" value="save_header">
                                 <?php wp_nonce_field('cc_dashboard_save_header', 'cc_dashboard_nonce'); ?>
-                                <input type="hidden" name="cc_dashboard_header_cover" value="<?php echo esc_attr($header['cover_url']); ?>" class="js-cc-cover-url">
-                                <input type="hidden" name="cc_dashboard_header_cover_id" value="<?php echo (int) $header['cover_id']; ?>" class="js-cc-cover-id">
+                                <input type="hidden" name="cc_dashboard_header_cover"
+                                    value="<?php echo esc_attr($header['cover_url']); ?>" class="js-cc-cover-url">
+                                <input type="hidden" name="cc_dashboard_header_cover_id"
+                                    value="<?php echo (int) $header['cover_id']; ?>" class="js-cc-cover-id">
                                 <label>
                                     <?php echo esc_html($this->t('header_cover_library')); ?>
                                     <div class="cc-wp-cover-actions">
-                                        <button type="button" class="button js-cc-cover-select"><?php echo esc_html($this->t('choose_from_library')); ?></button>
+                                        <button type="button"
+                                            class="button js-cc-cover-select"><?php echo esc_html($this->t('choose_from_library')); ?></button>
                                     </div>
                                 </label>
-                                <button type="submit" class="button button-primary"><?php echo esc_html($this->t('save')); ?></button>
+                                <button type="submit"
+                                    class="button button-primary"><?php echo esc_html($this->t('save')); ?></button>
                             </form>
                         </details>
                     <?php endif; ?>
                     <div class="cc-wp-profile-row">
                         <div class="cc-wp-profile-brand">
                             <?php if ($brand_logo_url !== ''): ?>
-                                <img src="<?php echo esc_url($brand_logo_url); ?>" alt="<?php echo esc_attr($this->t('brand_logo_alt')); ?>"
-                                    class="cc-wp-dashboard-logo">
+                                <img src="<?php echo esc_url($brand_logo_url); ?>"
+                                    alt="<?php echo esc_attr($this->t('brand_logo_alt')); ?>" class="cc-wp-dashboard-logo">
                             <?php endif; ?>
                         </div>
                     </div>
@@ -170,7 +175,8 @@ class StandardDashboardCustomizer
                     <div class="cc-wp-shortcuts">
                         <?php foreach ($shortcuts as $shortcut): ?>
                             <a href="<?php echo esc_url((string) $shortcut['url']); ?>" class="cc-wp-shortcut">
-                                <span class="dashicons <?php echo esc_attr((string) ($shortcut['icon'] ?? 'dashicons-arrow-right-alt2')); ?>"></span>
+                                <span
+                                    class="dashicons <?php echo esc_attr((string) ($shortcut['icon'] ?? 'dashicons-arrow-right-alt2')); ?>"></span>
                                 <span><?php echo esc_html((string) $shortcut['label']); ?></span>
                             </a>
                         <?php endforeach; ?>
@@ -192,12 +198,9 @@ class StandardDashboardCustomizer
                                         <strong><?php echo (int) ($type['published'] ?? 0); ?></strong>
                                     </div>
                                     <?php if (!empty($type['create_url'])): ?>
-                                        <a
-                                            class="cc-wp-kpi-add"
-                                            href="<?php echo esc_url((string) $type['create_url']); ?>"
+                                        <a class="cc-wp-kpi-add" href="<?php echo esc_url((string) $type['create_url']); ?>"
                                             title="<?php echo esc_attr(sprintf('%s: %s', $this->t('create_new'), (string) ($type['label'] ?? ''))); ?>"
-                                            aria-label="<?php echo esc_attr(sprintf('%s: %s', $this->t('create_new'), (string) ($type['label'] ?? ''))); ?>"
-                                        >+</a>
+                                            aria-label="<?php echo esc_attr(sprintf('%s: %s', $this->t('create_new'), (string) ($type['label'] ?? ''))); ?>">+</a>
                                     <?php endif; ?>
                                 </div>
                             <?php endforeach; ?>
@@ -215,27 +218,30 @@ class StandardDashboardCustomizer
                                 <details class="cc-wp-translation-item">
                                     <summary class="cc-wp-translation-summary">
                                         <div class="cc-wp-translation-lang">
-                                            <span class="cc-wp-lang-flag"><?php echo wp_kses($row['flag_html'], $this->get_allowed_flag_html_tags()); ?></span>
+                                            <span
+                                                class="cc-wp-lang-flag"><?php echo wp_kses($row['flag_html'], $this->get_allowed_flag_html_tags()); ?></span>
                                             <strong><?php echo esc_html($row['code']); ?></strong>
                                         </div>
                                         <div class="cc-wp-translation-cell">
                                             <span class="cc-status-pill cc-status-<?php echo esc_attr($row['status']); ?>">
-                                                <?php echo esc_html(strtoupper($this->t((string) $row['label_key']))); ?>
+                                                <?php echo esc_html($this->t((string) $row['label_key'])); ?>
                                             </span>
                                         </div>
                                         <div class="cc-wp-translation-progress">
                                             <small><?php echo esc_html((string) $row['progress_percent']); ?></small>
                                         </div>
-                                        <span class="cc-wp-translation-toggle dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
+                                        <span class="cc-wp-translation-toggle dashicons dashicons-arrow-down-alt2"
+                                            aria-hidden="true"></span>
                                     </summary>
                                     <div class="cc-wp-translation-details">
                                         <?php $pages_url = $this->get_translation_overview_url('page', (string) ($row['code'] ?? '')); ?>
                                         <?php if ($pages_url !== ''): ?>
-                                            <a class="cc-wp-translation-detail cc-wp-translation-detail-link" href="<?php echo esc_url($pages_url); ?>">
+                                            <a class="cc-wp-translation-detail cc-wp-translation-detail-link"
+                                                href="<?php echo esc_url($pages_url); ?>">
                                                 <span><?php echo esc_html($this->t('pages')); ?></span>
                                                 <div class="cc-wp-translation-cell">
                                                     <span class="cc-status-pill cc-status-<?php echo esc_attr($row['pages_status']); ?>">
-                                                        <?php echo esc_html(strtoupper($this->t((string) $row['pages_label_key']))); ?>
+                                                        <?php echo esc_html($this->t((string) $row['pages_label_key'])); ?>
                                                     </span>
                                                     <small><?php echo esc_html($row['pages_progress']); ?></small>
                                                 </div>
@@ -245,7 +251,7 @@ class StandardDashboardCustomizer
                                                 <span><?php echo esc_html($this->t('pages')); ?></span>
                                                 <div class="cc-wp-translation-cell">
                                                     <span class="cc-status-pill cc-status-<?php echo esc_attr($row['pages_status']); ?>">
-                                                        <?php echo esc_html(strtoupper($this->t((string) $row['pages_label_key']))); ?>
+                                                        <?php echo esc_html($this->t((string) $row['pages_label_key'])); ?>
                                                     </span>
                                                     <small><?php echo esc_html($row['pages_progress']); ?></small>
                                                 </div>
@@ -254,11 +260,13 @@ class StandardDashboardCustomizer
                                         <?php foreach ((array) ($row['type_breakdown'] ?? []) as $type_row): ?>
                                             <?php $type_url = $this->get_translation_overview_url((string) ($type_row['slug'] ?? ''), (string) ($row['code'] ?? '')); ?>
                                             <?php if ($type_url !== ''): ?>
-                                                <a class="cc-wp-translation-detail cc-wp-translation-detail-link" href="<?php echo esc_url($type_url); ?>">
+                                                <a class="cc-wp-translation-detail cc-wp-translation-detail-link"
+                                                    href="<?php echo esc_url($type_url); ?>">
                                                     <span><?php echo esc_html((string) ($type_row['label'] ?? '')); ?></span>
                                                     <div class="cc-wp-translation-cell">
-                                                        <span class="cc-status-pill cc-status-<?php echo esc_attr((string) ($type_row['status'] ?? 'healthy')); ?>">
-                                                            <?php echo esc_html(strtoupper($this->t((string) ($type_row['label_key'] ?? 'complete')))); ?>
+                                                        <span
+                                                            class="cc-status-pill cc-status-<?php echo esc_attr((string) ($type_row['status'] ?? 'healthy')); ?>">
+                                                            <?php echo esc_html($this->t((string) ($type_row['label_key'] ?? 'complete'))); ?>
                                                         </span>
                                                         <small><?php echo esc_html((string) ($type_row['progress'] ?? '0 / 0')); ?></small>
                                                     </div>
@@ -267,8 +275,9 @@ class StandardDashboardCustomizer
                                                 <div class="cc-wp-translation-detail">
                                                     <span><?php echo esc_html((string) ($type_row['label'] ?? '')); ?></span>
                                                     <div class="cc-wp-translation-cell">
-                                                        <span class="cc-status-pill cc-status-<?php echo esc_attr((string) ($type_row['status'] ?? 'healthy')); ?>">
-                                                            <?php echo esc_html(strtoupper($this->t((string) ($type_row['label_key'] ?? 'complete')))); ?>
+                                                        <span
+                                                            class="cc-status-pill cc-status-<?php echo esc_attr((string) ($type_row['status'] ?? 'healthy')); ?>">
+                                                            <?php echo esc_html($this->t((string) ($type_row['label_key'] ?? 'complete'))); ?>
                                                         </span>
                                                         <small><?php echo esc_html((string) ($type_row['progress'] ?? '0 / 0')); ?></small>
                                                     </div>

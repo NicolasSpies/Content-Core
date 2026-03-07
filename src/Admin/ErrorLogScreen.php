@@ -106,11 +106,9 @@ class ErrorLogScreen
                 <!-- Toolbar: filters + actions -->
                 <div class="cc-card cc-grid-full">
                     <div class="cc-card-body">
-                        <div
-                           >
+                        <div>
                             <!-- Filters -->
-                            <form method="get" action="<?php echo admin_url('admin.php'); ?>"
-                               >
+                            <form method="get" action="<?php echo admin_url('admin.php'); ?>">
                                 <input type="hidden" name="page" value="cc-error-log">
 
                                 <div class="cc-field">
@@ -182,7 +180,6 @@ class ErrorLogScreen
                                 }
                                 ?>
                                 <button type="button" class="cc-button-secondary"
-                                   
                                     onclick="if(confirm('<?php echo esc_js(__('Clear resolved log entries (older than 24h)?', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-old')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(async (res) => { window.location.href = window.location.href.split('&cc_msg=')[0] + '&cc_msg=cleared'; }); }"
                                     <?php echo !$has_resolved ? 'disabled' : ''; ?>>
                                     <span class="dashicons dashicons-trash"></span>
@@ -191,7 +188,6 @@ class ErrorLogScreen
 
                                 <?php if ($filter_severity || $filter_days > 0): ?>
                                     <button type="button" class="cc-button-secondary"
-                                       
                                         onclick="if(confirm('<?php echo esc_js(__('PERMANENTLY DELETE ALL entries matching current filters? This cannot be undone.', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-filtered')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>', 'Content-Type': 'application/json' }, body: JSON.stringify({ severity: '<?php echo esc_js($filter_severity); ?>', days: <?php echo (int) $filter_days; ?> }) }).then(async (res) => { window.location.reload(); }); }">
                                         <span class="dashicons dashicons-filter"></span>
                                         <?php _e('Hard Delete Filtered', 'content-core'); ?>
@@ -199,7 +195,6 @@ class ErrorLogScreen
                                 <?php endif; ?>
 
                                 <button type="button" class="cc-button-secondary"
-                                   
                                     onclick="if(confirm('<?php echo esc_js(__('PERMANENTLY DELETE ALL log entries? This cannot be undone.', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(async (res) => { window.location.href = window.location.href.split('&cc_msg=')[0] + '&cc_msg=cleared'; }); }"
                                     <?php echo empty($all_entries) ? 'disabled' : ''; ?>>
                                     <span class="dashicons dashicons-dismiss"></span>
@@ -214,8 +209,7 @@ class ErrorLogScreen
                 <div class="cc-card cc-grid-full">
                     <?php if (empty($paged_entries)): ?>
                         <div class="cc-card-body">
-                            <span class="dashicons dashicons-yes-alt"
-                               ></span>
+                            <span class="dashicons dashicons-yes-alt"></span>
                             <h2>
                                 <?php _e('No errors logged', 'content-core'); ?>
                             </h2>
@@ -258,12 +252,10 @@ class ErrorLogScreen
                                         ?>
                                         <tr>
                                             <td>
-                                                <span class="cc-status-pill"
-                                                   >
-                                                    <?php echo esc_html(strtoupper($sev)); ?>
+                                                <span class="cc-status-pill">
+                                                    <?php echo esc_html(ucfirst($sev)); ?>
                                                 </span>
-                                                <div
-                                                   >
+                                                <div>
                                                     <?php echo $is_active ? __('ACTIVE', 'content-core') : __('RESOLVED', 'content-core'); ?>
                                                 </div>
                                             </td>
@@ -276,12 +268,11 @@ class ErrorLogScreen
                                                 </div>
                                                 <?php if (!empty($entry['trace'])): ?>
                                                     <a href="#"
-                                                        onclick="document.getElementById('<?php echo esc_attr($uid); ?>').style.display = document.getElementById('<?php echo esc_attr($uid); ?>').style.display === 'none' ? 'block' : 'none'; return false;"
-                                                       >
+                                                        onclick="document.getElementById('<?php echo esc_attr($uid); ?>').style.display = document.getElementById('<?php echo esc_attr($uid); ?>').style.display === 'none' ? 'block' : 'none'; return false;">
                                                         <?php _e('[stack trace]', 'content-core'); ?>
                                                     </a>
-                                                    <pre id="<?php echo esc_attr($uid); ?>" class="cc-code-block"
-                                                       ><?php echo esc_html($entry['trace']); ?></pre>
+                                                    <pre id="<?php echo esc_attr($uid); ?>"
+                                                        class="cc-code-block"><?php echo esc_html($entry['trace']); ?></pre>
                                                 <?php endif; ?>
                                             </td>
                                             <td>
@@ -293,8 +284,7 @@ class ErrorLogScreen
                                                 <?php echo esc_html($entry['screen'] ?? ''); ?>
                                             </td>
                                             <td>
-                                                <button type="button" class="cc-button-secondary cc-button-sm"
-                                                    onclick="if(confirm('<?php echo esc_js(__('Delete this entry?', 'content-core')); ?>')) { 
+                                                <button type="button" class="cc-button-secondary cc-button-sm" onclick="if(confirm('<?php echo esc_js(__('Delete this entry?', 'content-core')); ?>')) { 
                                                         const btn = this;
                                                         btn.disabled = true;
                                                         fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/delete')); ?>', { 
@@ -331,8 +321,7 @@ class ErrorLogScreen
 
                 <!-- Pagination -->
                 <?php if ($total_pages > 1): ?>
-                    <div class="cc-card cc-grid-full"
-                       >
+                    <div class="cc-card cc-grid-full">
                         <span>
                             <?php printf(
                                 esc_html__('Page %1$d of %2$d (%3$d entries)', 'content-core'),
@@ -436,8 +425,7 @@ class ErrorLogScreen
                 <div class="cc-card-body">
                     <div>
                         <!-- Filters -->
-                        <form method="get" action="<?php echo admin_url('admin.php'); ?>"
-                           >
+                        <form method="get" action="<?php echo admin_url('admin.php'); ?>">
                             <input type="hidden" name="page" value="cc-diagnostics">
                             <input type="hidden" name="tab" value="error-log">
 
@@ -491,21 +479,18 @@ class ErrorLogScreen
                             </button>
                             <?php if ($filter_severity || $filter_days > 0): ?>
                                 <button type="button" class="cc-button-secondary"
-                                   
-                                    onclick="if(confirm('<?php echo esc_js(__('PERMANENTLY DELETE ALL entries matching current filters? This cannot be undone.', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-filtered')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>', 'Content-Type': 'application/json' }, body: JSON.stringify({ severity: '<?php echo esc_js($filter_severity); ?>', days: <?php echo (int)$filter_days; ?> }) }).then(async (res) => { window.location.reload(); }); }">
+                                    onclick="if(confirm('<?php echo esc_js(__('PERMANENTLY DELETE ALL entries matching current filters? This cannot be undone.', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-filtered')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>', 'Content-Type': 'application/json' }, body: JSON.stringify({ severity: '<?php echo esc_js($filter_severity); ?>', days: <?php echo (int) $filter_days; ?> }) }).then(async (res) => { window.location.reload(); }); }">
                                     <span class="dashicons dashicons-filter"></span>
                                     <?php _e('Hard Delete Filtered', 'content-core'); ?>
                                 </button>
                             <?php endif; ?>
 
                             <button type="button" class="cc-button-secondary"
-                               
                                 onclick="if(confirm('<?php echo esc_js(__('Clear resolved log entries (older than 24h)?', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear-old')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(async (res) => { window.location.reload(); }); }">
                                 <span class="dashicons dashicons-trash"></span>
                                 <?php _e('Clear Resolved', 'content-core'); ?>
                             </button>
                             <button type="button" class="cc-button-secondary"
-                               
                                 onclick="if(confirm('<?php echo esc_js(__('PERMANENTLY DELETE ALL log entries? This cannot be undone.', 'content-core')); ?>')) { fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/clear')); ?>', { method: 'POST', headers: { 'X-WP-Nonce': '<?php echo wp_create_nonce('wp_rest'); ?>' } }).then(async (res) => { window.location.reload(); }); }"
                                 <?php echo empty($all_entries) ? 'disabled' : ''; ?>>
                                 <span class="dashicons dashicons-dismiss"></span>
@@ -558,9 +543,8 @@ class ErrorLogScreen
                                     ?>
                                     <tr>
                                         <td>
-                                            <span class="cc-status-pill"
-                                               >
-                                                <?php echo esc_html(strtoupper($sev)); ?>
+                                            <span class="cc-status-pill">
+                                                <?php echo esc_html(ucfirst($sev)); ?>
                                             </span>
                                         </td>
                                         <td>
@@ -572,12 +556,11 @@ class ErrorLogScreen
                                             </div>
                                             <?php if (!empty($entry['trace'])): ?>
                                                 <a href="#"
-                                                    onclick="document.getElementById('<?php echo esc_attr($uid); ?>').style.display = document.getElementById('<?php echo esc_attr($uid); ?>').style.display === 'none' ? 'block' : 'none'; return false;"
-                                                   >
+                                                    onclick="document.getElementById('<?php echo esc_attr($uid); ?>').style.display = document.getElementById('<?php echo esc_attr($uid); ?>').style.display === 'none' ? 'block' : 'none'; return false;">
                                                     <?php _e('[stack trace]', 'content-core'); ?>
                                                 </a>
-                                                <pre id="<?php echo esc_attr($uid); ?>" class="cc-code-block"
-                                                   ><?php echo esc_html($entry['trace']); ?></pre>
+                                                <pre id="<?php echo esc_attr($uid); ?>"
+                                                    class="cc-code-block"><?php echo esc_html($entry['trace']); ?></pre>
                                             <?php endif; ?>
                                         </td>
                                         <td>
@@ -589,8 +572,7 @@ class ErrorLogScreen
                                             <?php echo esc_html($entry['screen'] ?? ''); ?>
                                         </td>
                                         <td>
-                                            <button type="button" class="cc-button-secondary cc-button-sm"
-                                                onclick="if(confirm('<?php echo esc_js(__('Delete this entry?', 'content-core')); ?>')) { 
+                                            <button type="button" class="cc-button-secondary cc-button-sm" onclick="if(confirm('<?php echo esc_js(__('Delete this entry?', 'content-core')); ?>')) { 
                                                     const btn = this;
                                                     btn.disabled = true;
                                                     fetch('<?php echo esc_url(rest_url(\ContentCore\Plugin::get_instance()->get_rest_namespace() . '/tools/error-log/delete')); ?>', { 
@@ -627,8 +609,7 @@ class ErrorLogScreen
 
             <!-- Pagination -->
             <?php if ($total_pages > 1): ?>
-                <div class="cc-card cc-grid-full"
-                   >
+                <div class="cc-card cc-grid-full">
                     <span>
                         <?php printf(
                             esc_html__('Page %1$d of %2$d', 'content-core'),

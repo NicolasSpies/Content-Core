@@ -243,7 +243,7 @@ class DashboardRenderer
                                                 <?php echo esc_html($row['label']); ?>
                                             </span>
                                             <span class="cc-status-pill <?php echo esc_attr($badge_class); ?> cc-settings-card-pill">
-                                                <?php echo esc_html(strtoupper($status_label)); ?>
+                                                <?php echo esc_html($status_label); ?>
                                             </span>
                                         </div>
                                         <div
@@ -259,7 +259,7 @@ class DashboardRenderer
                                                 <?php echo esc_html($row['label']); ?>
                                             </span>
                                             <span class="cc-status-pill <?php echo esc_attr($badge_class); ?> cc-settings-card-pill">
-                                                <?php echo esc_html(strtoupper($status_label)); ?>
+                                                <?php echo esc_html($status_label); ?>
                                             </span>
                                         </div>
                                         <div
@@ -367,7 +367,7 @@ class DashboardRenderer
                                                     <span
                                                         class="cc-status-pill cc-status-<?php echo ($log['status'] ?? '') === 'success' ? 'healthy' : 'warning'; ?>"
                                                        >
-                                                        <?php echo strtoupper($log['status'] ?? 'INFO'); ?>
+                                                        <?php echo esc_html(ucfirst($log['status'] ?? 'Info')); ?>
                                                     </span>
                                                 </td>
                                             </tr>

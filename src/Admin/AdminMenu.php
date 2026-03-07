@@ -22,6 +22,7 @@ class AdminMenu
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
         add_filter('admin_body_class', [$this, 'add_admin_theme_body_class']);
         add_action('load-upload.php', [$this, 'enforce_media_grid_view']);
+        add_action('pre_get_posts', [$this, 'enforce_default_list_sort']);
 
         // 3. Maintenance Actions
         $maintenance = new MaintenanceService();
@@ -37,6 +38,10 @@ class AdminMenu
         add_action('admin_footer', [$this, 'render_sidebar_account']);
         add_filter('admin_footer_text', [$this, 'maybe_remove_footer_text'], 11);
         add_filter('update_footer', [$this, 'maybe_remove_footer_text'], 11);
+        add_action('admin_head', [$this, 'maybe_hide_footer_container'], 1000);
+        // Defensive cleanup: ensure no legacy list header renderer remains on admin_notices.
+        remove_action('admin_notices', [$this, 'render_list_table_header_row'], 999);
+        add_action('admin_footer', [$this, 'render_list_table_header_row_template']);
 
         // 6. Error Log actions — delegated to ErrorLogScreen
         $logger = \ContentCore\Plugin::get_instance()->get_error_logger();
@@ -311,6 +316,30 @@ class AdminMenu
     }
 
     /**
+     * Remove the WordPress footer container on unified admin screens.
+     */
+    public function maybe_hide_footer_container(): void
+    {
+        $screen = get_current_screen();
+        if (!$screen || !$this->is_unified_theme_scope($screen)) {
+            return;
+        }
+
+        echo '<style id="cc-hide-admin-footer">'
+            . '#wpfooter{display:none !important;border:0 !important;box-shadow:none !important;}'
+            . '#wpbody-content{padding-bottom:0 !important;margin-bottom:0 !important;border-bottom:0 !important;box-shadow:none !important;}'
+            . '#wpbody-content:after,#wpbody-content::after{display:none !important;border:0 !important;box-shadow:none !important;height:0 !important;}'
+            . '#wpcontent,#wpbody{margin-bottom:0 !important;border-bottom:0 !important;box-shadow:none !important;}'
+            . '</style>';
+    }
+
+    /**
+     * Render the Filter button inside list-screen forms.
+     * Placed via admin_footer; CSS grid-area:filter positions it in the views bar.
+     * No DOM reparenting — button renders as a form child via JS insertion into the form.
+     */
+
+    /**
      * Render the footer audit block if requested
      */
     public function maybe_render_footer_audit(): void
@@ -371,24 +400,7 @@ class AdminMenu
                 </a>
             </div>
         </div>
-        <script>
-            (function () {
-                var mount = function () {
-                    var account = document.getElementById('cc-sidebar-account');
-                    var menuWrap = document.getElementById('adminmenuwrap');
-                    if (!account || !menuWrap) {
-                        return;
-                    }
-                    if (account.parentElement !== menuWrap) {
-                        menuWrap.appendChild(account);
-                    }
-                };
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', mount);
-                } else {
-                    mount();
-                }
-            })();
+        <script>     (function () { var mount = function () { var account = document.getElementById('cc-sidebar-account'); var menuWrap = document.getElementById('adminmenuwrap'); if (!account || !menuWrap) { return; } if (account.parentElement !== menuWrap) { menuWrap.appendChild(account); } }; if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', mount); } else { mount(); } })();
         </script>
         <?php
     }
@@ -409,10 +421,29 @@ class AdminMenu
             $site_name = __('Content Core', 'content-core');
         }
         $dashboard_url = admin_url('admin.php?page=content-core');
+        $brand_link_url = $dashboard_url;
+        $brand_link_target = '';
+        $brand_link_rel = '';
+
+        $admin_bar_settings = get_option(\ContentCore\Modules\Settings\SettingsModule::ADMIN_BAR_KEY, []);
+        if (
+            is_array($admin_bar_settings)
+            && !empty($admin_bar_settings['enabled'])
+            && !empty($admin_bar_settings['url'])
+        ) {
+            $configured_url = esc_url_raw((string) $admin_bar_settings['url']);
+            if ($configured_url !== '') {
+                $brand_link_url = $configured_url;
+                if (!empty($admin_bar_settings['new_tab'])) {
+                    $brand_link_target = '_blank';
+                    $brand_link_rel = 'noopener noreferrer';
+                }
+            }
+        }
         ?>
         <div id="cc-sidebar-branding" class="cc-sidebar-branding" aria-label="<?php esc_attr_e('Brand', 'content-core'); ?>">
             <div class="cc-sidebar-branding__row">
-                <a class="cc-sidebar-branding__link" href="<?php echo esc_url($dashboard_url); ?>">
+                <a class="cc-sidebar-branding__link" href="<?php echo esc_url($brand_link_url); ?>" <?php if ($brand_link_target !== ''): ?>target="<?php echo esc_attr($brand_link_target); ?>" <?php endif; ?><?php if ($brand_link_rel !== ''): ?>rel="<?php echo esc_attr($brand_link_rel); ?>"<?php endif; ?>>
                     <?php if ($logo_url !== ''): ?>
                         <img src="<?php echo esc_url($logo_url); ?>" alt="" class="cc-sidebar-branding__logo">
                     <?php else: ?>
@@ -420,35 +451,65 @@ class AdminMenu
                     <?php endif; ?>
                     <span class="cc-sidebar-branding__name"><?php echo esc_html($site_name); ?></span>
                 </a>
-                <button type="button" id="cc-sidebar-collapse-toggle" class="cc-sidebar-branding__collapse"
-                    aria-label="<?php esc_attr_e('Toggle Menu', 'content-core'); ?>"
-                    title="<?php esc_attr_e('Toggle Menu', 'content-core'); ?>">
-                    <span class="dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span>
-                </button>
             </div>
         </div>
-        <script>
-            (function () {
-                var mount = function () {
-                    var brand = document.getElementById('cc-sidebar-branding');
-                    var menuWrap = document.getElementById('adminmenuwrap');
-                    var menu = document.getElementById('adminmenu');
-                    if (!brand || !menuWrap || !menu) {
-                        return;
-                    }
-                    if (brand.parentElement !== menuWrap) {
-                        menuWrap.insertBefore(brand, menu);
-                    } else if (brand.nextElementSibling !== menu) {
-                        menuWrap.insertBefore(brand, menu);
-                    }
-                };
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', mount);
-                } else {
-                    mount();
-                }
-            })();
+        <script>     (function () { var mount = function () { var brand = document.getElementById('cc-sidebar-branding'); var menuWrap = document.getElementById('adminmenuwrap'); var menu = document.getElementById('adminmenu'); if (!brand || !menuWrap || !menu) { return; } if (brand.parentElement !== menuWrap) { menuWrap.insertBefore(brand, menu); } else if (brand.nextElementSibling !== menu) { menuWrap.insertBefore(brand, menu); } }; if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', mount); } else { mount(); } })();
         </script>
+        <?php
+    }
+
+    /**
+     * Render list-table header row template for client-side placement.
+     * The row is inserted directly before the list table form after the page title.
+     */
+    public function render_list_table_header_row_template(): void
+    {
+        $screen = get_current_screen();
+        if (!$screen || !$this->is_unified_theme_scope($screen) || !$this->is_list_table_screen($screen)) {
+            return;
+        }
+
+        // Output the new 3-part custom header
+        ?>
+        <template id="cc-list-header-template">
+            <div class="cc-list-header-row">
+                <div class="cc-list-header-left">
+                </div>
+                <div class="cc-list-header-center">
+                    <button type="button" id="cc-filter-btn" class="button" aria-expanded="false" aria-controls="screen-meta">
+                        <span class="dashicons dashicons-columns"></span>
+                        <?php esc_html_e('Columns', 'content-core'); ?>
+                    </button>
+                </div>
+                <div class="cc-list-header-right">
+                    <form method="get" action="">
+                        <?php
+                        // Preserve current query context (post_type/page/taxonomy etc.), except search and paging.
+                        if (isset($_GET) && is_array($_GET)) {
+                            foreach ($_GET as $key => $value) {
+                                if ($key === 's' || $key === 'paged') {
+                                    continue;
+                                }
+                                if (is_array($value)) {
+                                    foreach ($value as $v) {
+                                        echo '<input type="hidden" name="' . esc_attr($key) . '[]" value="' . esc_attr($v) . '">';
+                                    }
+                                } else {
+                                    echo '<input type="hidden" name="' . esc_attr($key) . '" value="' . esc_attr($value) . '">';
+                                }
+                            }
+                        }
+                        ?>
+                        <p class="search-box">
+                            <label class="screen-reader-text"
+                                for="cc-search-input"><?php esc_html_e('Search', 'content-core'); ?></label>
+                            <input type="search" id="cc-search-input" name="s"
+                                value="<?php echo esc_attr(get_search_query()); ?>">
+                        </p>
+                    </form>
+                </div>
+            </div>
+        </template>
         <?php
     }
 
@@ -480,14 +541,11 @@ class AdminMenu
         if ($this->is_list_table_screen($screen)) {
             $add_class('cc-list-table-screen');
         }
-
-        if ($screen->id === 'upload') {
-            $add_class('cc-upload-media-final');
-            $add_class('cc-media-screen');
-            $add_class('cc-media-native-inspector');
+        if ($screen->base === 'upload') {
+            $add_class('cc-media-library-screen');
         }
 
-        if (in_array($screen->base, ['post', 'site-editor'], true)) {
+        if ($this->is_classic_post_editor_screen($screen)) {
             $add_class('cc-post-edit-screen');
         }
 
@@ -503,15 +561,66 @@ class AdminMenu
      */
     private function is_list_table_screen(\WP_Screen $screen): bool
     {
-        if (in_array($screen->base, ['edit', 'upload', 'users', 'plugins', 'comments', 'edit-tags'], true)) {
+        if (in_array($screen->base, ['edit', 'users', 'plugins', 'comments', 'edit-tags'], true)) {
             return true;
         }
 
-        if (in_array($screen->id, ['edit', 'upload', 'users', 'plugins', 'edit-comments', 'edit-tags'], true)) {
+        if (in_array($screen->id, ['edit', 'users', 'plugins', 'edit-comments', 'edit-tags'], true)) {
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Limit post editor layout classes to classic post.php/post-new.php screens.
+     */
+    private function is_classic_post_editor_screen(\WP_Screen $screen): bool
+    {
+        if (!in_array($screen->base, ['post', 'post-new'], true)) {
+            return false;
+        }
+
+        if (method_exists($screen, 'is_block_editor') && $screen->is_block_editor()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Keep list screens sorted by newest first unless user explicitly chose another order.
+     */
+    public function enforce_default_list_sort(\WP_Query $query): void
+    {
+        if (!is_admin() || !$query->is_main_query()) {
+            return;
+        }
+
+        $screen = get_current_screen();
+        if (!$screen || !$this->is_list_table_screen($screen)) {
+            return;
+        }
+
+        // Apply only where "date" sorting is meaningful.
+        if (!in_array($screen->base, ['edit'], true)) {
+            return;
+        }
+
+        $requested_orderby = isset($_GET['orderby']) ? sanitize_key((string) wp_unslash($_GET['orderby'])) : '';
+        $requested_order = isset($_GET['order']) ? strtoupper(sanitize_key((string) wp_unslash($_GET['order']))) : '';
+        if ($requested_orderby !== '' || $requested_order !== '') {
+            return;
+        }
+
+        $query_orderby = (string) $query->get('orderby');
+        $query_order = (string) $query->get('order');
+        if ($query_orderby !== '' || $query_order !== '') {
+            return;
+        }
+
+        $query->set('orderby', 'date');
+        $query->set('order', 'DESC');
     }
 
     /**

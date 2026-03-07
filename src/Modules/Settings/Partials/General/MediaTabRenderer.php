@@ -11,14 +11,19 @@ class MediaTabRenderer
     public static function render(SettingsModule $settings_mod): void
     {
         $media_settings = $settings_mod->get_registry()->get(SettingsModule::MEDIA_KEY);
+        $db_settings = is_array($media_settings) ? $media_settings : [];
+        if (!isset($db_settings['max_dimension_px']) && isset($db_settings['max_width_px'])) {
+            $db_settings['max_dimension_px'] = $db_settings['max_width_px'];
+        }
+        
         $media_settings = array_merge([
             'enabled' => false,
-            'max_width_px' => 1920,
+            'max_dimension_px' => 1920,
             'quality' => 70,
             'png_mode' => 'lossless',
             'delete_original' => false,
             'upload_limit_mb' => '',
-        ], is_array($media_settings) ? $media_settings : []);
+        ], $db_settings);
         ?>
         <div id="cc-settings-media">
             <div class="cc-card">
@@ -46,11 +51,11 @@ class MediaTabRenderer
                         </div>
 
                         <div class="cc-field">
-                            <label class="cc-field-label"><?php _e('Max Width (px)', 'content-core'); ?></label>
-                            <input type="number" name="cc_media_settings[max_width_px]"
-                                value="<?php echo esc_attr($media_settings['max_width_px']); ?>" step="1" min="100">
+                            <label class="cc-field-label"><?php _e('Max Dimension (px)', 'content-core'); ?></label>
+                            <input type="number" name="cc_media_settings[max_dimension_px]"
+                                value="<?php echo esc_attr($media_settings['max_dimension_px']); ?>" step="1" min="100">
                             <span
-                                class="cc-help"><?php _e('Images wider than this will be resized down.', 'content-core'); ?></span>
+                                class="cc-help"><?php _e('Images larger than this in width or height will be resized so the largest side equals this value.', 'content-core'); ?></span>
                         </div>
 
                         <div class="cc-field">

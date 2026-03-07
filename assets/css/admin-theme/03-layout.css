@@ -144,6 +144,58 @@
     gap: var(--ui-space-4);
 }
 
+/* Canonical admin page shell */
+:where(body.cc-admin-theme .cc-admin-page) {
+    display: grid;
+    gap: var(--ui-space-6);
+}
+
+:where(body.cc-admin-theme .cc-admin-header) {
+    display: grid;
+    gap: var(--ui-space-4);
+}
+
+:where(body.cc-admin-theme .cc-admin-toolbar) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ui-space-3);
+}
+
+:where(body.cc-admin-theme .cc-admin-content) {
+    display: grid;
+    gap: var(--ui-space-6);
+}
+
+:where(body.cc-admin-theme .cc-admin-footer) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ui-space-3);
+}
+
+/* Map native WP containers into the same shell without DOM changes */
+:where(body.cc-admin-theme #wpbody-content > .wrap) {
+    display: grid;
+    gap: var(--ui-space-6);
+    align-content: start;
+}
+
+:where(body.cc-admin-theme #wpbody-content > .wrap > h1,
+    body.cc-admin-theme #wpbody-content > .wrap > .wp-heading-inline) {
+    margin: 0;
+    justify-self: start;
+    text-align: left;
+}
+
+:where(body.cc-admin-theme #wpbody-content > .wrap > .page-title-action,
+    body.cc-admin-theme #wpbody-content > .wrap > .add-new-h2) {
+    margin: 0 0 0 auto;
+    justify-self: end;
+}
+
 @media (max-width: 1200px) {
     :where(body.cc-admin-theme .wrap) {
         margin-left: var(--ui-space-6);
@@ -168,5 +220,74 @@
 
     :where(body.cc-admin-theme .cc-form-row--2) {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SINGLE CANONICAL OUTER CONTAINER RULE
+   Defines identical grid geometry for ALL screens based on tokens.
+   Never override these rules per-screen without strict justification.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1) Define a single content rail */
+body.cc-admin-theme #wpbody-content {
+    box-sizing: border-box !important;
+    padding-left: var(--ui-space-8) !important;
+    padding-right: var(--ui-space-8) !important;
+    padding-top: var(--ui-space-6) !important;
+    padding-bottom: var(--ui-space-10) !important;
+}
+
+/* 2) Define the inner rail width and center it */
+body.cc-admin-theme #wpbody-content>.wrap {
+    max-width: var(--ui-layout-wrap-max, 1600px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: 100% !important;
+}
+
+/* 
+ * 3) Content Core Metabox & Section Bridge
+ * We do NOT override #poststuff grid. Instead, we style the internal 
+ * meta box containers to act as a stack of cards.
+ */
+body.cc-admin-theme .cc-metabox {
+    display: grid;
+    gap: var(--ui-space-6);
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+body.cc-admin-theme .postbox.cc-metabox-postbox {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+body.cc-admin-theme .postbox.cc-metabox-postbox>.inside {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Hard block screen specific overrides for offsets */
+body.cc-admin-theme #wpbody-content>.wrap {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+}
+
+@media (max-width: 1200px) {
+    body.cc-admin-theme #wpbody-content {
+        padding-left: var(--ui-space-6) !important;
+        padding-right: var(--ui-space-6) !important;
+    }
+}
+
+@media (max-width: 782px) {
+    body.cc-admin-theme #wpbody-content {
+        padding-left: var(--ui-space-4) !important;
+        padding-right: var(--ui-space-4) !important;
     }
 }

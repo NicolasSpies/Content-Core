@@ -40,9 +40,10 @@ class BrandingInjector
 
         add_action('admin_bar_menu', [$this, 'replace_admin_bar_logo'], 999);
         add_action('admin_enqueue_scripts', [$this, 'inject_admin_css']);
+        add_action('admin_footer', [$this, 'render_custom_footer']);
 
         if (!empty($settings['remove_wp_mentions'])) {
-            add_filter('admin_footer_text', [$this, 'override_footer_text'], 999);
+            add_filter('admin_footer_text', '__return_empty_string', 999);
             add_filter('update_footer', '__return_empty_string', 999);
         }
     }
@@ -353,12 +354,18 @@ class BrandingInjector
         wp_enqueue_style('cc-admin-ui');
     }
 
-    public function override_footer_text(string $text): string
+    /**
+     * Render the custom footer content
+     */
+    public function render_custom_footer(): void
     {
         $settings = $this->module->get_settings();
-        if (!empty($settings['custom_footer_text'])) {
-            return wp_kses_post($settings['custom_footer_text']);
-        }
-        return '';
+        $footer_text = !empty($settings['custom_footer_text'])
+            ? wp_kses_post($settings['custom_footer_text'])
+            : 'Built and maintained by <a href="https://nicolasspies.com" target="_blank">Nicolas Spies</a>';
+
+        echo '<div class="cc-admin-footer" style="padding: 24px; text-align: center; color: #646970; font-size: 13px;">';
+        echo $footer_text;
+        echo '</div>';
     }
 }

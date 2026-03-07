@@ -409,13 +409,13 @@ body.cc-admin-theme #adminmenuwrap {
     body.cc-admin-theme.folded #adminmenuback,
     body.cc-admin-theme.folded #adminmenuwrap,
     body.cc-admin-theme.folded #adminmenu {
-        width: var(--ui-size-sidebar-width-folded);
+        width: var(--ui-size-sidebar-width);
     }
 
     body.cc-admin-theme.folded #wpcontent,
     body.cc-admin-theme.folded #wpfooter {
-        margin-left: var(--ui-size-sidebar-width-folded) !important;
-        width: calc(100% - var(--ui-size-sidebar-width-folded)) !important;
+        margin-left: var(--ui-size-sidebar-width) !important;
+        width: calc(100% - var(--ui-size-sidebar-width)) !important;
     }
 }
 
@@ -495,12 +495,10 @@ body.cc-admin-theme #adminmenu li.opensub>a.menu-top {
 }
 
 body.cc-admin-theme #adminmenu li.current>a.menu-top,
-body.cc-admin-theme #adminmenu li.wp-has-current-submenu>a.menu-top,
-body.cc-admin-theme #adminmenu li.current>a.menu-top:hover,
-body.cc-admin-theme #adminmenu li.wp-has-current-submenu>a.menu-top:hover {
-    background: var(--ui-color-accent-100) !important;
-    color: var(--ui-color-accent-600) !important;
-    border-color: transparent !important;
+body.cc-admin-theme #adminmenu li.current>a.menu-top:hover {
+    background: var(--ui-color-bg-subtle) !important;
+    color: var(--ui-color-text-primary) !important;
+    border-color: var(--ui-color-border-muted) !important;
     box-shadow: none !important;
 }
 
@@ -593,8 +591,8 @@ body.cc-admin-theme #adminmenu .wp-submenu a:focus {
 body.cc-admin-theme #adminmenu .wp-submenu .current a,
 body.cc-admin-theme #adminmenu .wp-submenu .current a:hover,
 body.cc-admin-theme #adminmenu .wp-submenu .current a:focus {
-    background: var(--ui-color-accent-100) !important;
-    color: var(--ui-color-accent-600) !important;
+    background: var(--ui-color-bg-subtle) !important;
+    color: var(--ui-color-text-primary) !important;
     border-left: 0 !important;
     box-shadow: none !important;
 }
@@ -706,8 +704,8 @@ body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.cc-menu-group-ite
 body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.cc-menu-group-item.current>a,
 body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.cc-menu-group-item.current>a:hover,
 body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.cc-menu-group-item.current>a:focus {
-    background: var(--ui-color-accent-100) !important;
-    color: var(--ui-color-accent-600) !important;
+    background: var(--ui-color-bg-subtle) !important;
+    color: var(--ui-color-text-primary) !important;
 }
 
 body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.cc-menu-group-item[hidden] {
@@ -765,8 +763,8 @@ body.cc-admin-theme #adminmenu #menu-settings .wp-submenu li a:focus {
 body.cc-admin-theme #adminmenu #menu-settings .wp-submenu li.current a,
 body.cc-admin-theme #adminmenu #menu-settings .wp-submenu li.current a:hover,
 body.cc-admin-theme #adminmenu #menu-settings .wp-submenu li.current a:focus {
-    background: var(--ui-color-accent-100) !important;
-    color: var(--ui-color-accent-600) !important;
+    background: var(--ui-color-bg-subtle) !important;
+    color: var(--ui-color-text-primary) !important;
 }
 
 body.cc-admin-theme #adminmenu li.wp-menu-separator,
@@ -857,7 +855,7 @@ body.cc-admin-theme #adminmenuwrap #cc-sidebar-account {
     width: 100%;
     display: block !important;
     background: var(--ui-color-bg-surface);
-    border-top: var(--ui-border-muted);
+    border-top: 0 !important;
     z-index: 1000;
 }
 
@@ -1329,21 +1327,21 @@ body.cc-admin-theme .stuffbox .inside {
     padding: var(--ui-space-6);
 }
 
-body.cc-admin-theme .metabox-holder,
-body.cc-admin-theme .meta-box-sortables,
+body.cc-admin-theme:not(.cc-post-edit-screen) .metabox-holder,
+body.cc-admin-theme:not(.cc-post-edit-screen) .meta-box-sortables,
 body.cc-admin-theme #dashboard-widgets .meta-box-sortables {
     display: grid;
     gap: var(--ui-space-6);
 }
 
-body.cc-admin-theme #poststuff #post-body.columns-2 {
+body.cc-admin-theme:not(.cc-post-edit-screen) #poststuff #post-body.columns-2 {
     display: grid;
     grid-template-columns: minmax(0, 1fr) var(--ui-layout-split-aside);
     gap: var(--ui-space-6);
 }
 
-body.cc-admin-theme #poststuff #post-body.columns-2 #postbox-container-1,
-body.cc-admin-theme #poststuff #post-body.columns-2 #postbox-container-2,
+body.cc-admin-theme:not(.cc-post-edit-screen) #poststuff #post-body.columns-2 #postbox-container-1,
+body.cc-admin-theme:not(.cc-post-edit-screen) #poststuff #post-body.columns-2 #postbox-container-2,
 body.cc-admin-theme #dashboard-widgets .postbox-container {
     float: none;
     width: auto;
@@ -1887,18 +1885,18 @@ body.cc-admin-theme .meta-box-sortables {
 
 body.cc-admin-theme .metabox-holder .postbox-container,
 body.cc-admin-theme #dashboard-widgets .postbox-container,
-body.cc-admin-theme #poststuff .postbox-container {
+body.cc-admin-theme:not(.cc-post-edit-screen) #poststuff .postbox-container {
     width: 100%;
     float: none;
     min-width: 0;
     margin: 0;
 }
 
-body.cc-admin-theme #poststuff #post-body {
+body.cc-admin-theme:not(.cc-post-edit-screen) #poststuff #post-body {
     margin: 0;
 }
 
-body.cc-admin-theme #poststuff #post-body.columns-2 {
+body.cc-admin-theme:not(.cc-post-edit-screen) #poststuff #post-body.columns-2 {
     align-items: start;
     grid-template-columns: minmax(0, 1fr) var(--ui-layout-split-aside);
 }
@@ -2050,7 +2048,7 @@ body.cc-admin-theme .content-core-admin.cc-page>* {
 
 body.cc-admin-theme .content-core-admin.cc-page .cc-header {
     display: flex !important;
-    align-items: flex-start !important;
+    align-items: center !important;
     justify-content: space-between !important;
     gap: var(--ui-space-4) !important;
     margin: 0 !important;
@@ -2218,11 +2216,7 @@ body.cc-admin-theme:is(.edit-php, .users-php, .plugins-php) #wpbody-content .wra
 
 /* Broad sibling hide removed — unsafe after JS purge. Individual screen families handle their own chrome. */
 
-body.cc-admin-theme.edit-php .wrap,
-body.cc-admin-theme.users-php .wrap,
-body.cc-admin-theme.plugins-php .wrap {
-    display: block !important;
-}
+/* Broad sibling hide removed — unsafe after JS purge. Individual screen families handle their own chrome. */
 
 /* Force list table forms to span exactly 100% width on all screens */
 body.cc-admin-theme .wrap>form#posts-filter,
@@ -2517,7 +2511,7 @@ body.cc-admin-theme.upload-php .media-frame .media-sidebar .setting select {
 }
 
 @media (max-width: 1024px) {
-    body.cc-admin-theme #poststuff #post-body.columns-2 {
+    body.cc-admin-theme:not(.cc-post-edit-screen) #poststuff #post-body.columns-2 {
         grid-template-columns: 1fr;
     }
 }
@@ -2550,36 +2544,7 @@ body.cc-admin-theme .wrap .nav-tab-wrapper .nav-tab {
     margin-left: 0;
 }
 
-body.cc-admin-theme.post-new-php #poststuff,
-body.cc-admin-theme.post-php #poststuff {
-    width: 100%;
-    margin: 0;
-    display: grid;
-    gap: var(--ui-space-6);
-}
-
-body.cc-admin-theme.post-new-php #poststuff #post-body.columns-2,
-body.cc-admin-theme.post-php #poststuff #post-body.columns-2 {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--ui-layout-split-aside);
-    gap: var(--ui-space-6);
-    align-items: start;
-}
-
-body.cc-admin-theme.post-new-php #postbox-container-1 .meta-box-sortables,
-body.cc-admin-theme.post-php #postbox-container-1 .meta-box-sortables,
-body.cc-admin-theme.post-new-php #postbox-container-2 .meta-box-sortables,
-body.cc-admin-theme.post-php #postbox-container-2 .meta-box-sortables {
-    display: grid;
-    gap: var(--ui-space-4);
-}
-
-body.cc-admin-theme.post-new-php #postbox-container-1 .postbox,
-body.cc-admin-theme.post-php #postbox-container-1 .postbox,
-body.cc-admin-theme.post-new-php #postbox-container-2 .postbox,
-body.cc-admin-theme.post-php #postbox-container-2 .postbox {
-    margin: 0;
-}
+/* Post editor geometry is defined in assets/css/admin-theme/12-layout-editor.css. */
 
 body.cc-admin-theme.edit-php .tablenav.top,
 body.cc-admin-theme.users-php .tablenav.top {
@@ -2610,14 +2575,6 @@ body.cc-admin-theme.users-php .wp-list-table th,
 body.cc-admin-theme.users-php .wp-list-table td {
     padding-top: var(--ui-space-4);
     padding-bottom: var(--ui-space-4);
-}
-
-@media (max-width: 1024px) {
-
-    body.cc-admin-theme.post-new-php #poststuff #post-body.columns-2,
-    body.cc-admin-theme.post-php #poststuff #post-body.columns-2 {
-        grid-template-columns: 1fr;
-    }
 }
 
 /* Notice bridge */
@@ -2940,12 +2897,10 @@ body.cc-admin-theme #adminmenu #menu-settings>a.menu-top::before {
 
 /* Sidebar accent tuning: subtle background, keep text/icon in base color */
 body.cc-admin-theme #adminmenu li.current>a.menu-top,
-body.cc-admin-theme #adminmenu li.wp-has-current-submenu>a.menu-top,
-body.cc-admin-theme #adminmenu li.current>a.menu-top:hover,
-body.cc-admin-theme #adminmenu li.wp-has-current-submenu>a.menu-top:hover {
-    background: color-mix(in srgb, var(--ui-color-accent-500) 18%, #ffffff) !important;
+body.cc-admin-theme #adminmenu li.current>a.menu-top:hover {
+    background: var(--ui-color-bg-subtle) !important;
     color: var(--ui-color-text-primary) !important;
-    border-color: transparent !important;
+    border-color: var(--ui-color-border-muted) !important;
 }
 
 body.cc-admin-theme #adminmenu .wp-submenu .current a,
@@ -2957,15 +2912,13 @@ body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.cc-menu-group-ite
 body.cc-admin-theme #adminmenu #menu-settings .wp-submenu li.current a,
 body.cc-admin-theme #adminmenu #menu-settings .wp-submenu li.current a:hover,
 body.cc-admin-theme #adminmenu #menu-settings .wp-submenu li.current a:focus {
-    background: color-mix(in srgb, var(--ui-color-accent-500) 14%, #ffffff) !important;
+    background: var(--ui-color-bg-subtle) !important;
     color: var(--ui-color-text-primary) !important;
 }
 
 /* Dark mode sidebar active states: use transparent accent, never white-mix */
 body.cc-admin-theme.cc-admin-theme-dark #adminmenu li.current>a.menu-top,
-body.cc-admin-theme.cc-admin-theme-dark #adminmenu li.wp-has-current-submenu>a.menu-top,
-body.cc-admin-theme.cc-admin-theme-dark #adminmenu li.current>a.menu-top:hover,
-body.cc-admin-theme.cc-admin-theme-dark #adminmenu li.wp-has-current-submenu>a.menu-top:hover {
+body.cc-admin-theme.cc-admin-theme-dark #adminmenu li.current>a.menu-top:hover {
     background: color-mix(in srgb, var(--ui-color-accent-500) 24%, transparent) !important;
     color: var(--ui-color-text-primary) !important;
     border-color: color-mix(in srgb, var(--ui-color-accent-500) 34%, var(--ui-color-border-default)) !important;
@@ -3010,144 +2963,9 @@ body.cc-admin-theme .wrap>.add-new-h2 {
     top: 0 !important;
 }
 
-/* Post editor unified layout: field groups directly below title area */
-body.cc-admin-theme.post-php #poststuff,
-body.cc-admin-theme.post-new-php #poststuff {
-    width: 100% !important;
-    margin: 0 !important;
-}
-
-body.cc-admin-theme.post-php #poststuff #post-body.columns-2,
-body.cc-admin-theme.post-new-php #poststuff #post-body.columns-2 {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) 340px !important;
-    grid-template-areas:
-        "content side"
-        "main side" !important;
-    gap: var(--ui-space-5) !important;
-    align-items: start !important;
-}
-
-body.cc-admin-theme.post-php #post-body-content,
-body.cc-admin-theme.post-new-php #post-body-content {
-    grid-area: content !important;
-    min-width: 0 !important;
-    display: grid !important;
-    gap: var(--ui-space-4) !important;
-}
-
-body.cc-admin-theme.post-php #postbox-container-2,
-body.cc-admin-theme.post-new-php #postbox-container-2 {
-    grid-area: main !important;
-    min-width: 0 !important;
-    width: auto !important;
-    float: none !important;
-    margin: 0 !important;
-}
-
-body.cc-admin-theme.post-php #postbox-container-1,
-body.cc-admin-theme.post-new-php #postbox-container-1 {
-    grid-area: side !important;
-    min-width: 0 !important;
-    width: auto !important;
-    float: none !important;
-    margin: 0 !important;
-}
-
-body.cc-admin-theme.post-php #postbox-container-2 .meta-box-sortables,
-body.cc-admin-theme.post-new-php #postbox-container-2 .meta-box-sortables,
-body.cc-admin-theme.post-php #postbox-container-1 .meta-box-sortables,
-body.cc-admin-theme.post-new-php #postbox-container-1 .meta-box-sortables {
-    display: grid !important;
-    gap: var(--ui-space-4) !important;
-}
-
-body.cc-admin-theme.post-php #postbox-container-2 .postbox,
-body.cc-admin-theme.post-new-php #postbox-container-2 .postbox,
-body.cc-admin-theme.post-php #postbox-container-1 .postbox,
-body.cc-admin-theme.post-new-php #postbox-container-1 .postbox {
-    margin: 0 !important;
-    border: var(--ui-border-default) !important;
-    border-radius: var(--ui-radius-lg) !important;
-    background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
-    overflow: hidden !important;
-}
-
-body.cc-admin-theme.post-php #postbox-container-2 .postbox .inside,
-body.cc-admin-theme.post-new-php #postbox-container-2 .postbox .inside,
-body.cc-admin-theme.post-php #postbox-container-1 .postbox .inside,
-body.cc-admin-theme.post-new-php #postbox-container-1 .postbox .inside {
-    margin: 0 !important;
-    padding: var(--ui-space-5) !important;
-}
-
-body.cc-admin-theme.post-php #postbox-container-2 .postbox .postbox-header,
-body.cc-admin-theme.post-new-php #postbox-container-2 .postbox .postbox-header,
-body.cc-admin-theme.post-php #postbox-container-1 .postbox .postbox-header,
-body.cc-admin-theme.post-new-php #postbox-container-1 .postbox .postbox-header {
-    padding: var(--ui-space-4) var(--ui-space-5) !important;
-    border-bottom: var(--ui-border-muted) !important;
-}
-
-@media (max-width: 1200px) {
-
-    body.cc-admin-theme.post-php #poststuff #post-body.columns-2,
-    body.cc-admin-theme.post-new-php #poststuff #post-body.columns-2 {
-        grid-template-columns: 1fr !important;
-        grid-template-areas:
-            "content"
-            "main"
-            "side" !important;
-    }
-}
-
-/* Post editor flow fix: keep left column continuous under title */
-body.cc-admin-theme.post-php #poststuff #post-body.columns-2,
-body.cc-admin-theme.post-new-php #poststuff #post-body.columns-2 {
-    position: relative !important;
-    display: block !important;
-    min-height: 1px;
-}
-
-body.cc-admin-theme.post-php #post-body-content,
-body.cc-admin-theme.post-new-php #post-body-content,
-body.cc-admin-theme.post-php #postbox-container-2,
-body.cc-admin-theme.post-new-php #postbox-container-2 {
-    width: auto !important;
-    margin-right: calc(340px + var(--ui-space-5)) !important;
-}
-
-body.cc-admin-theme.post-php #postbox-container-1,
-body.cc-admin-theme.post-new-php #postbox-container-1 {
-    position: absolute !important;
-    top: 0 !important;
-    right: 0 !important;
-    width: 340px !important;
-    margin: 0 !important;
-}
-
-body.cc-admin-theme.post-php #postbox-container-2,
-body.cc-admin-theme.post-new-php #postbox-container-2 {
-    margin-top: var(--ui-space-4) !important;
-}
-
-@media (max-width: 1200px) {
-
-    body.cc-admin-theme.post-php #post-body-content,
-    body.cc-admin-theme.post-new-php #post-body-content,
-    body.cc-admin-theme.post-php #postbox-container-2,
-    body.cc-admin-theme.post-new-php #postbox-container-2 {
-        margin-right: 0 !important;
-    }
-
-    body.cc-admin-theme.post-php #postbox-container-1,
-    body.cc-admin-theme.post-new-php #postbox-container-1 {
-        position: static !important;
-        width: auto !important;
-        margin-top: var(--ui-space-4) !important;
-    }
-}
+/* Post editor structural layout moved to 12-layout-editor.css.
+ * Keep this file limited to narrow control overrides.
+ */
 
 /* List surfaces v2: stable product layout for pages/post types/users */
 /* list .wrap layout removed - now handled by display:block + form internal grid */
@@ -3207,7 +3025,7 @@ body.cc-admin-theme.users-php form#users-filter>p.search-box input[type="search"
 
 body.cc-admin-theme.edit-php .tablenav.top,
 body.cc-admin-theme.users-php .tablenav.top {
-    margin-top: var(--ui-space-4) !important;
+    margin-top: 0 !important;
     border: var(--ui-border-default) !important;
     border-bottom: 0 !important;
     border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0 !important;
@@ -5043,7 +4861,7 @@ body.cc-admin-theme.plugins-php .wrap>.page-title-action {
     position: static !important;
     top: auto !important;
     right: auto !important;
-    float: right !important;
+    float: none !important;
     margin: 0 0 0 var(--ui-space-2) !important;
 }
 
@@ -5332,9 +5150,15 @@ body.cc-admin-theme.plugins-php form#plugins-filter {
 body.cc-admin-theme.edit-php form#posts-filter>.tablenav.top,
 body.cc-admin-theme.users-php form#users-filter>.tablenav.top,
 body.cc-admin-theme.plugins-php form#plugins-filter>.tablenav.top {
-    grid-area: top !important;
-    margin-top: var(--ui-space-4) !important;
-    max-width: none !important;
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+    position: absolute !important;
 }
 
 body.cc-admin-theme.edit-php form#posts-filter>p.search-box,
@@ -5407,7 +5231,6 @@ body.cc-admin-theme.users-php .wrap>h1,
 body.cc-admin-theme.users-php .wrap>.wp-heading-inline,
 body.cc-admin-theme.plugins-php .wrap>h1,
 body.cc-admin-theme.plugins-php .wrap>.wp-heading-inline {
-    grid-area: title !important;
     display: block !important;
     text-align: left !important;
     margin: 0 !important;
@@ -5417,7 +5240,6 @@ body.cc-admin-theme.plugins-php .wrap>.wp-heading-inline {
 body.cc-admin-theme.edit-php .wrap>.page-title-action,
 body.cc-admin-theme.users-php .wrap>.page-title-action,
 body.cc-admin-theme.plugins-php .wrap>.page-title-action {
-    grid-area: action !important;
     justify-self: end !important;
     align-self: center !important;
     position: static !important;
@@ -6200,7 +6022,7 @@ body.cc-admin-theme.edit-php .wrap>.subsubsub {
     list-style: none !important;
     width: 100% !important;
     max-width: 100% !important;
-    margin: var(--ui-space-4) 0 0 !important;
+    margin: 0 !important;
     padding: var(--ui-space-3) var(--ui-space-4) !important;
     border: var(--ui-border-default) !important;
     border-bottom: 0 !important;
@@ -6353,8 +6175,8 @@ body.cc-admin-theme[class*="toplevel_page_"] .wrap,
 body.cc-admin-theme[class*="admin_page_"] .wrap,
 body.cc-admin-theme[class*="tools_page_"] .wrap,
 body.cc-admin-theme.edit-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap,
-body.cc-admin-theme.post-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap,
-body.cc-admin-theme.post-new-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap {
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap {
     max-width: var(--ui-layout-wrap-max) !important;
     margin: 0 auto !important;
     padding-inline: var(--ui-space-6) !important;
@@ -6376,10 +6198,10 @@ body.cc-admin-theme[class*="tools_page_"] .wrap>h1,
 body.cc-admin-theme[class*="tools_page_"] .wrap>.wp-heading-inline,
 body.cc-admin-theme.edit-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap>h1,
 body.cc-admin-theme.edit-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap>.wp-heading-inline,
-body.cc-admin-theme.post-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap>h1,
-body.cc-admin-theme.post-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap>.wp-heading-inline,
-body.cc-admin-theme.post-new-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap>h1,
-body.cc-admin-theme.post-new-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap>.wp-heading-inline {
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap>h1,
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap>.wp-heading-inline,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap>h1,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap>.wp-heading-inline {
     margin-bottom: var(--ui-space-4) !important;
 }
 
@@ -6645,8 +6467,8 @@ body.cc-admin-theme[class*="settings_page_"] .form-table,
 body.cc-admin-theme[class*="toplevel_page_"] .form-table,
 body.cc-admin-theme[class*="admin_page_"] .form-table,
 body.cc-admin-theme[class*="tools_page_"] .form-table,
-body.cc-admin-theme.post-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .form-table,
-body.cc-admin-theme.post-new-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .form-table {
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .form-table,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .form-table {
     border-collapse: separate !important;
     border-spacing: 0 !important;
     width: 100% !important;
@@ -6659,8 +6481,8 @@ body.cc-admin-theme[class*="settings_page_"] .form-table th,
 body.cc-admin-theme[class*="toplevel_page_"] .form-table th,
 body.cc-admin-theme[class*="admin_page_"] .form-table th,
 body.cc-admin-theme[class*="tools_page_"] .form-table th,
-body.cc-admin-theme.post-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .form-table th,
-body.cc-admin-theme.post-new-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .form-table th {
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .form-table th,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .form-table th {
     width: 240px !important;
     padding: var(--ui-space-4) var(--ui-space-4) var(--ui-space-4) 0 !important;
     color: var(--ui-color-text-primary) !important;
@@ -6674,8 +6496,8 @@ body.cc-admin-theme[class*="settings_page_"] .form-table td,
 body.cc-admin-theme[class*="toplevel_page_"] .form-table td,
 body.cc-admin-theme[class*="admin_page_"] .form-table td,
 body.cc-admin-theme[class*="tools_page_"] .form-table td,
-body.cc-admin-theme.post-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .form-table td,
-body.cc-admin-theme.post-new-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .form-table td {
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .form-table td,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .form-table td {
     padding: var(--ui-space-4) 0 !important;
 }
 
@@ -6700,12 +6522,12 @@ body.cc-admin-theme[class*="admin_page_"] .card,
 body.cc-admin-theme[class*="tools_page_"] .postbox,
 body.cc-admin-theme[class*="tools_page_"] .stuffbox,
 body.cc-admin-theme[class*="tools_page_"] .card,
-body.cc-admin-theme.post-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .postbox,
-body.cc-admin-theme.post-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .stuffbox,
-body.cc-admin-theme.post-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .card,
-body.cc-admin-theme.post-new-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .postbox,
-body.cc-admin-theme.post-new-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .stuffbox,
-body.cc-admin-theme.post-new-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .card {
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .postbox,
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .stuffbox,
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .card,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .postbox,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .stuffbox,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .card {
     border: var(--ui-border-default) !important;
     border-radius: var(--ui-radius-lg) !important;
     background: var(--ui-color-bg-surface) !important;
@@ -6720,8 +6542,8 @@ body.cc-admin-theme[class*="settings_page_"] .postbox .inside,
 body.cc-admin-theme[class*="toplevel_page_"] .postbox .inside,
 body.cc-admin-theme[class*="admin_page_"] .postbox .inside,
 body.cc-admin-theme[class*="tools_page_"] .postbox .inside,
-body.cc-admin-theme.post-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .postbox .inside,
-body.cc-admin-theme.post-new-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .postbox .inside {
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .postbox .inside,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .postbox .inside {
     margin: 0 !important;
     padding: var(--ui-space-4) !important;
 }
@@ -6742,8 +6564,8 @@ body.cc-admin-theme[class*="toplevel_page_"] .notice,
 body.cc-admin-theme[class*="admin_page_"] .notice,
 body.cc-admin-theme[class*="tools_page_"] .notice,
 body.cc-admin-theme.edit-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .notice,
-body.cc-admin-theme.post-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .notice,
-body.cc-admin-theme.post-new-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .notice {
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .notice,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .notice {
     margin: 0 0 var(--ui-space-4) !important;
     border: var(--ui-border-default) !important;
     border-left-width: 4px !important;
@@ -6762,8 +6584,8 @@ body.cc-admin-theme.post-new-php[class*="post-type-"]:not(.post-type-post):not(.
     body.cc-admin-theme[class*="admin_page_"] .wrap,
     body.cc-admin-theme[class*="tools_page_"] .wrap,
     body.cc-admin-theme.edit-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap,
-    body.cc-admin-theme.post-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap,
-    body.cc-admin-theme.post-new-php[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap {
+    body.cc-admin-theme.post-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap,
+    body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen)[class*="post-type-"]:not(.post-type-post):not(.post-type-page) .wrap {
         padding-inline: var(--ui-space-4) !important;
     }
 
@@ -6842,38 +6664,23 @@ body.cc-admin-theme.edit-php form#posts-filter {
 }
 
 body.cc-admin-theme.edit-php form#posts-filter>.tablenav.top {
-    grid-area: top !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: var(--ui-space-2) !important;
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
     margin: 0 !important;
-    padding: var(--ui-space-3) var(--ui-space-4) !important;
-    border: var(--ui-border-default) !important;
-    border-top: 0 !important;
-    border-bottom: 0 !important;
-    border-radius: 0 !important;
-    background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
-    min-height: 64px !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
 }
 
 body.cc-admin-theme.edit-php form#posts-filter>p.search-box {
-    grid-area: search !important;
-    position: static !important;
-    float: none !important;
-    clear: none !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: flex-end !important;
-    margin: 0 !important;
-    padding: var(--ui-space-3) var(--ui-space-4) !important;
-    border: var(--ui-border-default) !important;
-    border-top: 0 !important;
-    border-bottom: 0 !important;
-    border-left: 0 !important;
-    border-radius: 0 !important;
-    background: var(--ui-color-bg-surface) !important;
-    box-shadow: var(--ui-shadow-sm) !important;
+    display: none !important;
 }
 
 body.cc-admin-theme.edit-php form#posts-filter>p.search-box input[type="search"] {
@@ -8361,7 +8168,7 @@ body.cc-admin-theme.edit-php #wpbody-content form#posts-filter>.wp-list-table,
 body.cc-admin-theme.users-php #wpbody-content .wrap>form[method="get"]>.wp-list-table {
     grid-area: table !important;
     width: 100% !important;
-    margin: 12px 0 0 !important;
+    margin: 0 !important;
 }
 
 body.cc-admin-theme.edit-php #wpbody-content form#posts-filter>.tablenav.bottom,
@@ -8474,7 +8281,7 @@ body.cc-admin-theme.plugins-php #wpbody-content .wrap>form#bulk-action-form>.tab
 body.cc-admin-theme.plugins-php #wpbody-content .wrap>form#bulk-action-form>.wp-list-table {
     grid-area: table !important;
     width: 100% !important;
-    margin: 12px 0 0 !important;
+    margin: 0 !important;
 }
 
 body.cc-admin-theme.plugins-php #wpbody-content .wrap>form#bulk-action-form>.tablenav.bottom {
@@ -9120,7 +8927,6 @@ body.cc-admin-theme.upload-php.cc-upload-media-final .media-sidebar .cc-media-fi
  */
 body.cc-admin-theme.edit-php #wpbody-content>.wrap,
 body.cc-admin-theme.edit-php .wrap {
-    display: block !important;
     width: 100% !important;
     max-width: none !important;
 }
@@ -9129,26 +8935,28 @@ body.cc-admin-theme.edit-php form#posts-filter {
     display: block !important;
     width: 100% !important;
     max-width: none !important;
-    margin: var(--ui-space-3) 0 0 !important;
+    margin: 0 !important;
 }
 
 body.cc-admin-theme.edit-php form#posts-filter>.tablenav.top {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    align-items: center !important;
-    gap: var(--ui-space-2) !important;
-    width: 100% !important;
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
 }
 
 body.cc-admin-theme.edit-php form#posts-filter>p.search-box,
 body.cc-admin-theme.edit-php .tablenav.top .search-box {
-    position: static !important;
-    float: none !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    margin: 0 0 0 auto !important;
-    width: clamp(320px, 32vw, 420px) !important;
-    max-width: 100% !important;
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    visibility: hidden !important;
 }
 
 body.cc-admin-theme.edit-php form#posts-filter>p.search-box input[type='search'],
@@ -9172,7 +8980,20 @@ body.cc-admin-theme.edit-php form#posts-filter>.tablenav.bottom {
     }
 }
 
-/* Final list-table views bar unification */
+/* Hide native WP subsubsub that was NOT enhanced by our JS (lacks cc-viewsbar-right child).
+   It keeps display:flex from WP and takes up ~54px even when visually hidden. */
+body.cc-admin-theme.cc-list-table-screen .wrap>.subsubsub:not(:has(.cc-viewsbar-right)) {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    visibility: hidden !important;
+}
+
+/* Our enhanced subsubsub (the pill bar) */
+body.cc-admin-theme.cc-list-table-screen .wrap>.subsubsub:has(.cc-viewsbar-right),
 body.cc-admin-theme.cc-list-table-screen .wrap>.subsubsub {
     display: flex !important;
     align-items: center !important;
@@ -9183,8 +9004,14 @@ body.cc-admin-theme.cc-list-table-screen .wrap>.subsubsub {
     padding: var(--ui-space-3) var(--ui-space-4) !important;
     background: var(--ui-color-bg-surface) !important;
     border: var(--ui-border-default) !important;
-    border-radius: var(--ui-radius-lg) !important;
+    border-bottom: 0 !important;
+    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0 !important;
     box-shadow: var(--ui-shadow-sm) !important;
+}
+
+/* Kill browser-default table margin-top */
+body.cc-admin-theme.cc-list-table-screen .wp-list-table {
+    margin-top: 0 !important;
 }
 
 body.cc-admin-theme.cc-list-table-screen .wrap>.subsubsub>li {
@@ -9239,9 +9066,9 @@ body.cc-admin-theme.cc-list-table-screen .cc-viewsbar-right .cc-screen-options-d
     left: auto !important;
 }
 
-/* Keep bulk/date toolbar as second row */
+/* Bulk/date toolbar sits flush — no top margin */
 body.cc-admin-theme.cc-list-table-screen :is(form#posts-filter, form#users-filter, form#plugins-filter, form#comments-form)>.tablenav.top {
-    margin-top: var(--ui-space-3) !important;
+    margin-top: 0 !important;
 }
 
 /* Hide obsolete trigger copy paths if anything escaped JS dedupe */
@@ -9285,12 +9112,14 @@ body.cc-admin-theme.cc-list-table-screen :is(form#posts-filter, form#users-filte
     max-width: none !important;
 }
 
+/* Completely hide tablenav.top on all list table screens — bulk actions hidden since checkboxes are off */
 body.cc-admin-theme.cc-list-table-screen :is(form#posts-filter, form#users-filter, form#plugins-filter, form#comments-form)>.tablenav.top {
-    display: flex !important;
-    align-items: center !important;
-    gap: var(--ui-space-2) !important;
-    flex-wrap: wrap !important;
-    width: 100% !important;
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
 }
 
 body.cc-admin-theme.cc-list-table-screen:has(.wrap > .subsubsub) :is(form#posts-filter, form#users-filter, form#plugins-filter, form#comments-form) {
@@ -9302,7 +9131,7 @@ body.cc-admin-theme.cc-list-table-screen:has(.wrap > .subsubsub) :is(form#posts-
         "bottom bottom" !important;
     align-items: start !important;
     column-gap: var(--ui-space-3) !important;
-    row-gap: var(--ui-space-3) !important;
+    row-gap: 0 !important;
 }
 
 body.cc-admin-theme.cc-list-table-screen:has(.wrap > .subsubsub) :is(form#posts-filter, form#users-filter, form#plugins-filter, form#comments-form)>.tablenav.top {
@@ -9310,12 +9139,14 @@ body.cc-admin-theme.cc-list-table-screen:has(.wrap > .subsubsub) :is(form#posts-
 }
 
 body.cc-admin-theme.cc-list-table-screen:has(.wrap > .subsubsub) :is(form#posts-filter, form#users-filter, form#plugins-filter, form#comments-form)>p.search-box {
-    grid-area: search !important;
-    position: static !important;
-    float: none !important;
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
     margin: 0 !important;
-    width: min(420px, 100%) !important;
-    justify-self: end !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    visibility: hidden !important;
 }
 
 body.cc-admin-theme.cc-list-table-screen:has(.wrap > .subsubsub) :is(form#posts-filter, form#users-filter, form#plugins-filter, form#comments-form)>.wp-list-table {
@@ -10281,4 +10112,535 @@ body.cc-admin-theme .wp-list-table td.column-date {
     body.cc-admin-theme .cc-list-topbar .search-box {
         flex: 1 1 auto !important;
     }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   FINAL AUTHORITY: Bar → Table flush attachment on ALL list table screens
+   This block is intentionally last so nothing in this file overrides it.
+   ═════════════════════════════════════════════════════════════════════════ */
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .wrap>ul.subsubsub {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .wrap>form,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .wrap>form#posts-filter,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .wrap>form#users-filter,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .wrap>form#plugins-filter,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .wrap>form#comments-form {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen #wpbody-content form>.tablenav.top {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+}
+
+/* Hide native standalone p.search-box that lives directly in the form (not in our pill bar) */
+body.cc-admin-theme.cc-list-table-screen #wpbody-content form>p.search-box {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    visibility: hidden !important;
+}
+
+/* Explicitly restore pill-bar search boxes — these selectors are more specific (include #wpbody-content)
+   so they beat the form > p.search-box hide rule above */
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .cc-list-header-right p.search-box,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .cc-viewsbar-right p.search-box,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .cc-viewsbar-right .search-box,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content ul.subsubsub li.cc-viewsbar-right .search-box {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    position: static !important;
+    overflow: visible !important;
+}
+
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .wp-list-table {
+    margin-top: 0 !important;
+}
+
+/* Pull form flush to the custom cc-list-header-row bar */
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .wrap>form#posts-filter,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .wrap>form#users-filter,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .wrap>form#plugins-filter,
+body.cc-admin-theme.cc-list-table-screen #wpbody-content .wrap>form#comments-form {
+    margin-top: 0 !important;
+}
+
+/* Native media fallback: disable custom docked-sidebar experiment on upload.php. */
+body.cc-admin-theme.upload-php #wpbody-content .wrap > .media-frame,
+body.cc-admin-theme.upload-php.modal-open #wpbody-content .wrap > .media-frame {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+}
+
+body.cc-admin-theme.upload-php:not(.modal-open) #wpbody-content .wrap > .media-frame .attachments-browser {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas:
+        "toolbar"
+        "library" !important;
+}
+
+body.cc-admin-theme.upload-php:not(.modal-open) #wpbody-content .wrap > .media-frame .media-sidebar {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    border: 0 !important;
+    padding: 0 !important;
+}
+
+body.cc-admin-theme.upload-php.modal-open .media-modal-backdrop {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+body.cc-admin-theme.upload-php.modal-open .media-modal {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    position: fixed !important;
+    inset: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+}
+
+body.cc-admin-theme.upload-php.modal-open .media-modal .media-modal-content {
+    position: absolute !important;
+    inset: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: auto !important;
+}
+
+body.cc-admin-theme.upload-php .cc-media-sidebar-actions {
+    display: none !important;
+}
+
+/* Global admin canvas + sticky footer authority.
+ * Prevents native WP white background from appearing below #wpfooter.
+ */
+html.wp-toolbar,
+html.wp-toolbar body.cc-admin-theme,
+body.cc-admin-theme {
+    min-height: 100vh !important;
+    background: var(--ui-color-bg-canvas) !important;
+}
+
+body.cc-admin-theme #wpwrap,
+body.cc-admin-theme #wpcontent,
+body.cc-admin-theme #wpbody,
+body.cc-admin-theme #wpbody-content,
+body.cc-admin-theme #wpfooter {
+    background: var(--ui-color-bg-canvas) !important;
+}
+
+body.cc-admin-theme #wpwrap {
+    min-height: 100vh !important;
+}
+
+body.cc-admin-theme #wpcontent {
+    min-height: 100dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+body.cc-admin-theme #wpbody {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 0 auto !important;
+    min-height: 0 !important;
+}
+
+body.cc-admin-theme #wpbody-content {
+    flex: 1 0 auto !important;
+    min-height: 0 !important;
+    padding-bottom: calc(var(--cc-footer-height, 34px) + var(--ui-space-2)) !important;
+}
+
+body.cc-admin-theme #wpfooter {
+    position: fixed !important;
+    left: var(--ui-size-sidebar-width) !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: auto !important;
+    margin: 0 !important;
+    min-height: var(--cc-footer-height, 34px) !important;
+    height: var(--cc-footer-height, 34px) !important;
+    padding: 0 var(--ui-space-6) env(safe-area-inset-bottom, 0) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 1000 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: var(--ui-color-bg-canvas) !important;
+    color: var(--ui-color-text-muted) !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+}
+
+body.cc-admin-theme.folded #wpfooter {
+    left: var(--ui-size-sidebar-width) !important;
+}
+
+body.cc-admin-theme #wpfooter #footer-left,
+body.cc-admin-theme #wpfooter #footer-upgrade {
+    float: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+}
+
+body.cc-admin-theme #wpfooter #footer-left {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.25rem !important;
+    text-align: center !important;
+}
+
+body.cc-admin-theme #wpfooter #footer-upgrade {
+    display: none !important;
+}
+
+@media (max-width: 782px) {
+    body.cc-admin-theme #wpfooter {
+        left: 0 !important;
+    }
+}
+
+/* Global settings toggle authority.
+ * Restores real switch UI where global checkbox rules are too aggressive.
+ */
+body.cc-admin-theme .cc-toggle,
+body.cc-admin-theme .ui-toggle {
+    position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 24px !important;
+    cursor: pointer !important;
+}
+
+body.cc-admin-theme .cc-toggle input[type="checkbox"],
+body.cc-admin-theme .ui-toggle input[type="checkbox"] {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    margin: 0 !important;
+    opacity: 0 !important;
+    border: 0 !important;
+    pointer-events: none !important;
+}
+
+body.cc-admin-theme .cc-toggle .cc-slider,
+body.cc-admin-theme .cc-toggle .cc-toggle-slider,
+body.cc-admin-theme .ui-toggle .ui-slider {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    border: 1px solid var(--ui-color-border-default) !important;
+    border-radius: 999px !important;
+    background: var(--ui-color-bg-subtle) !important;
+    transition: background-color 160ms ease, border-color 160ms ease !important;
+}
+
+body.cc-admin-theme .cc-toggle .cc-slider::before,
+body.cc-admin-theme .cc-toggle .cc-toggle-slider::before,
+body.cc-admin-theme .ui-toggle .ui-slider::before {
+    content: "" !important;
+    position: absolute !important;
+    top: 2px !important;
+    left: 2px !important;
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 999px !important;
+    background: #fff !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18) !important;
+    transition: transform 160ms ease !important;
+}
+
+body.cc-admin-theme .cc-toggle input[type="checkbox"]:checked + .cc-slider,
+body.cc-admin-theme .cc-toggle input[type="checkbox"]:checked + .cc-toggle-slider,
+body.cc-admin-theme .ui-toggle input[type="checkbox"]:checked + .ui-slider {
+    background: var(--ui-color-accent-500) !important;
+    border-color: var(--ui-color-accent-500) !important;
+}
+
+body.cc-admin-theme .cc-toggle input[type="checkbox"]:checked + .cc-slider::before,
+body.cc-admin-theme .cc-toggle input[type="checkbox"]:checked + .cc-toggle-slider::before,
+body.cc-admin-theme .ui-toggle input[type="checkbox"]:checked + .ui-slider::before {
+    transform: translateX(18px) !important;
+}
+
+body.cc-admin-theme .cc-toggle input[type="checkbox"]:focus-visible + .cc-slider,
+body.cc-admin-theme .cc-toggle input[type="checkbox"]:focus-visible + .cc-toggle-slider,
+body.cc-admin-theme .ui-toggle input[type="checkbox"]:focus-visible + .ui-slider {
+    outline: var(--ui-focus-ring-width) solid var(--ui-focus-ring-color) !important;
+    outline-offset: var(--ui-focus-ring-offset) !important;
+}
+
+body.cc-admin-theme .cc-toggle input[type="checkbox"]:disabled + .cc-slider,
+body.cc-admin-theme .cc-toggle input[type="checkbox"]:disabled + .cc-toggle-slider,
+body.cc-admin-theme .ui-toggle input[type="checkbox"]:disabled + .ui-slider {
+    opacity: 0.45 !important;
+}
+
+/* Final authority: pressed/focus states must use accent, never browser blue. */
+body.cc-admin-theme a,
+body.cc-admin-theme button,
+body.cc-admin-theme input[type="button"],
+body.cc-admin-theme input[type="submit"] {
+    -webkit-tap-highlight-color: rgba(16, 185, 129, 0.18);
+}
+
+body.cc-admin-theme :focus {
+    outline: none !important;
+}
+
+body.cc-admin-theme #cc-sidebar-branding .cc-sidebar-branding__link {
+    border: 1px solid transparent !important;
+    transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease !important;
+}
+
+body.cc-admin-theme #cc-sidebar-branding .cc-sidebar-branding__link:hover {
+    background: var(--ui-color-bg-subtle) !important;
+}
+
+body.cc-admin-theme #cc-sidebar-branding .cc-sidebar-branding__link:focus,
+body.cc-admin-theme #cc-sidebar-branding .cc-sidebar-branding__link:focus-visible,
+body.cc-admin-theme #cc-sidebar-branding .cc-sidebar-branding__link:active,
+body.cc-admin-theme #cc-sidebar-branding .cc-sidebar-branding__link[aria-pressed="true"] {
+    border-color: var(--ui-color-accent-500) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-color-accent-100) 78%, transparent) !important;
+}
+
+/* Final authority: sidebar state model (neutral hover, accent only on real active item). */
+body.cc-admin-theme #adminmenu > li.menu-top > a.menu-top {
+    background: transparent !important;
+    border-color: transparent !important;
+    color: var(--ui-color-text-primary) !important;
+}
+
+body.cc-admin-theme #adminmenu > li.menu-top:hover > a.menu-top,
+body.cc-admin-theme #adminmenu > li.menu-top.opensub > a.menu-top,
+body.cc-admin-theme #adminmenu > li.menu-top > a.menu-top:focus-visible {
+    background: var(--ui-color-bg-subtle) !important;
+    border-color: var(--ui-color-border-muted) !important;
+    color: var(--ui-color-text-primary) !important;
+}
+
+body.cc-admin-theme #adminmenu > li.menu-top.wp-has-current-submenu.wp-menu-open > a.menu-top,
+body.cc-admin-theme #adminmenu > li.menu-top.current.wp-has-current-submenu > a.menu-top,
+body.cc-admin-theme #adminmenu > li.menu-top.current:not(.wp-not-current-submenu) > a.menu-top,
+body.cc-admin-theme #adminmenu > li.menu-top > a.menu-top[aria-current="page"],
+body.cc-admin-theme #adminmenu > li.menu-top.wp-has-current-submenu.wp-menu-open > a.menu-top:hover,
+body.cc-admin-theme #adminmenu > li.menu-top.current.wp-has-current-submenu > a.menu-top:hover,
+body.cc-admin-theme #adminmenu > li.menu-top.current:not(.wp-not-current-submenu) > a.menu-top:hover,
+body.cc-admin-theme #adminmenu > li.menu-top > a.menu-top[aria-current="page"]:hover {
+    background: color-mix(in srgb, var(--ui-color-accent-500) 16%, transparent) !important;
+    border-color: color-mix(in srgb, var(--ui-color-accent-500) 30%, var(--ui-color-border-default)) !important;
+    color: var(--ui-color-text-primary) !important;
+}
+
+body.cc-admin-theme #adminmenu > li.menu-top > a.menu-top .wp-menu-image::before,
+body.cc-admin-theme #adminmenu > li.menu-top > a.menu-top .dashicons,
+body.cc-admin-theme #adminmenu > li.menu-top > a.menu-top .wp-menu-image svg,
+body.cc-admin-theme #adminmenu > li.menu-top > a.menu-top .wp-menu-name {
+    color: currentColor !important;
+    fill: currentColor !important;
+    stroke: currentColor !important;
+    opacity: 1 !important;
+    filter: none !important;
+}
+
+body.cc-admin-theme #adminmenu .wp-submenu a:hover,
+body.cc-admin-theme #adminmenu .wp-submenu a:focus {
+    color: var(--ui-color-text-muted) !important;
+}
+
+body.cc-admin-theme #adminmenu .wp-submenu .current a,
+body.cc-admin-theme #adminmenu .wp-submenu .current a:hover,
+body.cc-admin-theme #adminmenu .wp-submenu .current a:focus {
+    color: var(--ui-color-text-primary) !important;
+}
+
+/* Content Core sidebar submenu: keep text/icon color stable on hover (no accent shift). */
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.cc-menu-group-item > a {
+    color: var(--ui-color-text-muted) !important;
+}
+
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.cc-menu-group-item > a:hover,
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.cc-menu-group-item > a:focus {
+    color: var(--ui-color-text-muted) !important;
+}
+
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.cc-menu-group-item.current > a,
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.cc-menu-group-item.current > a:hover,
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.cc-menu-group-item.current > a:focus {
+    background: var(--ui-color-accent-100) !important;
+    background: color-mix(in srgb, var(--ui-color-accent-500) 14%, transparent) !important;
+    color: var(--ui-color-text-primary) !important;
+}
+
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.cc-menu-group-item > a .dashicons,
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.cc-menu-group-item > a svg {
+    color: currentColor !important;
+    fill: currentColor !important;
+    stroke: currentColor !important;
+}
+
+/* Hard lock: Content Core submenu text/icon color must stay neutral in all states. */
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li > a,
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li > a:visited,
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li > a:hover,
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li > a:focus,
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li > a:active,
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.current > a,
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.current > a:hover,
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li.current > a:focus {
+    color: var(--ui-color-text-primary) !important;
+    opacity: 1 !important;
+}
+
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li > a .dashicons,
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li > a svg,
+body.cc-admin-theme #toplevel_page_content-core .wp-submenu li > a [class*="dashicons-"]::before {
+    color: currentColor !important;
+    fill: currentColor !important;
+    stroke: currentColor !important;
+    opacity: 1 !important;
+}
+
+body.cc-admin-theme .page-title-action,
+body.cc-admin-theme .add-new-h2,
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen) #submitdiv #publishing-action .button-primary,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen) #submitdiv #publishing-action .button-primary,
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen) #submitdiv #major-publishing-actions .button-primary,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen) #submitdiv #major-publishing-actions .button-primary,
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen) #submitdiv #publish,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen) #submitdiv #publish {
+    background: var(--ui-color-accent-500) !important;
+    border-color: var(--ui-color-accent-500) !important;
+    color: var(--ui-color-text-inverse) !important;
+    opacity: 1 !important;
+    filter: none !important;
+}
+
+body.cc-admin-theme .page-title-action:hover,
+body.cc-admin-theme .add-new-h2:hover,
+body.cc-admin-theme .page-title-action:focus-visible,
+body.cc-admin-theme .add-new-h2:focus-visible,
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen) #submitdiv #publishing-action .button-primary:hover,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen) #submitdiv #publishing-action .button-primary:hover,
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen) #submitdiv #publishing-action .button-primary:focus-visible,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen) #submitdiv #publishing-action .button-primary:focus-visible,
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen) #submitdiv #major-publishing-actions .button-primary:hover,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen) #submitdiv #major-publishing-actions .button-primary:hover,
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen) #submitdiv #major-publishing-actions .button-primary:focus-visible,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen) #submitdiv #major-publishing-actions .button-primary:focus-visible,
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen) #submitdiv #publish:hover,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen) #submitdiv #publish:hover,
+body.cc-admin-theme.post-php:not(.cc-post-edit-screen) #submitdiv #publish:focus-visible,
+body.cc-admin-theme.post-new-php:not(.cc-post-edit-screen) #submitdiv #publish:focus-visible {
+    background: var(--ui-color-accent-600) !important;
+    border-color: var(--ui-color-accent-600) !important;
+    color: var(--ui-color-text-inverse) !important;
+}
+
+/* Final footer kill-switch: no empty WP footer bar on CC admin screens. */
+body.cc-admin-theme #wpfooter,
+body.cc-admin-theme #wpfooter * {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
+body.cc-admin-theme #wpfooter {
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+}
+
+body.cc-admin-theme #wpbody-content,
+body.cc-admin-theme #wpcontent,
+body.cc-admin-theme #wpbody {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+}
+
+body.cc-admin-theme #wpbody-content::after,
+body.cc-admin-theme #wpbody-content:after {
+    display: none !important;
+    content: none !important;
+    height: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Classic edit screen only: field-group wrappers are technical containers, not visible UI blocks. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"],
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .inside {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .postbox-header,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .hndle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > h2.hndle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > .handlediv,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-2 .postbox[id^="cc_group_"] > button.handlediv {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    min-height: 0 !important;
 }

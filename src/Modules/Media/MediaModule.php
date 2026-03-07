@@ -76,11 +76,20 @@ class MediaModule implements ModuleInterface
 
         $webp_file = $info['dirname'] . '/' . $info['filename'] . '.webp';
 
-        // Resize if needed (handles the "big image" requirement manually)
+        // Resize if needed
         $size = $editor->get_size();
-        $max_width = intval($settings['max_width_px'] ?: 2000);
-        if ($size['width'] > $max_width) {
-            $editor->resize($max_width, null, false);
+        $max_dimension = intval($settings['max_dimension_px'] ?? $settings['max_width_px'] ?? 2000);
+
+        $imageWidth = $size['width'];
+        $imageHeight = $size['height'];
+
+        $largestSide = max($imageWidth, $imageHeight);
+
+        if ($largestSide > $max_dimension) {
+            $scaleFactor = $max_dimension / $largestSide;
+            $newWidth = (int) round($imageWidth * $scaleFactor);
+            $newHeight = (int) round($imageHeight * $scaleFactor);
+            $editor->resize($newWidth, $newHeight, false);
         }
 
         // Set quality

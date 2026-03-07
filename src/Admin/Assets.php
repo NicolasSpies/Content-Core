@@ -59,8 +59,8 @@ class Assets
             $this->enqueue_style('cc-admin-layout-media', 'assets/css/admin-theme/11-layout-media.css', ['cc-admin-ui']);
         }
 
-        // 3. Post Editor
-        if ('post' === $screen->base || 'post-new' === $screen->base) {
+        // 3. Post Editor (classic only)
+        if ($this->is_classic_post_editor_screen($screen)) {
             $this->enqueue_style('cc-admin-layout-editor', 'assets/css/admin-theme/12-layout-editor.css', ['cc-admin-ui']);
         }
 
@@ -69,10 +69,32 @@ class Assets
             $this->enqueue_style('cc-admin-layout-taxonomy', 'assets/css/admin-theme/13-layout-taxonomy.css', ['cc-admin-ui']);
         }
 
-        // 5. Settings Pages
-        if (strpos($screen->id, 'settings_page_') !== false || strpos($screen->id, 'toplevel_page_') !== false || 'options-general' === $screen->base) {
+        // 5. Settings Pages — includes WP native options pages, generic settings pages,
+        //    and CC-specific submenu pages (screen ID uses "content-core_page_" prefix).
+        if (
+            strpos($screen->id, 'settings_page_') !== false
+            || strpos($screen->id, 'toplevel_page_') !== false
+            || strpos($screen->id, 'content-core_page_') !== false
+            || 'options-general' === $screen->base
+        ) {
             $this->enqueue_style('cc-admin-layout-settings', 'assets/css/admin-theme/14-layout-settings.css', ['cc-admin-ui']);
         }
+    }
+
+    /**
+     * Keep editor layout CSS out of block editor and site editor contexts.
+     */
+    private function is_classic_post_editor_screen(\WP_Screen $screen): bool
+    {
+        if (!in_array($screen->base, ['post', 'post-new'], true)) {
+            return false;
+        }
+
+        if (method_exists($screen, 'is_block_editor') && $screen->is_block_editor()) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

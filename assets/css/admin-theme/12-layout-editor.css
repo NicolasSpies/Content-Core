@@ -1,2 +1,539 @@
-/* Content Core Admin Theme - Layout: Post Editor */
-/* Scoped to post editor screens (.post-php, .post-new-php) */
+/* Classic post editor two-rail composition.
+ * Layout authority for post.php + post-new.php classic editor only.
+ */
+
+:root {
+    --cc-editor-sidebar-width: clamp(280px, 24vw, 360px);
+    --cc-editor-rail-gap: clamp(20px, 3vw, 44px);
+    --cc-editor-main-pad-x: clamp(24px, 4vw, 64px);
+    --cc-editor-side-pad-x: 0;
+    /* Sidebar container itself owns its width/padding logic now */
+    --cc-editor-topbar-height: 54px;
+    --cc-editor-track-gap: 8px;
+    --cc-editor-intro-bg: var(--ui-color-bg-subtle-opaque, #f8fafc);
+    --cc-editor-section-bg: #ffffff;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) {
+    background: var(--ui-color-bg-canvas) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) :is(#wpwrap, #wpcontent, #wpbody, #wpbody-content) {
+    background: var(--ui-color-bg-canvas) !important;
+}
+
+/* Remove inherited generic right shell padding so sidebar rail can sit flush right. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #wpbody-content {
+    padding-right: 0 !important;
+}
+
+/* Single composition root: form#post encompasses headers and content. */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) form#post {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) var(--cc-editor-sidebar-width) !important;
+    grid-template-rows: var(--cc-editor-topbar-height) auto !important;
+    column-gap: var(--cc-editor-rail-gap) !important;
+    row-gap: 0 !important;
+    align-items: start !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* --- TOP COMPOSITION (Row 1) --- */
+
+/* Left header Piece: Editorial alignment */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header.v3-tighter {
+    grid-column: 1 / 3 !important;
+    /* Fix: Span both left and rail columns if possible, or at least full left */
+    grid-row: 1 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1200 !important;
+    height: var(--cc-editor-topbar-height) !important;
+    padding: 0 var(--cc-editor-main-pad-x) !important;
+    background: var(--ui-color-bg-surface) !important;
+    border-bottom: 2px solid var(--ui-color-border-muted) !important;
+    /* Visual weight */
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-topbar-main {
+    width: 100% !important;
+    max-width: none !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    /* Stable 3-column layout */
+    align-items: center !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-header-left {
+    justify-self: start !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-save-status {
+    justify-self: center !important;
+    text-align: center !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-language-switcher {
+    justify-self: end !important;
+}
+
+/* Right header Piece: Action alignment with sidebar rail surface */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) form#post>.cc-editor-topbar-actions {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1200 !important;
+    height: var(--cc-editor-topbar-height) !important;
+    padding: 0 clamp(16px, 2.2vw, 32px) !important;
+    margin: 0 !important;
+    background: var(--ui-color-bg-surface) !important;
+    background-color: var(--ui-color-bg-surface) !important;
+    border: 0 !important;
+    border-bottom: 0 !important;
+    border-bottom-width: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    box-sizing: border-box !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-sidebar-actions {
+    display: flex !important;
+    gap: var(--ui-space-3) !important;
+}
+
+/* --- BODY COMPOSITION (Row 2) --- */
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #poststuff {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #poststuff #post-body {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) var(--cc-editor-sidebar-width) !important;
+    column-gap: var(--cc-editor-rail-gap) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Left Content Rail: Intro area sits on grey background */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #post-body-content {
+    grid-column: 1 !important;
+    padding: var(--cc-editor-track-gap) var(--cc-editor-main-pad-x) 0 !important;
+    float: none !important;
+    width: auto !important;
+    background: transparent !important;
+}
+
+/* Group Fields: Sits transparently on the grey page background */
+/* Group Fields: Sits in subtle grouping blocks */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .postbox[id^="cc_group_"] {
+    background: var(--cc-editor-section-bg) !important;
+    /* Solid visible background */
+    border: 1px solid var(--ui-color-border-muted) !important;
+    margin-bottom: var(--ui-space-8) !important;
+    /* Consistent spacing */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+    /* Extremely subtle weight */
+    border-radius: var(--ui-radius-lg) !important;
+    /* Unified radius */
+    padding: 0 var(--ui-space-8) var(--ui-space-8) !important;
+    /* Internal section grouping */
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .postbox[id^="cc_group_"] .postbox-header {
+    padding: var(--ui-space-8) 0 var(--ui-space-4) 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--ui-color-border-muted) 30%, transparent) !important;
+    margin-bottom: var(--ui-space-6) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .postbox[id^="cc_group_"] .postbox-header .hndle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .postbox[id^="cc_group_"] .postbox-header h2 {
+    font-size: 19px !important;
+    /* Refined size */
+    font-weight: 600 !important;
+    color: var(--ui-color-text-primary) !important;
+    letter-spacing: -0.01em !important;
+}
+
+/* ULTRA-SPECIFIC overrides to beat core/theme conflicts confirmed in diagnosis */
+
+/* Decisively kill the 64px title bottom margin */
+html body.cc-post-edit-screen #wpbody-content #titlediv,
+html body.cc-post-edit-screen #wpbody-content #post-body-content #titlediv {
+    margin-bottom: 0 !important;
+}
+
+/* Force visible section grouping backgrounds */
+html body.cc-post-edit-screen #post-body .postbox[id^="cc_group_"] {
+    background: #ffffff !important;
+    border: 1px solid var(--ui-color-border-muted) !important;
+}
+
+/* Decisively force readable field labels */
+html body.cc-post-edit-screen #post-body .cc-editor-field-label,
+html body.cc-post-edit-screen #post-body .cc-field-label {
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    color: var(--ui-color-text-primary) !important;
+    opacity: 1 !important;
+    margin-bottom: 12px !important;
+}
+
+/* Intro Area: Title + Permalink grouped background */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #titlediv {
+    margin-top: var(--ui-space-6) !important;
+    /* Lower in a more intentional block */
+    margin-bottom: 0 !important;
+    background: var(--cc-editor-intro-bg) !important;
+    padding: var(--ui-space-10) var(--ui-space-8) 0 !important;
+    /* More breathing room */
+    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0 !important;
+    border: 1px solid var(--ui-color-border-muted) !important;
+    border-bottom: 0 !important;
+}
+
+/* DECISIVE OVERRIDE: Kill the 64px margin confirmed in diagnosis */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #titlediv-replace-me-fake,
+#wpbody-content #titlediv {
+    margin-bottom: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #titlediv #title {
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    font-size: 32px !important;
+    padding: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #edit-slug-box {
+    margin-top: 0 !important;
+    margin-bottom: var(--ui-space-10) !important;
+    /* Spacing before first section */
+    padding: 0 var(--ui-space-8) var(--ui-space-10) !important;
+    /* Increased meta breathing room */
+    background: var(--cc-editor-intro-bg) !important;
+    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg) !important;
+    border: 1px solid var(--ui-color-border-muted) !important;
+    border-top: 0 !important;
+    font-size: 13px !important;
+    /* Meta sizing */
+    color: var(--ui-color-text-muted) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .edit-slug.button {
+    font-size: 10px !important;
+    padding: 2px 8px !important;
+    min-height: 20px !important;
+    opacity: 0.7 !important;
+    background: transparent !important;
+    border-color: var(--ui-color-border-muted) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #sample-permalink {
+    color: var(--ui-color-text-muted) !important;
+    font-size: inherit !important;
+}
+
+/* Right Sidebar Rail: UNIFIED CONTINUOUS WHITE SURFACE */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #poststuff #post-body #postbox-container-1 {
+    grid-column: 2 !important;
+    background: var(--ui-color-bg-surface) !important;
+    background-color: var(--ui-color-bg-surface) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    float: none !important;
+    width: 100% !important;
+    position: sticky !important;
+    top: var(--cc-editor-topbar-height) !important;
+    align-self: start !important;
+    min-height: calc(100vh - var(--cc-editor-topbar-height)) !important;
+    box-sizing: border-box !important;
+    border: 0 !important;
+}
+
+/* Sidebar Module Rhythm: Use full intended rail width */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .meta-box-sortables {
+    display: grid !important;
+    gap: 20px !important;
+    /* Tightened spacing */
+    padding: var(--cc-editor-track-gap) 0 var(--ui-space-12) !important;
+    /* NO wasted side padding */
+    margin: 0 !important;
+    border: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox {
+    width: 100% !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    /* Restore grouping visibility */
+    border: 1px solid var(--ui-color-border-muted) !important;
+    border-radius: var(--ui-radius-lg) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.01) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox-header,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .inside,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .submitbox,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .misc-pub-section,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #major-publishing-actions,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 #minor-publishing-actions {
+    background: transparent !important;
+    background-color: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox>.inside {
+    padding: 0 !important;
+}
+
+/* --- COMPONENT POLISH --- */
+
+/* Input System Unification */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) :is(input[type="text"], input[type="url"], input[type="number"], input[type="search"], input[type="email"], input[type="tel"], input[type="password"], select, textarea, .ui-input, .ui-select, .ui-textarea) {
+    border-radius: var(--ui-radius-lg) !important;
+    min-height: 40px !important;
+    padding-inline: 14px !important;
+    border-color: var(--ui-color-border-default) !important;
+    font-size: 14px !important;
+    background: var(--ui-color-bg-surface) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) textarea {
+    padding-block: 10px !important;
+}
+
+/* Toggle Refinement */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-field--toggle {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--ui-space-4) !important;
+    padding: var(--ui-space-3) 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .ui-toggle,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-toggle {
+    width: 44px !important;
+    height: 26px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .ui-toggle .ui-slider::before,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-toggle .cc-slider::before {
+    width: 20px !important;
+    height: 20px !important;
+    top: 2px !important;
+    left: 2px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .ui-toggle input:checked+.ui-slider::before,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-toggle input:checked+.cc-slider::before {
+    transform: translateX(18px) !important;
+}
+
+/* File Field Polish: Visibly larger and cleaner */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-field--file .cc-file-card {
+    padding: var(--ui-space-6) !important;
+    /* Noticeably larger: 24px */
+    border-radius: var(--ui-radius-lg) !important;
+    display: grid !important;
+    grid-template-columns: auto 1fr auto !important;
+    align-items: center !important;
+    gap: var(--ui-space-6) !important;
+    background: var(--ui-color-bg-subtle) !important;
+    border: 1px solid var(--ui-color-border-muted) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-file-info {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-file-name {
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    /* Visibly stronger */
+    color: var(--ui-color-text-primary) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-file-meta {
+    font-size: 12px !important;
+    /* Readable metadata */
+    color: var(--ui-color-text-muted) !important;
+    opacity: 0.8 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-file-actions {
+    justify-self: end !important;
+}
+
+/* Gallery & Image Polish: Structured grid */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-gallery-grid {
+    gap: var(--ui-space-4) !important;
+    /* Structured 16px gap */
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-gallery-item,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-gallery-add {
+    border-radius: var(--ui-radius-lg) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-gallery-add {
+    border: 1px dashed var(--ui-color-border-muted) !important;
+    background: transparent !important;
+    opacity: 0.6 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-gallery-add:hover {
+    opacity: 1 !important;
+    border-color: var(--ui-color-border-default) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-image-preview-wrapper {
+    border-radius: var(--ui-radius-lg) !important;
+}
+
+/* Sidebar Module Harmonization */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .meta-box-sortables {
+    gap: var(--ui-space-8) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox .inside {
+    padding: 0 var(--ui-space-6) var(--ui-space-6) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox-header {
+    padding: var(--ui-space-6) var(--ui-space-6) var(--ui-space-2) !important;
+    border: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 .postbox-header h2 {
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: var(--ui-color-text-muted) !important;
+    font-weight: 600 !important;
+}
+
+/* Categories Polish */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #categorychecklist {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: var(--ui-space-2) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #categorychecklist li {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #categorychecklist label {
+    display: inline-flex !important;
+    align-items: center !important;
+    height: 32px !important;
+    padding: 0 12px !important;
+    background: var(--ui-color-bg-subtle) !important;
+    border: 1px solid var(--ui-color-border-muted) !important;
+    border-radius: var(--ui-radius-pill) !important;
+    font-size: 12px !important;
+    cursor: pointer !important;
+}
+
+/* Language Polish */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-language-selector tr {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--ui-space-3) !important;
+    padding: var(--ui-space-2) 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-language-selector .cc-badge,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-language-selector .cc-status-pill {
+    opacity: 0.7 !important;
+    transform: scale(0.85) !important;
+}
+
+/* Post Settings Polish */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv .misc-pub-section {
+    padding: var(--ui-space-3) 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--ui-space-2) !important;
+    border-bottom: 1px solid var(--ui-color-border-muted) !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv .misc-pub-section:last-of-type {
+    border-bottom: 0 !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv .dashicons {
+    opacity: 0.4 !important;
+    font-size: 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+}
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv a.edit-timestamp,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv a.edit-visibility,
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #submitdiv a.edit-post-status {
+    font-size: 11px !important;
+    color: var(--ui-color-text-muted) !important;
+    margin-left: auto !important;
+}
+
+/* --- OVERRIDES (Cleaning bridge/core interference) --- */
+
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #wpbody-content>.wrap {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Ensure no shadows or gaps break the rail feel */
+body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .postbox-header {
+    background: transparent !important;
+    border-bottom-color: color-mix(in srgb, var(--ui-color-border-muted) 40%, transparent) !important;
+}
+
+/* Responsive: graceful stack for mobile/tablet */
+@media (max-width: 1200px) {
+    body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) form#post {
+        grid-template-columns: minmax(0, 1fr) !important;
+        grid-template-rows: auto auto auto auto !important;
+    }
+
+    body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) .cc-editor-topbar-actions {
+        grid-column: 1 !important;
+        grid-row: 2 !important;
+        position: static !important;
+        background: var(--ui-color-bg-surface) !important;
+        border-top: 1px solid var(--ui-color-border-muted) !important;
+        padding-inline: var(--cc-editor-main-pad-x) !important;
+    }
+
+    body.cc-post-edit-screen.cc-admin-theme:not(.block-editor-page) #postbox-container-1 {
+        grid-column: 1 !important;
+        position: static !important;
+        background: var(--ui-color-bg-subtle) !important;
+        padding: var(--ui-space-8) var(--cc-editor-main-pad-x) !important;
+        min-height: 0 !important;
+    }
+}

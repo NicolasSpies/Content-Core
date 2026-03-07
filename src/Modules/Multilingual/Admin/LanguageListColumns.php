@@ -27,6 +27,10 @@ class LanguageListColumns
 
         $post_types = get_post_types(["show_ui" => true]);
         foreach ($post_types as $post_type) {
+            // Status view tabs are filtered via dynamic list table hooks:
+            // views_edit-{post_type}
+            add_filter("views_edit-{$post_type}", [$this, 'filter_status_views'], 999);
+
             if ($this->should_show_column($post_type)) {
                 // Use specific hooks for all post types to avoid overlapping generic hooks (like manage_posts_custom_column)
                 // which fire for all non-hierarchical post types.
@@ -150,6 +154,90 @@ class LanguageListColumns
 
         // Explicitly suppressed: The language filter dropdown is removed in favor of 
         // Default Language enforcement and direct Translation Column interaction.
+    }
+
+    /**
+     * Reduce post status views to All and Trash without counts.
+     */
+    public function filter_status_views(array $views): array
+    {
+        if (!$this->module->is_active()) {
+            return $views;
+        }
+
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if (!$screen || $screen->base !== 'edit') {
+            return $views;
+        }
+
+        $post_type = (string) ($screen->post_type ?: sanitize_text_field($_GET['post_type'] ?? 'post'));
+        if (!$this->should_simplify_status_views($post_type)) {
+            return $views;
+        }
+
+        $requested_status = sanitize_text_field($_GET['post_status'] ?? '');
+        $is_trash_view = ($requested_status === 'trash');
+
+        return [
+            'all' => $this->build_status_view_link(
+                $this->build_status_view_url($post_type, ''),
+                __('All'),
+                !$is_trash_view
+            ),
+            'trash' => $this->build_status_view_link(
+                $this->build_status_view_url($post_type, 'trash'),
+                _x('Trash', 'post'),
+                $is_trash_view
+            ),
+        ];
+    }
+
+    private function build_status_view_url(string $post_type, string $status): string
+    {
+        $args = [];
+        if ($post_type !== 'post') {
+            $args['post_type'] = $post_type;
+        }
+
+        if ($status !== '') {
+            $args['post_status'] = $status;
+        }
+
+        return add_query_arg($args, admin_url('edit.php'));
+    }
+
+    private function should_simplify_status_views(string $post_type): bool
+    {
+        if (!post_type_supports($post_type, 'cc-multilingual') || !$this->should_show_column($post_type)) {
+            return false;
+        }
+
+        if (in_array($post_type, ['post', 'page'], true)) {
+            return true;
+        }
+
+        if (strpos($post_type, 'cc_') === 0) {
+            return true;
+        }
+
+        $settings = $this->module->get_settings();
+        $permalink_bases = $settings['permalink_bases'] ?? [];
+
+        return isset($permalink_bases[$post_type]);
+    }
+
+    private function build_status_view_link(string $url, string $label, bool $is_current): string
+    {
+        $classes = $is_current ? ' class="current"' : '';
+        $aria = $is_current ? ' aria-current="page"' : '';
+
+        return sprintf(
+            '<a href="%1$s"%2$s%3$s>%4$s</a>',
+            esc_url($url),
+            $classes,
+            $aria,
+            esc_html($label)
+        );
     }
 
     public function apply_filters($query): void

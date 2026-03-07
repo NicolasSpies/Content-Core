@@ -1,2 +1,1569 @@
 /* Content Core Admin Theme - Layout: Media Library */
-/* Scoped to upload screens (.upload-php) */
+
+/* Keep upload.php on the same page shell used by other screens. */
+body.cc-admin-theme.upload-php #wpbody-content>.wrap {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    column-gap: var(--ui-space-4) !important;
+    row-gap: 0 !important;
+    align-content: start;
+    align-items: center;
+    position: relative;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>h1,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-heading-inline {
+    grid-column: 1;
+    order: 1;
+    display: inline-block !important;
+    margin: 0 !important;
+    float: none !important;
+    justify-self: start;
+    text-align: left;
+    font-size: var(--ui-text-display-size) !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.page-title-action,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.add-new-h2 {
+    grid-column: 2 !important;
+    order: 2;
+    margin: 0 0 0 auto !important;
+    float: none !important;
+    justify-self: end;
+    align-self: start;
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    min-height: 46px;
+    height: 46px;
+    padding: 0 var(--ui-space-5);
+    border-radius: var(--ui-radius-md);
+    border: 1px solid var(--ui-color-accent-500) !important;
+    background: var(--ui-color-accent-500) !important;
+    color: var(--ui-color-text-inverse) !important;
+    font-size: var(--ui-text-label-size);
+    font-weight: var(--ui-font-weight-semibold);
+    box-shadow: var(--ui-shadow-sm);
+    opacity: 1 !important;
+    filter: none !important;
+    text-decoration: none;
+    display: inline-flex !important;
+    align-items: center;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.page-title-action:hover,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.page-title-action:focus-visible,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.add-new-h2:hover,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.add-new-h2:focus-visible {
+    background: var(--ui-color-accent-600) !important;
+    border-color: var(--ui-color-accent-600) !important;
+    color: var(--ui-color-text-inverse) !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>hr.wp-header-end,
+body.cc-admin-theme.upload-php .cc-list-header-row,
+body.cc-admin-theme.upload-php #cc-filter-btn {
+    display: none !important;
+}
+
+/* Header bar above media grid, same visual language as list tables. */
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter {
+    grid-column: 1 / -1;
+    margin: var(--ui-space-4) 0 0 !important;
+    width: 100% !important;
+    min-height: var(--cc-list-header-height, 56px);
+    padding: var(--ui-space-3) var(--ui-space-4) !important;
+    border: var(--ui-border-default) !important;
+    border-radius: var(--ui-radius-lg) var(--ui-radius-lg) 0 0 !important;
+    border-bottom: 0 !important;
+    background: var(--ui-color-bg-surface) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: var(--ui-space-3) !important;
+    box-sizing: border-box;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .media-toolbar-secondary,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.wp-filter .media-toolbar-secondary,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .filter-items,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .actions {
+    display: inline-flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: var(--ui-space-2) !important;
+    margin: 0 !important;
+    width: auto !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .media-toolbar-primary,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.wp-filter .media-toolbar-primary,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .search-form,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .search-box {
+    margin: 0 0 0 auto !important;
+    width: clamp(220px, 26vw, 360px) !important;
+    max-width: 100% !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .search-form label,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .search-box label {
+    display: none !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter select,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter button,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter input[type="search"] {
+    min-height: 36px !important;
+    height: 36px !important;
+    border: var(--ui-border-default) !important;
+    border-radius: var(--ui-radius-pill) !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .media-toolbar-secondary select.attachment-filters,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.wp-filter .media-toolbar-secondary select.attachment-filters {
+    width: auto !important;
+    min-width: 160px !important;
+    max-width: 240px !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .search-form input[type="search"],
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .search-box input[type="search"] {
+    width: 100% !important;
+    margin: 0 !important;
+    background-color: var(--ui-color-bg-subtle) !important;
+    background-image: var(--ui-icon-search) !important;
+    background-repeat: no-repeat !important;
+    background-position: calc(100% - 12px) center !important;
+    background-size: 16px !important;
+    padding-right: 40px !important;
+}
+
+/* Media frame flush under toolbar to create one shared card. */
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.attachments-browser {
+    grid-column: 1 / -1;
+    margin-top: 0 !important;
+    border: var(--ui-border-default) !important;
+    border-top: 0 !important;
+    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg) !important;
+    background: var(--ui-color-bg-surface) !important;
+    overflow: hidden;
+}
+
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.attachments-browser {
+    grid-column: 1 / -1;
+    margin-top: var(--ui-space-3) !important;
+    border: var(--ui-border-default) !important;
+    border-top: 0 !important;
+    border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg) !important;
+    background: var(--ui-color-bg-surface) !important;
+    overflow: hidden;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter {
+    padding: var(--ui-space-3) var(--ui-space-4) !important;
+    border-bottom: var(--ui-border-muted) !important;
+    background: var(--ui-color-bg-surface) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: var(--ui-space-3) !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-secondary,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-secondary {
+    display: inline-flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: var(--ui-space-2) !important;
+    width: auto !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-secondary>*,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-secondary>* {
+    display: inline-flex !important;
+    width: auto !important;
+    flex: 0 0 auto !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-secondary select.attachment-filters,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-secondary select.attachment-filters,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-secondary .button,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-secondary .button {
+    width: auto !important;
+    min-width: 160px !important;
+    max-width: 240px !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-secondary .button,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-secondary .button {
+    min-width: 0 !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-primary,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-primary {
+    display: inline-flex !important;
+    align-items: center !important;
+    margin-left: auto !important;
+    width: clamp(220px, 26vw, 360px) !important;
+    max-width: 100% !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-primary .search-form,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-primary .search-form,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-primary .search-box,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-primary .search-box {
+    width: 100% !important;
+    margin: 0 !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-primary label,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .media-toolbar-primary label {
+    display: none !important;
+}
+
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter select,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter select,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter button,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter button,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter input[type="search"],
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter input[type="search"] {
+    min-height: 36px !important;
+    height: 36px !important;
+    border: var(--ui-border-default) !important;
+    border-radius: var(--ui-radius-pill) !important;
+}
+
+body.cc-admin-theme.upload-php .media-frame .attachments,
+body.cc-admin-theme.modal-open .media-frame .attachments,
+body.cc-admin-theme.modal-open .media-frame .attachments {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+    gap: var(--ui-space-3) !important;
+    padding: var(--ui-space-3) !important;
+}
+
+/* Keep native thumb sizing, only remove black overlay and keep selected state clear. */
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment {
+    width: 100% !important;
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+}
+
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment .attachment-preview,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment .attachment-preview,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment .attachment-preview {
+    width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    border-radius: var(--ui-radius-md) !important;
+    border: var(--ui-border-default) !important;
+    overflow: hidden !important;
+    background: var(--ui-color-bg-surface) !important;
+}
+
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment .attachment-preview img,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment .attachment-preview img,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment .attachment-preview img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+}
+
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment .attachment-preview::before,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment .attachment-preview::before,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment .attachment-preview::before {
+    background: transparent !important;
+    opacity: 0 !important;
+}
+
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment.selected .attachment-preview,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment.selected .attachment-preview,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment.selected .attachment-preview,
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment.details .attachment-preview,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment.details .attachment-preview,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment.details .attachment-preview,
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment[aria-selected="true"] .attachment-preview,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment[aria-selected="true"] .attachment-preview,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment[aria-selected="true"] .attachment-preview {
+    border: var(--ui-border-default) !important;
+    box-shadow: none !important;
+}
+
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment.selected .attachment-preview::before,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment.selected .attachment-preview::before,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment.selected .attachment-preview::before,
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment.details .attachment-preview::before,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment.details .attachment-preview::before,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment.details .attachment-preview::before,
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment[aria-selected="true"] .attachment-preview::before,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment[aria-selected="true"] .attachment-preview::before,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment[aria-selected="true"] .attachment-preview::before,
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment[aria-checked="true"] .attachment-preview::before,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment[aria-checked="true"] .attachment-preview::before,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment[aria-checked="true"] .attachment-preview::before {
+    background: transparent !important;
+    opacity: 0 !important;
+}
+
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment.selected,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment.selected,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment.selected,
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment.details,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment.details,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment.details,
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment[aria-selected="true"],
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment[aria-selected="true"],
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment[aria-selected="true"],
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment[aria-checked="true"],
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment[aria-checked="true"],
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment[aria-checked="true"] {
+    border: 0 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+}
+
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment:focus,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment:focus,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment:focus,
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment:focus-visible,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment:focus-visible,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment:focus-visible {
+    outline: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Remove list/grid toggle; keep media library permanently in compact grid view. */
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .view-switch,
+body.cc-admin-theme.upload-php #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .view-switch,
+body.cc-admin-theme.modal-open #wpbody-content>.wrap>.media-frame .media-toolbar.wp-filter .view-switch {
+    display: none !important;
+}
+
+body.cc-admin-theme.upload-php .media-frame.mode-list .attachments,
+body.cc-admin-theme.modal-open .media-frame.mode-list .attachments,
+body.cc-admin-theme.modal-open .media-frame.mode-list .attachments,
+body.cc-admin-theme.upload-php .media-frame .attachments-browser.mode-list .attachments,
+body.cc-admin-theme.modal-open .media-frame .attachments-browser.mode-list .attachments,
+body.cc-admin-theme.modal-open .media-frame .attachments-browser.mode-list .attachments,
+body.cc-admin-theme.upload-php .media-frame .attachments.mode-list,
+body.cc-admin-theme.modal-open .media-frame .attachments.mode-list,
+body.cc-admin-theme.modal-open .media-frame .attachments.mode-list {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+    gap: var(--ui-space-3) !important;
+}
+
+body.cc-admin-theme.upload-php .media-frame .media-sidebar,
+body.cc-admin-theme.modal-open .media-frame .media-sidebar,
+body.cc-admin-theme.modal-open .media-frame .media-sidebar {
+    border-left: var(--ui-border-default) !important;
+    background: var(--ui-color-bg-surface) !important;
+}
+
+body.cc-admin-theme.upload-php .media-frame .media-sidebar .attachment-details,
+body.cc-admin-theme.modal-open .media-frame .media-sidebar .attachment-details,
+body.cc-admin-theme.modal-open .media-frame .media-sidebar .attachment-details {
+    padding: var(--ui-space-3) !important;
+}
+
+/* Keep background grid stable while details modal is open. */
+body.cc-admin-theme.modal-open {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+}
+
+body.cc-admin-theme.modal-open #wpbody-content .wrap>.media-frame .attachments-browser {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas:
+        "toolbar"
+        "library" !important;
+}
+
+body.cc-admin-theme.modal-open .media-frame .attachments-browser {
+    width: 100% !important;
+    right: 0 !important;
+    margin-right: 0 !important;
+}
+
+body.cc-admin-theme.modal-open #wpbody-content .wrap>.media-frame .media-sidebar {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    border: 0 !important;
+    padding: 0 !important;
+}
+
+@media (max-width: 960px) {
+    body.cc-admin-theme.upload-php #wpbody-content>.wrap {
+        grid-template-columns: 1fr;
+    }
+
+    body.cc-admin-theme.upload-php #wpbody-content>.wrap>.page-title-action,
+    body.cc-admin-theme.upload-php #wpbody-content>.wrap>.add-new-h2 {
+        justify-self: start;
+    }
+
+    body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+    }
+
+    body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .media-toolbar-primary,
+    body.cc-admin-theme.modal-open #wpbody-content>.wrap>.wp-filter .media-toolbar-primary,
+    body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .search-form,
+    body.cc-admin-theme.upload-php #wpbody-content>.wrap>.wp-filter .search-box,
+    body.cc-admin-theme.upload-php .media-frame .media-toolbar.wp-filter .media-toolbar-primary,
+    body.cc-admin-theme.modal-open .media-frame .media-toolbar.wp-filter .media-toolbar-primary,
+    body.cc-admin-theme.modal-open .media-frame .media-toolbar.wp-filter .media-toolbar-primary {
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+}
+
+/* Media details modal: compact, refined and CI-aligned. */
+body.cc-admin-theme.modal-open .media-modal-backdrop {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    background: rgba(15, 23, 42, 0.46) !important;
+    backdrop-filter: blur(2px);
+    z-index: 159000 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: min(1240px, 88vw) !important;
+    height: min(740px, calc(100vh - 72px)) !important;
+    max-width: min(1240px, 88vw) !important;
+    max-height: calc(100vh - 72px) !important;
+    min-width: 760px !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    z-index: 160000 !important;
+    border-radius: 18px !important;
+    overflow: hidden !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .media-modal-content {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    border: var(--ui-border-default) !important;
+    border-radius: 18px !important;
+    overflow: hidden !important;
+    box-shadow: 0 28px 56px rgba(15, 23, 42, 0.34) !important;
+    background: var(--ui-color-bg-surface) !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .media-modal-close:not(.left):not(.right) {
+    top: 10px !important;
+    right: 10px !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 999px !important;
+    background: var(--ui-color-bg-surface) !important;
+    border: var(--ui-border-default) !important;
+    color: var(--ui-color-text-secondary) !important;
+    z-index: 3 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .media-modal-close:not(.left):not(.right):hover {
+    color: var(--ui-color-accent-600) !important;
+    border-color: var(--ui-color-border-active) !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .media-modal-close.left,
+body.cc-admin-theme.modal-open .media-modal .media-modal-close.right,
+body.cc-admin-theme.modal-open .media-modal .media-modal-prev,
+body.cc-admin-theme.modal-open .media-modal .media-modal-next {
+    top: 10px !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 999px !important;
+    background: var(--ui-color-bg-surface) !important;
+    border: var(--ui-border-default) !important;
+    color: var(--ui-color-text-secondary) !important;
+    z-index: 3 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    text-indent: 0 !important;
+    overflow: hidden !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal button.media-modal-prev,
+body.cc-admin-theme.modal-open .media-modal button.media-modal-next,
+body.cc-admin-theme.modal-open .media-modal .media-modal-close.left,
+body.cc-admin-theme.modal-open .media-modal .media-modal-close.right {
+    display: inline-flex !important;
+    z-index: 160005 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .media-modal-close.right,
+body.cc-admin-theme.modal-open .media-modal .media-modal-next {
+    right: 52px !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .media-modal-close.left,
+body.cc-admin-theme.modal-open .media-modal .media-modal-prev {
+    right: 94px !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .media-modal-close.left:hover,
+body.cc-admin-theme.modal-open .media-modal .media-modal-close.right:hover,
+body.cc-admin-theme.modal-open .media-modal .media-modal-prev:hover,
+body.cc-admin-theme.modal-open .media-modal .media-modal-next:hover {
+    color: var(--ui-color-accent-600) !important;
+    border-color: var(--ui-color-border-active) !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .media-modal-close.left[aria-disabled="true"],
+body.cc-admin-theme.modal-open .media-modal .media-modal-close.right[aria-disabled="true"],
+body.cc-admin-theme.modal-open .media-modal .media-modal-prev[aria-disabled="true"],
+body.cc-admin-theme.modal-open .media-modal .media-modal-next[aria-disabled="true"] {
+    opacity: 0.45 !important;
+    pointer-events: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .media-modal-close.left::before,
+body.cc-admin-theme.modal-open .media-modal .media-modal-prev::before {
+    content: "\2039" !important;
+    font-size: 24px !important;
+    line-height: 1 !important;
+    font-weight: 700 !important;
+    color: currentColor !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .media-modal-close.right::before,
+body.cc-admin-theme.modal-open .media-modal .media-modal-next::before {
+    content: "\203A" !important;
+    font-size: 24px !important;
+    line-height: 1 !important;
+    font-weight: 700 !important;
+    color: currentColor !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .media-modal-close.left .screen-reader-text,
+body.cc-admin-theme.modal-open .media-modal .media-modal-close.right .screen-reader-text,
+body.cc-admin-theme.modal-open .media-modal .media-modal-prev .screen-reader-text,
+body.cc-admin-theme.modal-open .media-modal .media-modal-next .screen-reader-text {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    border: 0 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .edit-attachment-frame .attachment-details {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 36%) !important;
+    width: 100% !important;
+    height: 100% !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    overflow: hidden !important;
+    position: static !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .edit-attachment-frame .attachment-media-view {
+    grid-column: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: var(--ui-space-5) !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    background: #f3f5f7 !important;
+    box-sizing: border-box !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view .thumbnail,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view .thumbnail-image {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view .thumbnail:before,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view .thumbnail:after,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view .thumbnail-image:before,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view .thumbnail-image:after {
+    display: none !important;
+    content: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view img {
+    display: block !important;
+    width: auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: min(500px, calc(78vh - 180px)) !important;
+    object-fit: contain !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.12) !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view img.thumbnail,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view img.details-image {
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view .details,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view .setting,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view .actions,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view .copy-to-clipboard-container,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view .attachment-details-copy-link {
+    display: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-info {
+    grid-column: 2 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: var(--ui-space-6) !important;
+    border-left: var(--ui-border-default) !important;
+    background: var(--ui-color-bg-surface) !important;
+    overflow: auto !important;
+    box-sizing: border-box !important;
+    min-height: 0 !important;
+    padding-bottom: var(--ui-space-6) !important;
+    text-align: left !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    column-gap: var(--ui-space-2) !important;
+    row-gap: 0 !important;
+    align-content: start !important;
+    align-items: start !important;
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    align-items: stretch !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-info .details,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-info .setting:not([data-setting="url"]),
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-info .actions {
+    grid-column: 1 / -1 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"] {
+    grid-column: 1 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-info .details {
+    float: none !important;
+    width: 100% !important;
+    margin: 0 0 var(--ui-space-4) 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    text-align: left !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-info .details::before {
+    content: none !important;
+    display: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-info .details h2 {
+    display: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .settings-save-status {
+    display: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting {
+    display: block !important;
+    float: none !important;
+    clear: both !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 0 var(--ui-space-3) 0 !important;
+    padding: 0 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="title"] {
+    order: 10 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="alt"],
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting.alt-text {
+    order: 11 !important;
+}
+
+/* Transparent image mode (PNG/WebP/AVIF/GIF with alpha): checkerboard + alpha shadow. */
+body.cc-admin-theme.modal-open .media-modal.cc-media-has-alpha .attachment-details .attachment-media-view {
+    background:
+        repeating-conic-gradient(from 45deg, #e8edf3 0 25%, #f4f7fa 0 50%) 50% / 24px 24px,
+        #eef2f6 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal.cc-media-has-alpha .attachment-details .attachment-media-view img,
+body.cc-admin-theme.modal-open .media-modal.cc-media-has-alpha .attachment-details .attachment-media-view img.thumbnail,
+body.cc-admin-theme.modal-open .media-modal.cc-media-has-alpha .attachment-details .attachment-media-view img.details-image {
+    box-shadow: none !important;
+    filter: drop-shadow(0 8px 16px rgba(15, 23, 42, 0.16)) !important;
+}
+
+/* Final modal centering fallback for upload screen (prevents top-left drift). */
+body.upload-php.modal-open .media-modal {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+}
+
+body.upload-php.modal-open .media-modal .media-modal-content {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: inherit !important;
+}
+
+/* Final modal sidebar authority */
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"] {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 38px !important;
+    column-gap: 0 !important;
+    row-gap: var(--ui-space-1) !important;
+    width: 100% !important;
+    max-width: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>.name,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>label,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>span {
+    grid-column: 1 / -1 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>.attachment-details-copy-link,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>input {
+    grid-column: 1 !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 38px !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container {
+    grid-column: 2 !important;
+    margin: 0 !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    display: inline-flex !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container .copy-attachment-url {
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-left: 0 !important;
+    border-radius: 0 var(--ui-radius-md) var(--ui-radius-md) 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container .copy-attachment-url::before {
+    content: "\f481" !important;
+    font-family: dashicons !important;
+    font-size: 16px !important;
+    line-height: 1 !important;
+    color: var(--ui-color-text-secondary) !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-info hr,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .actions hr,
+body.cc-admin-theme.modal-open .media-modal .attachment-details [class*="separator"] {
+    display: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"] {
+    order: 12 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="alt"],
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="title"],
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"] {
+    width: 100% !important;
+    max-width: none !important;
+    align-self: stretch !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting>.name,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting>span,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting>label {
+    display: block !important;
+    float: none !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 0 var(--ui-space-1) 0 !important;
+    padding: 0 !important;
+    font-size: 12px !important;
+    letter-spacing: 0.03em !important;
+    text-transform: uppercase !important;
+    color: var(--ui-color-text-muted) !important;
+    text-align: left !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting .description,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting p.description {
+    display: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details p.description {
+    display: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal #alt-text-description {
+    display: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting input,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting textarea,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting select {
+    display: block !important;
+    float: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    min-height: 40px !important;
+    border: var(--ui-border-default) !important;
+    border-radius: var(--ui-radius-md) !important;
+    background: var(--ui-color-bg-surface) !important;
+    color: var(--ui-color-text-primary) !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="alt"] textarea,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="title"] input,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"] input,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"] .attachment-details-copy-link {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* Hide unused editorial fields in this backend flow. */
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="caption"],
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="description"] {
+    display: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .actions {
+    order: 20 !important;
+    margin: var(--ui-space-3) 0 0 !important;
+    padding-top: 0 !important;
+    border-top: 0 !important;
+    line-height: 1.45 !important;
+    display: block !important;
+    text-align: left !important;
+    width: 100% !important;
+    max-width: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .actions>* {
+    display: none !important;
+    float: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .actions .delete-attachment,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .actions .delete-permanently {
+    display: inline-flex !important;
+    width: 100% !important;
+    justify-content: center !important;
+    align-items: center !important;
+    min-height: 46px !important;
+    padding: 0 var(--ui-space-4) !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    float: none !important;
+    position: static !important;
+    margin: 0 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .actions .links-separator {
+    display: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .actions hr,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .actions::before,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .actions::after {
+    display: none !important;
+    content: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details hr {
+    display: none !important;
+    border: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .copy-to-clipboard-container {
+    display: flex !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin-top: 0 !important;
+    order: 12 !important;
+    grid-column: 2 !important;
+    align-self: end !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .copy-to-clipboard-container .copy-attachment-url {
+    margin-left: 0 !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    max-width: none !important;
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+    align-self: stretch !important;
+    font-size: 0 !important;
+    line-height: 1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .copy-to-clipboard-container .copy-attachment-url::before {
+    content: "\2398" !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+    font-weight: 600 !important;
+    color: var(--ui-color-text-secondary) !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting .attachment-details-copy-link {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 44px !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-info hr,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-info .compat-meta {
+    display: none !important;
+}
+
+/* Hide Edit Image in modal as requested. */
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view .attachment-actions,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view .edit-attachment {
+    display: none !important;
+}
+
+@media (max-width: 1100px) {
+    body.cc-admin-theme.modal-open .media-modal {
+        width: min(960px, 92vw) !important;
+        height: auto !important;
+        max-height: 88vh !important;
+        min-width: 0 !important;
+    }
+
+    body.cc-admin-theme.modal-open .media-modal .media-modal-content {
+        max-height: 88vh !important;
+        overflow: auto !important;
+    }
+
+    body.cc-admin-theme.modal-open .media-modal .edit-attachment-frame .attachment-details {
+        grid-template-columns: 1fr !important;
+    }
+
+    body.cc-admin-theme.modal-open .media-modal .edit-attachment-frame .attachment-media-view {
+        padding: var(--ui-space-4) !important;
+    }
+
+    body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view img {
+        max-height: min(42vh, 360px) !important;
+    }
+
+    body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-info {
+        grid-column: 1 !important;
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+        border-left: 0 !important;
+        border-top: var(--ui-border-default) !important;
+    }
+
+    body.cc-admin-theme.modal-open .media-modal .attachment-details .copy-to-clipboard-container {
+        grid-column: 1 !important;
+        margin-top: var(--ui-space-2) !important;
+        justify-content: flex-start !important;
+    }
+}
+
+/* Final image polish in details modal. */
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view img,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view img.thumbnail,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-media-view img.details-image {
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14) !important;
+}
+
+/* Final sidebar separator cleanup (between copy button and delete). */
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-info hr,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .actions hr,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .links-separator,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .details {
+    border: 0 !important;
+    border-top: 0 !important;
+    box-shadow: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .attachment-info hr,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .actions hr,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .links-separator {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    content: none !important;
+}
+
+/* Final URL row: input left, compact copy icon right (same row, attached). */
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"] {
+    order: 12 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 38px !important;
+    grid-auto-rows: auto !important;
+    column-gap: 0 !important;
+    row-gap: var(--ui-space-1) !important;
+    width: 100% !important;
+    max-width: none !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>.name,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>label,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>span {
+    grid-column: 1 / -1 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>.attachment-details-copy-link,
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>input {
+    grid-column: 1 !important;
+    width: 100% !important;
+    max-width: none !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container {
+    grid-column: 2 !important;
+    display: flex !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    margin: 0 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container .copy-attachment-url {
+    width: 100% !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 var(--ui-radius-md) var(--ui-radius-md) 0 !important;
+    border-left: 0 !important;
+    font-size: 0 !important;
+    line-height: 1 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container .copy-attachment-url::before {
+    content: "\2398" !important;
+    font-size: 16px !important;
+    line-height: 1 !important;
+    color: var(--ui-color-text-secondary) !important;
+}
+
+/* Keep field order stable: Title first, Alternative Text directly below. */
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="title"] {
+    order: 10 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting[data-setting="alt"],
+body.cc-admin-theme.modal-open .media-modal .attachment-details .setting.alt-text {
+    order: 11 !important;
+}
+
+/* Final authority: transparent images (including WebP alpha) */
+body.cc-admin-theme.modal-open .media-modal.cc-media-has-alpha .attachment-details .attachment-media-view {
+    background:
+        repeating-conic-gradient(from 45deg, #e8edf3 0 25%, #f4f7fa 0 50%) 50% / 24px 24px,
+        #eef2f6 !important;
+}
+
+body.cc-admin-theme.modal-open .media-modal.cc-media-has-alpha .attachment-details .attachment-media-view img,
+body.cc-admin-theme.modal-open .media-modal.cc-media-has-alpha .attachment-details .attachment-media-view img.thumbnail,
+body.cc-admin-theme.modal-open .media-modal.cc-media-has-alpha .attachment-details .attachment-media-view img.details-image {
+    box-shadow: none !important;
+    filter: drop-shadow(0 8px 16px rgba(15, 23, 42, 0.16)) !important;
+}
+
+/* Final modal centering fallback for upload screen (absolute tail override). */
+body.upload-php.modal-open .media-modal {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+}
+
+body.upload-php.modal-open .media-modal .media-modal-content {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: inherit !important;
+}
+
+/* Hard fallback: always center media modal on upload screen, regardless body state classes. */
+body.upload-php .media-modal {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+    width: min(1240px, 88vw) !important;
+    max-width: min(1240px, 88vw) !important;
+    min-width: 760px !important;
+    height: min(740px, calc(100vh - 72px)) !important;
+    max-height: calc(100vh - 72px) !important;
+    border-radius: 18px !important;
+    overflow: hidden !important;
+}
+
+body.upload-php .media-modal .media-modal-content {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+}
+
+@media (max-width: 1100px) {
+    body.upload-php .media-modal {
+        width: min(960px, 92vw) !important;
+        max-width: min(960px, 92vw) !important;
+        min-width: 0 !important;
+        height: auto !important;
+        max-height: 88vh !important;
+    }
+}
+
+/* Final polish pass: modal navigation, sidebar rhythm, URL row ergonomics. */
+body.upload-php .media-modal .media-modal-close.left,
+body.upload-php .media-modal .media-modal-close.right,
+body.upload-php .media-modal button.media-modal-prev:not(.cc-media-nav-btn),
+body.upload-php .media-modal button.media-modal-next:not(.cc-media-nav-btn) {
+    display: none !important;
+}
+
+body.upload-php .media-modal button.cc-media-nav-btn {
+    position: absolute !important;
+    top: 10px !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    border-radius: 999px !important;
+    z-index: 160005 !important;
+}
+
+body.upload-php .media-modal button.cc-media-nav-btn.media-modal-prev {
+    right: 94px !important;
+    left: auto !important;
+}
+
+body.upload-php .media-modal button.cc-media-nav-btn.media-modal-next {
+    right: 52px !important;
+    left: auto !important;
+}
+
+body.upload-php .media-modal .attachment-details .attachment-info {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--ui-space-2) !important;
+}
+
+body.upload-php .media-modal .attachment-details .attachment-info .details {
+    margin: 0 0 var(--ui-space-2) 0 !important;
+    line-height: 1.42 !important;
+}
+
+body.upload-php .media-modal .attachment-details .attachment-info .details,
+body.upload-php .media-modal .attachment-details .attachment-info .details p,
+body.upload-php .media-modal .attachment-details .attachment-info .details strong {
+    font-size: 15px !important;
+}
+
+body.upload-php .media-modal .attachment-details .attachment-info .setting {
+    width: 100% !important;
+    max-width: none !important;
+}
+
+body.upload-php .media-modal .attachment-details .attachment-info .actions {
+    margin-top: auto !important;
+    padding-top: var(--ui-space-3) !important;
+}
+
+body.upload-php .media-modal .attachment-details .setting[data-setting="url"] {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 44px !important;
+    column-gap: 0 !important;
+    row-gap: var(--ui-space-1) !important;
+}
+
+body.upload-php .media-modal .attachment-details .setting[data-setting="url"]>input,
+body.upload-php .media-modal .attachment-details .setting[data-setting="url"]>.attachment-details-copy-link {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+body.upload-php .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container {
+    width: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    margin: 0 !important;
+    grid-column: 2 !important;
+}
+
+body.upload-php .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container .copy-attachment-url {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 var(--ui-radius-md) var(--ui-radius-md) 0 !important;
+    border-left: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body.upload-php .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container .copy-attachment-url::before {
+    content: "\f481" !important;
+    font-family: dashicons !important;
+    font-size: 16px !important;
+    line-height: 1 !important;
+}
+
+/* Final polish pass 2: top controls, copy feedback cleanup, focus consistency. */
+body.upload-php .media-modal .attachment-details .attachment-info {
+    padding-top: calc(var(--ui-space-6) + 22px) !important;
+}
+
+body.upload-php .media-modal .media-modal-close:not(.left):not(.right),
+body.upload-php .media-modal button.cc-media-nav-btn {
+    top: 14px !important;
+}
+
+body.upload-php .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container .copy-attachment-url,
+body.upload-php .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container .copy-attachment-url:focus,
+body.upload-php .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container .copy-attachment-url:focus-visible,
+body.upload-php .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container .copy-attachment-url:hover,
+body.upload-php .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container .copy-attachment-url:active {
+    outline: 0 !important;
+    box-shadow: none !important;
+    border-color: var(--ui-color-border-default) !important;
+}
+
+body.upload-php .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container .copy-attachment-url::before {
+    display: block !important;
+    width: 16px !important;
+    height: 16px !important;
+    text-align: center !important;
+    color: var(--ui-color-text-secondary) !important;
+}
+
+body.upload-php .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container .success,
+body.upload-php .media-modal .attachment-details .setting[data-setting="url"]>.copy-to-clipboard-container .error,
+body.upload-php .media-modal .attachment-details .copy-to-clipboard-container .success,
+body.upload-php .media-modal .attachment-details .copy-to-clipboard-container .error {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Final polish pass 3: calm top area and cleaner action cluster. */
+body.upload-php .media-modal .attachment-details .attachment-info {
+    padding-top: 78px !important;
+}
+
+body.upload-php .media-modal .media-modal-close:not(.left):not(.right),
+body.upload-php .media-modal button.cc-media-nav-btn {
+    top: 16px !important;
+    background: var(--ui-color-bg-surface) !important;
+    border: var(--ui-border-default) !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08) !important;
+}
+
+body.upload-php .media-modal button.cc-media-nav-btn.media-modal-prev {
+    right: 108px !important;
+}
+
+body.upload-php .media-modal button.cc-media-nav-btn.media-modal-next {
+    right: 66px !important;
+}
+
+body.upload-php .media-modal .media-modal-close:not(.left):not(.right) {
+    right: 18px !important;
+}
+
+body.upload-php .media-modal .attachment-details .attachment-media-view img,
+body.upload-php .media-modal .attachment-details .attachment-media-view img.thumbnail,
+body.upload-php .media-modal .attachment-details .attachment-media-view img.details-image {
+    max-height: calc(100% - 10px) !important;
+}
+
+/* Final image-fit authority: square preview stage with contain behavior for all ratios. */
+body.upload-php .media-modal .attachment-details .attachment-media-view {
+    --cc-media-stage-size: min(calc(100% - 8px), calc(100vh - 240px));
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+}
+
+body.upload-php .media-modal .attachment-details .attachment-media-view .thumbnail,
+body.upload-php .media-modal .attachment-details .attachment-media-view .thumbnail-image {
+    width: var(--cc-media-stage-size) !important;
+    height: var(--cc-media-stage-size) !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body.upload-php .media-modal .attachment-details .attachment-media-view img,
+body.upload-php .media-modal .attachment-details .attachment-media-view img.thumbnail,
+body.upload-php .media-modal .attachment-details .attachment-media-view img.details-image {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    box-shadow: none !important;
+    filter: drop-shadow(0 6px 14px rgba(15, 23, 42, 0.14)) !important;
+}
+
+@media (max-width: 1100px) {
+    body.upload-php .media-modal .attachment-details .attachment-media-view {
+        --cc-media-stage-size: min(calc(100% - 8px), calc(100vh - 320px));
+    }
+}
+
+/* Native WP media navigation only: show and style like close button. */
+body.upload-php .media-modal button.cc-media-nav-btn {
+    display: none !important;
+}
+
+body.upload-php .media-modal .media-modal-close.left,
+body.upload-php .media-modal .media-modal-close.right,
+body.upload-php .media-modal button.media-modal-prev,
+body.upload-php .media-modal button.media-modal-next {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: absolute !important;
+    top: 16px !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    border-radius: 999px !important;
+    background: var(--ui-color-bg-surface) !important;
+    border: var(--ui-border-default) !important;
+    color: var(--ui-color-text-secondary) !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08) !important;
+    z-index: 160005 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+body.upload-php .media-modal .media-modal-close.left,
+body.upload-php .media-modal button.media-modal-prev {
+    right: 108px !important;
+    left: auto !important;
+}
+
+body.upload-php .media-modal .media-modal-close.right,
+body.upload-php .media-modal button.media-modal-next {
+    right: 66px !important;
+    left: auto !important;
+}
+
+body.upload-php .media-modal .media-modal-close.left:hover,
+body.upload-php .media-modal .media-modal-close.right:hover,
+body.upload-php .media-modal button.media-modal-prev:hover,
+body.upload-php .media-modal button.media-modal-next:hover {
+    color: var(--ui-color-accent-600) !important;
+    border-color: var(--ui-color-border-active) !important;
+}
+
+body.upload-php .media-modal .media-modal-close.left[aria-disabled="true"],
+body.upload-php .media-modal .media-modal-close.right[aria-disabled="true"],
+body.upload-php .media-modal button.media-modal-prev[aria-disabled="true"],
+body.upload-php .media-modal button.media-modal-next[aria-disabled="true"] {
+    opacity: 0.45 !important;
+    pointer-events: none !important;
+}
+
+/* Opaque media in modal: no square stage block behind the image. */
+body.upload-php .media-modal:not(.cc-media-has-alpha) .attachment-details .attachment-media-view {
+    background: transparent !important;
+}
+
+body.upload-php .media-modal:not(.cc-media-has-alpha) .attachment-details .attachment-media-view .thumbnail,
+body.upload-php .media-modal:not(.cc-media-has-alpha) .attachment-details .attachment-media-view .thumbnail-image {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    aspect-ratio: auto !important;
+    overflow: visible !important;
+    background: transparent !important;
+}
+
+body.upload-php .media-modal:not(.cc-media-has-alpha) .attachment-details .attachment-media-view img,
+body.upload-php .media-modal:not(.cc-media-has-alpha) .attachment-details .attachment-media-view img.thumbnail,
+body.upload-php .media-modal:not(.cc-media-has-alpha) .attachment-details .attachment-media-view img.details-image {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: min(560px, calc(100vh - 250px)) !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+}
+
+/* Media grid density: reduce vertical/horizontal spacing between tiles. */
+body.upload-php .media-frame .attachments {
+    gap: 12px !important;
+    padding: 12px !important;
+}
+
+body.upload-php .media-frame .attachments .attachment {
+    margin: 0 !important;
+}
+
+/* Final grid compact override (higher specificity): force tight tile flow. */
+body.cc-admin-theme.upload-php .media-frame .attachments,
+body.cc-admin-theme.modal-open .media-frame .attachments,
+body.upload-php .media-frame .attachments {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 170px)) !important;
+    justify-content: start !important;
+    align-content: start !important;
+    gap: 10px !important;
+    padding: 10px !important;
+}
+
+body.cc-admin-theme.upload-php .media-frame .attachments .attachment,
+body.cc-admin-theme.modal-open .media-frame .attachments .attachment,
+body.upload-php .media-frame .attachments .attachment {
+    width: 170px !important;
+    margin: 0 !important;
+}
+
+@media (max-width: 1280px) {
+
+    body.cc-admin-theme.upload-php .media-frame .attachments,
+    body.cc-admin-theme.modal-open .media-frame .attachments,
+    body.upload-php .media-frame .attachments {
+        grid-template-columns: repeat(auto-fill, minmax(156px, 156px)) !important;
+    }
+
+    body.cc-admin-theme.upload-php .media-frame .attachments .attachment,
+    body.cc-admin-theme.modal-open .media-frame .attachments .attachment,
+    body.upload-php .media-frame .attachments .attachment {
+        width: 156px !important;
+    }
+}

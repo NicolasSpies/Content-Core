@@ -75,7 +75,7 @@ class SettingsRegistry
         $current = $this->get($key);
 
         // 2. Merge
-        $merged = array_replace_recursive($current, $new_data);
+        $merged = $this->merge_for_key($key, $current, $new_data);
         $merged = $this->normalize_legacy_payload($key, $merged);
 
         // 3. Sanitize
@@ -193,5 +193,24 @@ class SettingsRegistry
         }
 
         return $data;
+    }
+
+    private function merge_for_key(string $key, array $current, array $new_data): array
+    {
+        $merged = array_replace_recursive($current, $new_data);
+
+        if ($key !== 'cc_languages_settings') {
+            return $merged;
+        }
+
+        // Languages and base maps are list-like structures in the UI.
+        // Replacing them avoids "deleted language comes back" merge artifacts.
+        foreach (['languages', 'permalink_bases', 'taxonomy_bases'] as $replace_key) {
+            if (array_key_exists($replace_key, $new_data)) {
+                $merged[$replace_key] = is_array($new_data[$replace_key]) ? $new_data[$replace_key] : [];
+            }
+        }
+
+        return $merged;
     }
 }

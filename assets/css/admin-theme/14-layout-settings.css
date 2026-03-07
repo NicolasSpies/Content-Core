@@ -1,31 +1,540 @@
 /* Content Core Admin Theme - Layout: Settings Pages */
-/* Scoped to settings and plugin admin pages (.options-general-php, .settings_page_*, .toplevel_page_*) */
+/* Scoped to CC settings pages: body.cc-admin-theme[class*="content-core_page_cc-"] */
+/* Note: WP generates body class "content-core_page_{slug}" for submenu pages under "content-core" parent. */
+
+/* ═══════════════════════════════════════════════════════════════
+   1. HELP BUTTON — hidden globally across all CC admin pages
+   ═══════════════════════════════════════════════════════════════ */
+body.cc-admin-theme #contextual-help-link-wrap,
+body.cc-admin-theme .contextual-help-tab-button {
+    display: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2. SHARED CC SETTINGS PAGE SHELL
+   ═══════════════════════════════════════════════════════════════ */
+/* Settings outer form — single column, 24px section gap */
+/* Settings outer form — full width shell, 24px section gap */
+body.cc-admin-theme[class*="content-core_page_cc-"] .wrap,
+body.cc-admin-theme[class*="content-core_page_cc-"] .wrap.cc-settings-single-page {
+    display: grid !important;
+    gap: var(--ui-space-6) !important;
+    max-width: var(--ui-layout-wrap-max, 1600px) !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Clear any legacy WP list table styles that might leak */
+body.cc-admin-theme[class*="content-core_page_cc-"] .wp-list-table {
+    border: 0;
+    box-shadow: none;
+}
+
+/* Settings main content flow */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-settings-content,
+body.cc-admin-theme[class*="content-core_page_cc-"] .wrap>form {
+    display: grid;
+    gap: var(--ui-space-6);
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   3. PAGE TITLE ROW (.cc-header)
+   ═══════════════════════════════════════════════════════════════ */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ui-space-4);
+    margin: 0;
+    padding: 0;
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-header h1 {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: var(--ui-text-h1-size) !important;
+    line-height: var(--ui-text-h1-line) !important;
+    font-weight: var(--ui-font-weight-bold) !important;
+    letter-spacing: -0.02em !important;
+    color: var(--ui-color-text-primary) !important;
+}
+
+/* Ensure consistent card geometry */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-section-card {
+    background: var(--ui-color-bg-surface) !important;
+    border: var(--ui-border-default) !important;
+    border-radius: var(--ui-radius-lg) !important;
+    padding: var(--ui-space-6) !important;
+    box-shadow: var(--ui-shadow-sm) !important;
+    display: grid !important;
+    gap: var(--ui-space-5) !important;
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card-header h2 {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: var(--ui-text-h2-size) !important;
+    line-height: var(--ui-text-h2-line) !important;
+    font-weight: var(--ui-font-weight-semibold) !important;
+    color: var(--ui-color-text-primary) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--ui-space-3) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   4. CARDS — consistent elevation inside settings pages
+   ═══════════════════════════════════════════════════════════════ */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card {
+    box-shadow: var(--ui-shadow-sm);
+}
+
+/* Card header dashicons: reduce visual weight */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card-header .dashicons {
+    color: var(--ui-color-text-muted);
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card-header h2,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-section-card h2,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-section-card h3 {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: var(--ui-text-h2-size) !important;
+    line-height: var(--ui-text-h2-line) !important;
+    font-weight: var(--ui-font-weight-semibold) !important;
+    color: var(--ui-color-text-primary) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--ui-space-3) !important;
+}
+
+/* Sub-card titles or minor group titles */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-field-group-title,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card h3:not(h2 *) {
+    margin: var(--ui-space-2) 0 0 0 !important;
+    font-size: var(--ui-text-body-size) !important;
+    font-weight: var(--ui-font-weight-semibold) !important;
+    color: var(--ui-color-text-primary) !important;
+}
+
+/* Subsection markers for long pages (nested cards) */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card .cc-card {
+    border-left: 3px solid var(--ui-color-border-subtle) !important;
+    background: var(--ui-color-bg-canvas) !important;
+    padding: var(--ui-space-5) !important;
+    margin-top: var(--ui-space-4) !important;
+    box-shadow: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   X. DENSITY & READABILITY (Inner Content Constraint)
+   ═══════════════════════════════════════════════════════════════ */
+/* Cards are full width, but their internal content is centered and constrained for readability */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    /* Ensure SEO card doesn't get constrained */
+}
+
+/* Constrain the inner contents of cards and direct readable elements, but not layout wrappers */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card-body>*:not(.cc-card),
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card>form>*:not(.cc-card),
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-settings-content>.cc-field,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-settings-content>.cc-notice,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-settings-content>p,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-form-actions {
+    max-width: 1000px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: 100% !important;
+}
+
+/* Fix for centered alignment where marginal gap might leak from parent displays */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card-body {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    padding-left: var(--ui-space-6) !important;
+    padding-right: var(--ui-space-6) !important;
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card-body>* {
+    align-self: center !important;
+}
+
+/* Page headers also follow the inner content alignment */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-header h1 {
+    max-width: 1000px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   X. SECTION RHYTHM SYSTEM (Level 1-3)
+   ═══════════════════════════════════════════════════════════════ */
+/* Level 1: Page Title */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-header h1 {
+    margin-bottom: var(--ui-space-6) !important;
+}
+
+/* Level 2: Card Section Title */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card-header h2 {
+    margin-bottom: var(--ui-space-4) !important;
+}
+
+/* Level 3: Subsection Grouping (H3 or group title DIVs) */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-field-group-title,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card h3:not(h2 *),
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card-body>div[style*="font-weight: bold"],
+/* Catch semi-styled React labels */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-card-body>div:has(> b) {
+    margin-top: var(--ui-space-6) !important;
+    margin-bottom: var(--ui-space-3) !important;
+    font-size: 13px !important;
+    letter-spacing: 0.03em !important;
+    text-transform: uppercase !important;
+    font-weight: var(--ui-font-weight-semibold) !important;
+    color: var(--ui-color-text-muted) !important;
+    display: block !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   5. FIELD GRID — single-column by default inside settings
+   ═══════════════════════════════════════════════════════════════ */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--ui-space-5);
+}
+
+/* Branding page uses two columns intentionally — keep it */
+body.cc-admin-theme.content-core_page_cc-branding .cc-grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Full-span override preserved for both cases */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-grid-full {
+    grid-column: 1 / -1;
+}
+
+/* ─── Input / select width constraining inside settings fields ─── */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-field input[type="text"],
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-field input[type="number"],
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-field input[type="url"],
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-field input[type="email"] {
+    max-width: clamp(200px, 50%, 520px);
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-field select {
+    max-width: clamp(160px, 40%, 400px);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   6. FORM ACTIONS ROW
+   ═══════════════════════════════════════════════════════════════ */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-form-actions {
+    display: flex !important;
+    /* Ensure visibility */
+    align-items: center;
+    gap: var(--ui-space-3);
+    padding: var(--ui-space-4) 0;
+    margin: var(--ui-space-6) 0 0 0;
+    border-top: var(--ui-border-default);
+    width: 100% !important;
+}
+
+/* Global Button Roles Enforced */
+
+/* Primary: Save Settings (Visually Dominant) */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-button-primary {
+    background: var(--ui-color-accent-500) !important;
+    border-color: var(--ui-color-accent-500) !important;
+    color: var(--ui-color-text-inverse) !important;
+    font-weight: var(--ui-font-weight-semibold) !important;
+    box-shadow: var(--ui-shadow-md) !important;
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-button-primary:hover {
+    background: var(--ui-color-accent-600) !important;
+    transform: translateY(-1px);
+}
+
+/* Secondary Actions (Tokens, Replace, Reset, Select) — Quieter */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-button-secondary,
+body.cc-admin-theme[class*="content-core_page_cc-"] .button-secondary {
+    background: var(--ui-color-bg-surface) !important;
+    border: 1px solid var(--ui-color-border-default) !important;
+    color: var(--ui-color-text-secondary) !important;
+    box-shadow: none !important;
+    font-weight: var(--ui-font-weight-medium) !important;
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-button-secondary:hover,
+body.cc-admin-theme[class*="content-core_page_cc-"] .button-secondary:hover {
+    background: var(--ui-color-bg-canvas) !important;
+    border-color: var(--ui-color-border-hover) !important;
+    color: var(--ui-color-text-primary) !important;
+}
+
+/* Destructive Actions (Remove, Delete) — Subtle but distinct warning style, not louder than primary */
+body.cc-admin-theme[class*="content-core_page_cc-"] .remove-row,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-button-destructive,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-button-secondary.remove-row,
+/* Force override for mixed legacy buttons */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-button-secondary.cc-button-destructive {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    color: var(--ui-color-status-error) !important;
+    font-weight: var(--ui-font-weight-medium) !important;
+    opacity: 0.8;
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .remove-row:hover,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-button-destructive:hover {
+    opacity: 1 !important;
+    background: var(--ui-color-status-error-bg) !important;
+    border-color: var(--ui-color-status-error) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   7. ROW STRUCTURES (Languages, Lists)
+   ═══════════════════════════════════════════════════════════════ */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-settings-content table {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-settings-content th {
+    background: var(--ui-color-bg-canvas) !important;
+    padding: var(--ui-space-3) var(--ui-space-4) !important;
+    text-align: left !important;
+    font-size: var(--ui-text-body-sm-size) !important;
+    font-weight: var(--ui-font-weight-semibold) !important;
+    color: var(--ui-color-text-muted) !important;
+    border-top: var(--ui-border-default) !important;
+    border-bottom: var(--ui-border-default) !important;
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-settings-content td {
+    padding: var(--ui-space-4) !important;
+    border-bottom: var(--ui-border-default) !important;
+    vertical-align: middle !important;
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-settings-content tr:last-child td {
+    border-bottom: 0 !important;
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-settings-content tr:hover td {
+    background: var(--ui-color-bg-canvas) !important;
+}
+
+/* Reset to Defaults — accent-outline variant */
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-form-actions [name="cc_reset_menu"] {
+    background: var(--ui-color-bg-surface);
+    border-color: var(--ui-color-accent-500);
+    color: var(--ui-color-accent-600);
+    font-weight: var(--ui-font-weight-regular);
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-form-actions [name="cc_reset_menu"]:hover,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-form-actions [name="cc_reset_menu"]:focus-visible {
+    color: var(--ui-color-accent-600);
+    background: var(--ui-color-accent-50);
+    border-color: var(--ui-color-accent-600);
+}
+
+/* Keep schema-page reset button aligned with the same accent-outline style */
+body.cc-admin-theme[class*="content-core_page_cc-"] button[name="cc_reset_site_options_schema"] {
+    background: var(--ui-color-bg-surface);
+    border-color: var(--ui-color-accent-500);
+    color: var(--ui-color-accent-600);
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] button[name="cc_reset_site_options_schema"]:hover,
+body.cc-admin-theme[class*="content-core_page_cc-"] button[name="cc_reset_site_options_schema"]:focus-visible {
+    background: var(--ui-color-accent-50);
+    border-color: var(--ui-color-accent-600);
+    color: var(--ui-color-accent-600);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   7. SAFETY CARD — suppress developer-level content
+   ═══════════════════════════════════════════════════════════════ */
+body.cc-admin-theme[class*="content-core_page_cc-"] .wrap>.cc-card:has(.dashicons-warning),
+body.cc-admin-theme[class*="content-core_page_cc-"] .wrap>form>.cc-card:has(.dashicons-warning) {
+    display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   8. REACT-SHELL PAGES (SEO, Cookie Banner)
+   Pages rendered by render_site_settings_page() with React root.
+   ═══════════════════════════════════════════════════════════════ */
+body.cc-admin-theme.content-core_page_cc-seo .wrap,
+body.cc-admin-theme.content-core_page_cc-cookie-banner .wrap {
+    display: grid;
+    gap: var(--ui-space-6);
+    align-content: start;
+}
+
+body.cc-admin-theme.content-core_page_cc-seo .cc-header,
+body.cc-admin-theme.content-core_page_cc-cookie-banner .cc-header {
+    margin: 0;
+}
+
+/* React root shell gets consistent max-width */
+body.cc-admin-theme.content-core_page_cc-seo #cc-site-settings-react-root,
+body.cc-admin-theme.content-core_page_cc-cookie-banner #cc-site-settings-react-root {
+    width: 100%;
+    max-width: 1000px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+/* Title is rendered inside .cc-header; hide any stray WP-injected h1 */
+body.cc-admin-theme[class*="content-core_page_cc-"] .wrap>h1:not(.cc-header *),
+body.cc-admin-theme[class*="content-core_page_cc-"] .wrap>.wp-heading-inline {
+    display: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   10. UNIFIED NOTICES (Success, Error, Warning)
+   ═══════════════════════════════════════════════════════════════ */
+body.cc-admin-theme[class*="content-core_page_cc-"] .notice,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-notice {
+    margin: 0 0 var(--ui-space-2) 0 !important;
+    border: var(--ui-border-default) !important;
+    border-left-width: 4px !important;
+    border-radius: var(--ui-radius-md) !important;
+    background: var(--ui-color-bg-surface) !important;
+    box-shadow: var(--ui-shadow-sm) !important;
+    padding: var(--ui-space-4) var(--ui-space-5) !important;
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .notice-success,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-notice-success {
+    border-left-color: var(--ui-color-status-success) !important;
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .notice-error,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-notice-error {
+    border-left-color: var(--ui-color-status-error) !important;
+}
+
+body.cc-admin-theme[class*="content-core_page_cc-"] .notice-warning,
+body.cc-admin-theme[class*="content-core_page_cc-"] .cc-notice-warning {
+    border-left-color: var(--ui-color-status-warning) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   11. JS TOAST STANDARDIZATION
+   ═══════════════════════════════════════════════════════════════ */
+.cc-toast {
+    position: fixed !important;
+    bottom: var(--ui-space-8) !important;
+    right: var(--ui-space-8) !important;
+    z-index: 100000 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--ui-space-4) !important;
+    padding: var(--ui-space-3) var(--ui-space-5) !important;
+    background: var(--ui-color-bg-surface) !important;
+    border: var(--ui-border-default) !important;
+    border-left: 4px solid var(--ui-color-status-success) !important;
+    border-radius: var(--ui-radius-lg) !important;
+    box-shadow: var(--ui-shadow-lg) !important;
+    animation: cc-toast-slide-in 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cc-toast--danger {
+    border-left-color: var(--ui-color-status-error) !important;
+}
+
+.cc-toast--warning {
+    border-left-color: var(--ui-color-status-warning) !important;
+}
+
+.cc-toast__text {
+    font-size: var(--ui-text-body-sm-size) !important;
+    font-weight: var(--ui-font-weight-medium) !important;
+    color: var(--ui-color-text-primary) !important;
+}
+
+.cc-toast__close {
+    background: transparent !important;
+    border: 0 !important;
+    color: var(--ui-color-text-muted) !important;
+    font-size: 20px !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    margin-left: var(--ui-space-2) !important;
+}
+
+.cc-toast__close:hover {
+    color: var(--ui-color-text-primary) !important;
+}
+
+@keyframes cc-toast-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   12. LEGACY options-* pages — preserved from original file
+   ═══════════════════════════════════════════════════════════════ */
+body.cc-admin-theme[class*="options-"] .wrap>h1 {
+    font-size: var(--ui-text-h1-size);
+    line-height: var(--ui-text-h1-line);
+    font-weight: var(--ui-font-weight-bold);
+    letter-spacing: -0.02em;
+    color: var(--ui-color-text-primary);
+    margin: 0 0 var(--ui-space-4) 0;
+    max-width: var(--ui-layout-form-max);
+    width: 100%;
+}
 
 body.cc-admin-theme[class*="options-"] .wrap>form {
     max-width: var(--ui-layout-form-max);
-    width: min(100%, var(--ui-layout-form-max));
-    margin: 0 auto;
+    width: 100%;
+    margin: 0;
     display: grid;
     gap: var(--ui-space-5);
+    background: var(--ui-color-bg-surface);
+    border: var(--ui-border-default);
+    border-radius: var(--ui-radius-lg);
+    box-shadow: var(--ui-shadow-sm);
+    padding: var(--ui-space-6);
+    box-sizing: border-box;
 }
 
 body.cc-admin-theme[class*="options-"] .wrap>form .form-table {
     border: 0;
     background: transparent;
     box-shadow: none;
+    border-radius: 0;
+    margin: 0;
 }
 
 body.cc-admin-theme[class*="options-"] .wrap>form .form-table tr {
-    border: var(--ui-border-default);
-    border-radius: var(--ui-radius-lg);
-    background: var(--ui-color-bg-surface);
-    padding: var(--ui-space-6);
-    margin-bottom: var(--ui-space-4);
-    box-shadow: var(--ui-shadow-sm);
-}
-
-body.cc-admin-theme[class*="options-"] .wrap>form .form-table tr:last-child {
-    margin-bottom: 0;
+    background: transparent;
+    box-shadow: none;
 }
 
 body.cc-admin-theme[class*="options-"] .wrap>form p.submit {
@@ -33,15 +542,205 @@ body.cc-admin-theme[class*="options-"] .wrap>form p.submit {
     padding: 0;
 }
 
-body.cc-admin-theme.options-general-php .search-box {
-    margin-left: auto;
+/* ═══════════════════════════════════════════════════════════════
+   11. MULTILINGUAL — table inputs should not stretch excessively
+   ═══════════════════════════════════════════════════════════════ */
+body.cc-admin-theme.content-core_page_cc-multilingual .cc-table input[type="text"] {
+    max-width: 200px;
+    min-width: 80px;
+    width: 100%;
 }
 
-body.cc-admin-theme.options-general-php .form-table,
-body.cc-admin-theme.options-writing-php .form-table,
-body.cc-admin-theme.options-reading-php .form-table,
-body.cc-admin-theme.options-discussion-php .form-table,
-body.cc-admin-theme.options-media-php .form-table,
-body.cc-admin-theme.options-permalink-php .form-table {
-    box-shadow: var(--ui-shadow-sm);
+body.cc-admin-theme.content-core_page_cc-multilingual .cc-table-wrap:has(#cc-ml-languages-table) {
+    max-width: 1000px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+body.cc-admin-theme.content-core_page_cc-multilingual #cc-ml-languages-table {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+body.cc-admin-theme.content-core_page_cc-multilingual #cc-ml-languages-table thead th {
+    height: auto;
+    padding: var(--ui-space-2) var(--ui-space-3) var(--ui-space-3);
+    border-bottom: var(--ui-border-muted);
+    color: var(--ui-color-text-secondary);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    background: transparent;
+}
+
+body.cc-admin-theme.content-core_page_cc-multilingual #cc-ml-languages-table tbody tr {
+    border-bottom: var(--ui-border-muted);
+    transition: background-color 140ms ease;
+}
+
+body.cc-admin-theme.content-core_page_cc-multilingual #cc-ml-languages-table tbody tr:last-child {
+    border-bottom: 0;
+}
+
+body.cc-admin-theme.content-core_page_cc-multilingual #cc-ml-languages-table tbody td {
+    padding-top: var(--ui-space-4);
+    padding-bottom: var(--ui-space-4);
+    border-bottom: 0;
+    vertical-align: middle;
+}
+
+body.cc-admin-theme.content-core_page_cc-multilingual #cc-ml-languages-table tbody tr:hover {
+    background: color-mix(in srgb, var(--ui-color-accent-50) 58%, transparent);
+}
+
+body.cc-admin-theme.content-core_page_cc-multilingual #cc-ml-languages-table td:first-child {
+    width: 36px;
+    padding-right: 0;
+}
+
+body.cc-admin-theme.content-core_page_cc-multilingual #cc-ml-languages-table .cc-ml-drag-handle {
+    color: var(--ui-color-text-muted);
+    opacity: 0.6;
+    cursor: grab;
+}
+
+body.cc-admin-theme.content-core_page_cc-multilingual #cc-ml-languages-table tr:hover .cc-ml-drag-handle {
+    opacity: 0.9;
+}
+
+body.cc-admin-theme.content-core_page_cc-multilingual #cc-ml-languages-table td code {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: var(--ui-radius-pill);
+    border: 1px solid var(--ui-color-border-muted);
+    background: color-mix(in srgb, var(--ui-color-bg-surface) 65%, var(--ui-color-bg-subtle));
+    color: var(--ui-color-text-muted);
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+body.cc-admin-theme.content-core_page_cc-multilingual #cc-ml-languages-table .button-small {
+    min-height: 36px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   12. VISIBILITY TABLE — drag + toggle layout
+   ═══════════════════════════════════════════════════════════════ */
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table-wrap {
+    max-width: 1000px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table.cc-visibility-sortable {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table.cc-visibility-sortable thead th {
+    height: auto;
+    padding: var(--ui-space-2) var(--ui-space-3) var(--ui-space-3);
+    border-bottom: var(--ui-border-muted);
+    color: var(--ui-color-text-secondary);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    background: transparent;
+}
+
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table.cc-visibility-sortable thead th:nth-child(3),
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table.cc-visibility-sortable thead th:nth-child(4) {
+    text-align: center;
+}
+
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table.cc-visibility-sortable tbody tr {
+    border-bottom: var(--ui-border-muted);
+    transition: background-color 140ms ease;
+}
+
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table.cc-visibility-sortable tbody tr:last-child {
+    border-bottom: 0;
+}
+
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table.cc-visibility-sortable tbody td {
+    padding-top: var(--ui-space-4);
+    padding-bottom: var(--ui-space-4);
+    border-bottom: 0;
+    vertical-align: middle;
+}
+
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table.cc-visibility-sortable tbody tr:hover {
+    background: color-mix(in srgb, var(--ui-color-accent-50) 58%, transparent);
+}
+
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table.cc-visibility-sortable td:first-child {
+    width: 36px;
+    padding-right: 0;
+}
+
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table.cc-visibility-sortable td:nth-child(2) {
+    min-width: 280px;
+}
+
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table.cc-visibility-sortable td:nth-child(2)>div:first-child {
+    font-size: var(--ui-text-body-size);
+    line-height: 1.25;
+    font-weight: var(--ui-font-weight-medium);
+    color: var(--ui-color-text-primary);
+}
+
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table.cc-visibility-sortable td code {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 6px;
+    padding: 3px 10px;
+    border-radius: var(--ui-radius-pill);
+    border: 1px solid var(--ui-color-border-muted);
+    background: color-mix(in srgb, var(--ui-color-bg-surface) 65%, var(--ui-color-bg-subtle));
+    color: var(--ui-color-text-muted);
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table.cc-visibility-sortable .cc-drag-handle {
+    color: var(--ui-color-text-muted);
+    opacity: 0.6;
+    cursor: grab;
+}
+
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table.cc-visibility-sortable tr:hover .cc-drag-handle {
+    opacity: 0.9;
+}
+
+body.cc-admin-theme.content-core_page_cc-visibility .cc-table td .cc-toggle-wrap {
+    justify-content: center;
+    min-width: 52px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   13. RESPONSIVE
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 1200px) {
+
+    body.cc-admin-theme[class*="content-core_page_cc-"] .cc-field input[type="text"],
+    body.cc-admin-theme[class*="content-core_page_cc-"] .cc-field input[type="number"],
+    body.cc-admin-theme[class*="content-core_page_cc-"] .cc-field input[type="url"],
+    body.cc-admin-theme[class*="content-core_page_cc-"] .cc-field input[type="email"] {
+        max-width: 100%;
+    }
+
+    body.cc-admin-theme[class*="content-core_page_cc-"] .cc-field select {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 900px) {
+    body.cc-admin-theme.content-core_page_cc-branding .cc-grid-2 {
+        grid-template-columns: 1fr;
+    }
 }
